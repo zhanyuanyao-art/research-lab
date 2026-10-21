@@ -1,0 +1,84 @@
+/* 研究工具 (literature map, evidence matrix, checks, concept ledger, progress). Layout on top of app.css. */
+.method-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0 36px; }
+@media (max-width: 900px) { .method-grid { grid-template-columns: 1fr; } }
+
+/* progress ladder */
+.milestones { list-style: none; padding: 0; margin: 0; }
+.milestone { border-bottom: 1px solid var(--border); padding: 10px 0; }
+.milestone:last-child { border-bottom: 0; }
+.milestone summary { display: flex; align-items: center; gap: 10px; }
+.milestone summary::before { order: -1; }
+.milestone.behind { opacity: .55; }
+.milestone .m-title { font-weight: 500; color: var(--fg); flex: 1; }
+.m-checks { list-style: none; padding: 6px 0 0 18px; margin: 0; font-size: 0.92rem; }
+.m-checks li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; color: var(--fg-2); }
+.m-checks .confirm { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: 400; color: var(--fg); }
+.stage-move { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+
+/* claims, cases, camps */
+.claims, .camps, .tray { list-style: none; padding: 0; margin: 0 0 12px; }
+.claim-row, .camps li, .tray li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.claim-row:last-child, .camps li:last-child, .tray li:last-child { border-bottom: 0; }
+.claim-row .statement { display: block; margin-top: 4px; font-family: var(--serif); line-height: 1.6; color: var(--fg); }
+.claim-row.suggested, .suggested-line, .edge-list li.suggested { border: 1px dashed var(--border-2); border-radius: var(--r); padding: 8px 10px; margin: 6px 0; }
+form.inline { display: inline; }
+button.chip { cursor: pointer; }
+
+/* literature map */
+.map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 980px) { .map-layout { grid-template-columns: 1fr; } }
+.cy { height: 640px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
+.map-side { display: flex; flex-direction: column; gap: 14px; }
+.map-side .card h3, .map-side h3 { margin: 0 0 10px; font-size: 0.9rem; font-weight: 500; color: var(--muted); }
+.node-panel h3 { margin: 0 0 6px; }
+.edge-list { list-style: none; padding: 0; font-size: 0.86rem; }
+.edge-list li { margin: 6px 0; }
+
+/* evidence matrix */
+.matrix-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+@media (max-width: 1060px) { .matrix-layout { grid-template-columns: 1fr; } }
+.matrix-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
+table.matrix { display: table; border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.88rem; }
+table.matrix th, table.matrix td { border: 0; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); padding: 6px; vertical-align: top; }
+table.matrix tr > *:last-child { border-right: 0; }
+table.matrix tbody tr:last-child > * { border-bottom: 0; }
+table.matrix tbody tr:hover td { background: transparent; }
+table.matrix thead th { font-size: 0.8rem; font-weight: 500; color: var(--fg-2); text-align: left; min-width: 8.5rem; padding: 10px; background: var(--surface-2); white-space: normal; }
+table.matrix thead th .mono { display: block; margin-top: 2px; color: var(--muted); font-size: 0.76rem; font-family: var(--sans); }
+table.matrix tbody th { text-align: left; font-weight: 500; min-width: 13rem; padding: 10px 12px; background: var(--surface-2); color: var(--fg); white-space: normal; }
+table.matrix tbody th .stmt { display: block; margin-top: 4px; font-size: 0.82rem; font-weight: 400; color: var(--muted); line-height: 1.5; }
+table.matrix tr.own th { box-shadow: inset 3px 0 0 var(--accent); }
+.mcell { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; min-height: 3.6rem; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--r); background: transparent; color: var(--fg); cursor: pointer; font: inherit; text-align: left; }
+.mcell:hover, .mcell:focus-visible { border-color: var(--border-2); background: var(--hover); }
+.mcell .glyph { font-size: 1rem; line-height: 1; color: var(--fg-2); }
+.mcell .lbl, .mcell .tt, .mcell .nx { font-size: 0.76rem; color: var(--muted); }
+.mcell .tt { color: var(--fg-2); }
+.mcell.s-weak { background: var(--hover); }
+.mcell.s-strong { background: var(--success-soft); }
+.mcell.s-strong .lbl { color: var(--success); }
+.mcell.s-contradicting { background: var(--danger-soft); }
+.mcell.s-contradicting .lbl { color: var(--danger); }
+.mcell.s-searched-none { background: repeating-linear-gradient(45deg, transparent 0 6px, var(--hover) 6px 8px); }
+.mcell.s-na { opacity: .5; }
+.legend { margin-top: 10px; font-size: 0.84rem; color: var(--muted); }
+#cell-panel h4 { margin: 16px 0 6px; font-size: 0.92rem; }
+.search-log { list-style: none; padding: 0; font-size: 0.86rem; }
+.hunt h2 { margin-top: 0; }
+.hunt-list { padding-left: 1.2em; font-size: 0.92rem; }
+.hunt-list li { margin: 14px 0; }
+.hunt-list li p { margin: 4px 0; color: var(--fg-2); line-height: 1.6; }
+.hunt-list li.forced { box-shadow: inset 3px 0 0 var(--warning); padding-left: 10px; list-style-position: inside; }
+.verdicts { list-style: none; padding: 0; font-size: 0.9rem; }
+.chip.v-eliminated { background: var(--danger-soft); color: var(--danger); }
+.chip.v-strengthened, .chip.v-survives { background: var(--success-soft); color: var(--success); }
+.chip.v-weakened { background: var(--warning-soft); color: var(--warning); }
+
+/* checks */
+.check-card header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.check-fields { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 8px 16px; margin: 12px 0; font-size: 0.93rem; }
+.check-fields dt { font-size: 0.86rem; color: var(--muted); }
+.check-fields dd { margin: 0; line-height: 1.6; }
+@media (max-width: 700px) { .check-fields { grid-template-columns: 1fr; } }
+.map-layout > div:first-child { position: relative; }
+.map-empty { position: absolute; z-index: 2; left: 50%; top: 24px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 420px; padding: 12px 16px; text-align: center; font-size: 0.88rem; color: var(--muted); background: var(--surface); border-radius: var(--r-lg); }
+.map-empty strong { color: var(--fg); font-weight: 600; }

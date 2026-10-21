@@ -1,0 +1,62 @@
+{
+  "status": "partial-inventory-for-private-review",
+  "notices": [
+    {
+      "file": "htmx-2.0.11.txt",
+      "source": "https://raw.githubusercontent.com/bigskysoftware/htmx/v2.0.11/LICENSE",
+      "sha256": "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38",
+      "bytes": 642,
+      "offset": 267,
+      "assets": {
+        "app/research_lab/web/static/vendor/htmx.min.js": "d6fdc75f204e6bdefa99b69bf1e6d4ac69b8a364f77929f45c13476b4000f717"
+      }
+    },
+    {
+      "file": "toast-ui-editor-3.2.2.txt",
+      "source": "https://raw.githubusercontent.com/nhn/tui.editor/editor%403.2.2/LICENSE",
+      "sha256": "1c7c070da956f0c3122883c1b4eb706b1b819971082ccde001fe2d241d90e3c0",
+      "bytes": 1072,
+      "offset": 1030,
+      "assets": {
+        "app/research_lab/web/static/vendor/toastui-editor-all.min.js": "f50e1b7c0fc4e5d9a1ccd0d8be78cb3a950ccb3bf676fbf1627810c76aeaedd8",
+        "app/research_lab/web/static/vendor/toastui-editor-i18n-zh-cn.js": "ab74ff635a92651d090d20d52e849d265d5f4086efbf28b461e77dbbff85a741",
+        "app/research_lab/web/static/vendor/toastui-editor-dark.min.css": "83831febb938eb3555e0b48679d47ac547646ffd6d530e94c7e4a784a158adec",
+        "app/research_lab/web/static/vendor/toastui-editor.min.css": "6981cbe423fc7d296dd67c6e92570774a015a11ce192ea423c7130a507cf147d"
+      }
+    },
+    {
+      "file": "cytoscape-3.34.3.txt",
+      "source": "https://raw.githubusercontent.com/cytoscape/cytoscape.js/v3.34.3/LICENSE",
+      "sha256": "eb319c6e6f233607f71e8e2f450391751883cfc0eeb3ca7ef574c13d1d9c2203",
+      "bytes": 1082,
+      "offset": 2219,
+      "assets": {
+        "app/research_lab/web/static/vendor/cytoscape.min.js": "5f3b5b529546d5af1fc5628590af033b74511a5b6f789f5f4682845863228b91"
+      }
+    },
+    {
+      "file": "dompurify-2.3.3.txt",
+      "source": "https://raw.githubusercontent.com/cure53/DOMPurify/2.3.3/LICENSE",
+      "sha256": "8b6902e953e2eb2876412a4ba75291758b77e88e220962e3423af4d080db1a59",
+      "bytes": 16899,
+      "offset": 3409,
+      "assets": {
+        "app/research_lab/web/static/vendor/toastui-editor-all.min.js": "f50e1b7c0fc4e5d9a1ccd0d8be78cb3a950ccb3bf676fbf1627810c76aeaedd8"
+      }
+    },
+    {
+      "file": "lucide.txt",
+      "source": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/LICENSE",
+      "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+      "bytes": 3208,
+      "note": "The sprite is rebuilt from pinned source SVGs recorded in mac-third-party-sources.json.",
+      "offset": 20445,
+      "assets": {
+        "app/research_lab/web/static/icons.svg": "8e8ba9ed930e3417a254d5fdb1d1c2882471abe64a8e5d38ab6697301f0be198"
+      }
+    }
+  ],
+  "limitations": [
+    "Mac builds also require mac-third-party-sources.json and a generated Python/native inventory. Application license: AGPL-3.0-or-later. Verify matching corresponding source for every binary; final publication approval remains separate."
+  ]
+}

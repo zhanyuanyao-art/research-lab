@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('method.css') }}">{% endblock %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">概念</span>{% endblock %}
+{% block content %}
+<p class="kicker"><a href="/projects/{{ slug }}">{{ p.name }}</a> · 概念台账</p>
+<h1>{{ c.label }}</h1>
+{% if error %}<div class="banner warning" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+{% for f in flags %}<p class="kicker warn">{{ f.text }}</p>{% endfor %}
+
+<h2>工作定义 {% if c.def_version %}<span class="chip">{{ c.def_version }}</span>{% endif %}</h2>
+{% if c.working_definition %}<blockquote>{{ c.working_definition }}</blockquote>{% else %}<p class="muted">还没有工作定义。</p>{% endif %}
+<form class="stack" method="post" action="/projects/{{ slug }}/concepts/{{ c.id }}/definition">
+  <textarea name="text" placeholder="用你自己的一句话">{{ c.working_definition or '' }}</textarea>
+  <div class="row"><input type="text" name="reason" placeholder="修改原因"><input type="text" name="artifact_ref" class="mono" placeholder="引起修改的 ART-…"></div>
+  <div><button class="btn small" type="submit">Save as new version</button></div>
+</form>
+{% if c.versions %}<table class="data"><thead><tr><th>版本</th><th>日期</th><th>文本</th><th>原因</th><th>Artifact</th></tr></thead><tbody>
+{% for v in c.versions %}<tr><td class="mono">{{ v.version }}</td><td class="mono">{{ v.created_at[:10] }}</td><td>{{ v.text }}</td><td>{{ v.reason or '' }}</td><td class="mono">{{ v.artifact_ref or '' }}</td></tr>{% endfor %}
+</tbody></table>{% endif %}
+
+<h2>维度与指标</h2>
+{% for d in c.dimensions %}
+<form class="card stack" method="post" action="/projects/{{ slug }}/concepts/{{ c.id }}/dimension-edit">
+  <input type="hidden" name="key" value="{{ d.key }}">
+  <div class="row"><input type="text" name="label" value="{{ d.label }}" aria-label="维度名称"><input type="text" name="description" value="{{ d.description }}" aria-label="维度含义"></div>
+  <label>指标（每行一个）{% if not d.indicators %} · <span class="warn">还没有指标</span>{% endif %}</label>
+  <textarea name="indicators" class="mono">{{ d.indicators | join('\n') }}</textarea>
+  <div class="row"><button class="btn small" type="submit">Save</button>
+    <button class="btn small secondary" type="submit" formaction="/projects/{{ slug }}/concepts/{{ c.id }}/dimension-remove">Delete</button></div>
+</form>
+{% else %}<p class="muted">还没有维度。</p>{% endfor %}
+<form class="row" method="post" action="/projects/{{ slug }}/concepts/{{ c.id }}/dimension">
+  <input type="text" name="label" placeholder="新维度" required><input type="text" name="description" placeholder="它的含义">
+  <button class="btn small" type="submit">Add dimension</button>
+</form>
+
+<h2>用法 <span class="muted mono">({{ usages|length }})</span></h2>
+<p class="kicker">用途标为「定义」并关联到这个概念的划线。</p>
+{% if usages %}<table class="data"><thead><tr><th>划线</th><th>来源</th><th>定义</th><th>阵营</th><th>维度</th></tr></thead><tbody>
+{% for u in usages %}<tr><td class="mono"><a href="/excerpts/{{ u.id }}">{{ u.id }}</a><br>{{ u.locator }}</td><td>{{ u.paper_title }}{% if u.year %} ({{ u.year }}){% endif %}</td>
+  <td>{{ u.quote[:240] }}</td><td>{{ u.camp or '' }}</td>
+  <td>{% for d in c.dimensions %}<form method="post" action="/projects/{{ slug }}/concepts/{{ c.id }}/usage-dimension" class="inline">
+    <input type="hidden" name="excerpt_id" value="{{ u.id }}"><input type="hidden" name="key" value="{{ d.key }}">
+    {% if d.key in u.dimensions %}<button class="chip status-active" type="submit" title="移除">{{ d.label }}</button>
+    {% else %}<input type="hidden" name="on" value="1"><button class="chip" type="submit">{{ d.label }}</button>{% endif %}</form>{% endfor %}</td></tr>{% endfor %}
+</tbody></table>{% else %}<p class="muted">还没有用法。把一个划线标为定义，并关联到「{{ c.label }}」。</p>{% endif %}
+
+<h2>相互竞争的用法</h2>
+{% if c.competing %}<ul>{% for pair in c.competing %}<li>{{ pair.a }} <strong>vs</strong> {{ pair.b }}{% if pair.note %} — {{ pair.note }}{% endif %}
+  <form class="inline" method="post" action="/projects/{{ slug }}/concepts/{{ c.id }}/competing-remove"><input type="hidden" name="index" value="{{ loop.index0 }}"><button class="btn small secondary" type="submit">Delete</button></form></li>{% endfor %}</ul>
+{% else %}<p class="muted">还没有记录。</p>{% endif %}
+<form class="row" method="post" action="/projects/{{ slug }}/concepts/{{ c.id }}/competing">
+  <input type="text" name="a" placeholder="用法 A（如 EXC-… 或 'rhetorical recognition'）" required>
+  <input type="text" name="b" placeholder="用法 B" required><input type="text" name="note" placeholder="为什么两者不能同时成立">
+  <button class="btn small" type="submit">Add pair</button>
+</form>
+
+{% set ladder_zh = {"asean-specific": "东盟特有", "regional-organisations": "可推及其他区域组织（AU、SCO）", "general": "一般概念"} %}
+<h2>抽象阶梯</h2>
+<form class="row" method="post" action="/projects/{{ slug }}/concepts/{{ c.id }}/ladder">
+  <select name="ladder" aria-label="抽象阶梯"><option value="">未决定</option>{% for l in ladder %}<option value="{{ l }}"{% if c.ladder == l %} selected{% endif %}>{{ ladder_zh.get(l, ladder_labels[l]) }}</option>{% endfor %}</select>
+  <button class="btn small" type="submit">Save</button>
+</form>
+{% endblock %}

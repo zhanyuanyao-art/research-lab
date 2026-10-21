@@ -1,0 +1,10 @@
+<li class="claim-row{% if cl.status == 'proposed' %} suggested{% endif %}">
+  <span class="mono">{{ cl.code or L.claim_kind[cl.kind] }}</span>{% if cl.is_own %} <span class="chip status-active">自己的</span>{% endif %}
+  <span class="chip">{{ L.claim_kind[cl.kind] }}</span>
+  <span class="statement">{{ cl.statement }}</span>
+  {% if cl.status == 'proposed' %}
+    <span class="chip">建议</span>
+    <button class="btn small" hx-post="/projects/{{ slug }}/claims/{{ cl.id }}/accept">Accept</button>
+    <button class="btn small secondary" hx-post="/projects/{{ slug }}/claims/{{ cl.id }}/reject">Discard</button>
+  {% endif %}
+</li>

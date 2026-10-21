@@ -1,0 +1,10 @@
+<div class="card side-card" id="versions">
+  <h3>版本历史</h3>
+  {% if not is_repo %}<p class="muted small">这里不是 git 仓库，没有版本历史。</p>
+  {% elif not versions %}<p class="muted small">还没有提交过这个文件。</p>
+  {% else %}
+  <ul class="list">{% for v in versions[:6] %}
+    <li class="list-item"><div class="body"><span class="title small">{{ v.subject }}</span><div class="sub"><span>{{ v.date }}</span><span class="mono">{{ v.hash }}</span></div></div></li>
+  {% endfor %}</ul>
+  {% endif %}
+</div>

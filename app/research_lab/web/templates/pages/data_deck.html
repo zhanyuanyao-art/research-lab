@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "partials/_data_macros.html" import flash %}
+{% block head %}<link rel="stylesheet" href="{{ asset('data.css') }}"><link rel="stylesheet" href="{{ asset('deck.css') }}">
+{% endblock %}
+{% block scripts %}<script src="{{ asset('deck-edit.js') }}" defer></script>{% endblock %}
+{% block crumbs %}<a href="/data">数据</a>{{ ui.icon('chevron-right', 'sm') }}<a href="/data/plans/{{ plan.id }}">{{ short_title }}</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">展示稿</span>{% endblock %}
+{% block content %}
+<div class="deck-page">
+<header class="page-header"><div class="titles"><h1 class="page-title">展示稿</h1>
+  {%- if info.exists %}<p class="page-desc">{{ slides_n }} 页</p>{% endif %}</div></header>
+{{ flash(msg, err) }}
+<div class="deck-bar">
+  <span class="muted">{% if info.exists %}{{ title }}{% endif %}</span>
+  <div class="actions">
+    {%- if deck_html %}
+    <button class="btn" type="button" data-deck-edit data-at="{{ at }}" data-testid="deck-edit">Edit</button>
+    <button class="btn primary" type="button" data-deck-save hidden data-testid="deck-save">Save</button>
+    <button class="btn" type="button" data-deck-cancel hidden>Cancel</button>
+    {%- endif %}
+    <form method="post" action="/data/plans/{{ plan.id }}/deck" data-deck-make-form>
+      <button class="btn {% if not info.exists %}primary{% endif %}" type="submit" data-testid="deck-make">{{ 'Remake' if info.exists else 'Make deck' }}</button>
+    </form>
+    {%- if info.exists %}<a class="btn primary" href="/data/plans/{{ plan.id }}/deck.pptx" data-deck-download data-testid="deck-download">Download .pptx</a>{% endif %}
+  </div>
+</div>
+{%- if deck_html %}
+{{ deck_html | safe }}
+{%- else %}
+<div class="card deck-empty muted">{{ '这份展示稿是旧版做的，Remake 之后才能在这里预览和修改' if info.exists else '还没有展示稿' }}</div>
+{%- endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+;; 复现工作区的沙箱 (card 0158, docs/design/REPLICATION-v2.md 第三步): every Python script the AI writes for a
+;; replication runs under this profile, through /usr/bin/sandbox-exec -f sandbox.sb -D NAME=value ...
+;; (replication/workspace.py: sandbox_command). Modelled on devflow/autofix.py's seatbelt profile.
+;;
+;; Parameters, all real paths (/private/var/... rather than /var/...):
+;;   WORKSPACE   the plan's workspace: the only place a script may write (not its data/ or author/ folders)
+;;   VENV        the app's virtual environment (pandas, statsmodels, pyfixest, differences, matplotlib)
+;;   PYTHON_HOME the interpreter the venv points at, with its standard library
+;;   HOME_DIR    Leo's home folder, refused except the paths above
+;;   USER_TEMP   this user's /var/folders/<..> folder (other sessions' scratch copies and preview databases)
+;;   APP_DATA    the app's data folder (database, DuckDB store, originals, backups): refused but the workspace in it
+;;   REPO        the research repository: app/.env and private/ in it are refused
+;;
+;; Writes: the workspace only, files and folders only (no links, FIFOs or devices). Network: none at all, localhost
+;; included. Processes: no fork. Reads: nothing under $HOME, /private/tmp
+;; or USER_TEMP except the workspace, the venv and the interpreter; never a .env file, never the app's data folder
+;; outside the workspace, never private/. Later rules win, so each deny comes before its allowances and the last
+;; denies are the ones nothing may override. Folders above the allowed ones may be stat'ed (not listed, not read):
+;; the interpreter resolves every parent of its own path and of the script's.
+
+(version 1)
+(allow default)
+
+(deny network*)
+(deny appleevent-send)
+;; Mach services a script has no business with (review of card 0186: a Python process reaches them without forking):
+;; the preference daemon (user defaults, `defaults write`), LaunchServices (opening apps and URLs), the pasteboard, the
+;; window server and screen capture, TCC. Denied by name and prefix; the rest of the profile stays allow-default.
+(deny mach-lookup (global-name "com.apple.cfprefsd.agent") (global-name "com.apple.cfprefsd.daemon")
+                  (local-name "com.apple.cfprefsd.agent")
+                  (global-name-prefix "com.apple.lsd") (global-name-prefix "com.apple.coreservices")
+                  (global-name-prefix "com.apple.pasteboard") (global-name-prefix "com.apple.windowserver")
+                  (global-name-prefix "com.apple.screencapture") (global-name-prefix "com.apple.replayd")
+                  (global-name-prefix "com.apple.CoreDisplay") (global-name-prefix "com.apple.iohideventsystem")
+                  (global-name-prefix "com.apple.tccd") (global-name-prefix "com.apple.dock"))
+(deny user-preference-write)
+;; No child processes: a child could leave the process group that Stop and the timeout kill (0158 review). pandas,
+;; statsmodels, pyfixest, differences and matplotlib run without one; multiprocessing and subprocess do not.
+(deny process-fork)
+
+(deny file-write*)
+(allow file-write* (subpath (param "WORKSPACE")) (regex #"^/dev/"))
+(deny file-write* (subpath (string-append (param "WORKSPACE") "/data")))
+;; author/ holds the authors' code exactly as saved (card 0183, 0184): the session translates it, so nothing it runs may
+;; rewrite, add to, rename or delete it (0184 review: a script turned author/code/x.R into a different file).
+(deny file-write* (subpath (string-append (param "WORKSPACE") "/author")))
+;; Only files and folders: a link planted in the workspace would lead the app (which reads and writes the workspace
+;; outside this sandbox) to a file elsewhere, and a FIFO would hang it (0158 review). workspace.sweep() is the second
+;; fence, the app's O_NOFOLLOW opens the third.
+(deny file-write-create (vnode-type SYMLINK) (vnode-type FIFO) (vnode-type SOCKET) (vnode-type CHARACTER-DEVICE)
+                        (vnode-type BLOCK-DEVICE))
+
+(deny file-read* (subpath (param "HOME_DIR")) (subpath "/private/tmp") (subpath "/private/var/tmp")
+                 (subpath (param "USER_TEMP")) (subpath (param "APP_DATA")))
+(allow file-read-metadata (subpath (param "HOME_DIR")) (subpath "/private/tmp") (subpath (param "USER_TEMP"))
+                          (subpath (param "APP_DATA")))
+(allow file-read* (subpath (param "WORKSPACE")) (subpath (param "VENV")) (subpath (param "PYTHON_HOME")))
+
+(deny file-read* (regex #"/\.env[^/]*$"))
+(deny file-read* (subpath (string-append (param "REPO") "/private")))

@@ -1,0 +1,73 @@
+/* /search (cards 0133, 0137; docs/design/LIBRARY-UI.md 3.5 and 五、对齐规则): layout only; components come from
+   app.css. Papers are the library's own rows (partials/_paper_line.html, styled by papers.css); issues, outputs and
+   highlights use .srch-line on the same tracks: state 16px · title · marks 76px · authors 168px · date 60px · ⋯ 28px. */
+
+.content:has(> .search-page) { max-width: calc(1440px + 64px); }
+
+.srch-field { position: relative; margin: 0 0 6px; }
+.srch-field > .i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+.srch-field input[type=search] { width: 100%; height: 42px; padding-left: 36px; font-size: 15px; }
+.srch-tabs { margin-bottom: 8px; }
+.srch-hint { margin: 14px 0; font-size: var(--text-ui); color: var(--muted); }
+
+.hit-group > header { display: flex; align-items: center; gap: 8px; height: 38px; margin-top: 10px; font-size: 13px; font-weight: 600; }
+.hit-group > header h2 { margin: 0; font-size: inherit; font-weight: inherit; letter-spacing: 0; }
+.hit-group > header .n { color: var(--faint); font-weight: 400; font-variant-numeric: tabular-nums; }
+.hit-group > header .aside { margin-left: auto; font-weight: 400; font-size: var(--text-meta); color: var(--muted); }
+
+.srch-lines { list-style: none; margin: 0; padding: 0; }
+.srch-line { display: grid; grid-template-columns: [state] 16px [title] minmax(0, 1fr) [marks] 76px [by] 168px [date] 60px [acts] 28px;
+  column-gap: 12px; align-items: center; min-height: 40px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r); }
+.srch-line:hover { background: var(--hover); }
+.srch-line.has-snip { grid-template-rows: 40px auto; }
+.srch-line > .issue-state, .srch-line > .srch-kind { grid-column: state; grid-row: 1; }
+.srch-kind { display: inline-flex; color: var(--faint); }
+.srch-title { grid-column: title; grid-row: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--fg); }
+.srch-title:hover { color: var(--fg); text-decoration: underline; text-decoration-color: var(--border-2); }
+.srch-title .key { margin-right: 8px; color: var(--muted); font-size: var(--text-meta); font-variant-numeric: tabular-nums; }
+.srch-title .loc { color: var(--muted); }
+.srch-tail { display: contents; }
+.srch-marks { grid-column: marks; grid-row: 1; display: flex; align-items: center; gap: 4px; }
+.srch-marks .dir-dot { margin-left: 0; }
+.srch-by { grid-column: by; grid-row: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--text-meta); color: var(--muted); }
+.srch-date { grid-column: date; grid-row: 1; justify-self: end; font-size: var(--text-meta); color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.srch-snip { grid-column: title / by; grid-row: 2; margin: -8px 0 0; padding-bottom: 8px; max-width: none; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis; font-size: var(--text-meta); color: var(--muted); }
+
+/* A paper hit: the library row, then the snippet under its title. The <li> repeats the row's tracks and its hover
+   block, so row and snippet highlight together; the ⋯ menu is wired by papers.js on the 文献 list only, so here its
+   track stays but the button does not show. */
+.srch-hit { display: grid; grid-template-columns: [state] 16px [title] minmax(0, 1fr) [marks] 76px [by] 168px [date] 60px [acts] 28px;
+  column-gap: 12px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r); }
+.srch-hit:hover { background: var(--hover); }
+.srch-hit > .paper-lines { grid-column: 1 / -1; margin: 0; }      /* the row's own -8px margin meets the <li>'s edges */
+.srch-hit .paper-line:hover { background: none; }
+.srch-hit .paper-line .hover-acts { visibility: hidden; }
+.srch-snip mark, .page-hit mark { background: var(--mark); color: inherit; }
+
+.page-group + .page-group { margin-top: 4px; }
+.page-hit { display: grid; grid-template-columns: [state] 16px [title] minmax(0, 1fr); column-gap: 12px; align-items: center;
+  min-height: 30px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r); font-size: var(--text-meta); color: var(--fg-2); }
+.page-hit:hover { background: var(--hover); text-decoration: none; color: var(--fg-2); }
+.page-hit .t { grid-column: title; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.page-hit .pg { display: inline-block; min-width: 56px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.page-more, .srch-all { display: inline-flex; align-items: center; height: 30px; margin-left: 28px; font-size: var(--text-meta); color: var(--muted); }
+.page-more:hover, .srch-all:hover { color: var(--fg); }
+
+@media (max-width: 720px) {
+  .srch-line { grid-template-columns: [state] 16px [title] minmax(0, 1fr) [acts] 28px; grid-template-rows: auto auto; row-gap: 4px;
+    align-items: start; padding: 10px 8px; }
+  .srch-line.has-snip { grid-template-rows: auto auto auto; }
+  .srch-line > .issue-state, .srch-line > .srch-kind { margin-top: 3px; }
+  .srch-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; }
+  .srch-tail { grid-column: title; grid-row: 2; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .srch-marks:empty, .srch-date:empty { display: none; }
+  .srch-hit { grid-template-columns: [state] 16px [title] minmax(0, 1fr) [acts] 28px; }
+  .srch-hit > .srch-snip { grid-column: title; grid-row: 2; margin: -4px 0 0; padding-bottom: 10px; }
+  .srch-date { margin-left: auto; }
+  .srch-snip { grid-column: title; grid-row: 3; margin: 0; padding: 0; white-space: normal; }
+  .hit-group > header .aside { display: none; }
+  .page-hit { padding-top: 4px; padding-bottom: 4px; }
+  .page-hit .t { white-space: normal; }
+  .page-hit .pg { min-width: 0; margin-right: 8px; }
+}

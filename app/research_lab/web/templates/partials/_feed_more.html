@@ -1,0 +1,6 @@
+{#- "加载更多" row at the end of the 全部条目 list; replaced by the next page of rows. Variables: next_offset, more_qs. -#}
+{% if next_offset %}
+<li class="stream-row stream-more">
+  <button class="btn secondary small" hx-get="/feed/more?{{ more_qs }}&amp;offset={{ next_offset }}" hx-target="closest li" hx-swap="outerHTML">Load more<span class="spinner"></span></button>
+</li>
+{% endif %}

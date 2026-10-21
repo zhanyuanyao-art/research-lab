@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('pm.css') }}">{% endblock %}
+{% block scripts %}<script src="{{ asset('tasks.js') }}" defer></script>{% endblock %}
+{% block crumbs %}<span class="current">待办</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title">待办</h1>
+    <p class="page-desc">一条待办是排进某一周、属于某个课题的一件事。勾掉它，或者移到别的周；搁置的不催，完成的留着看。</p>
+  </div>
+  <div class="page-actions">
+    {% if editing %}<a class="btn secondary" href="/tasks?view={{ view }}{{ '&project=' ~ filter_project if filter_project else '' }}">{{ ui.icon('x') }}Cancel</a>
+    {% else %}<a class="btn" href="/tasks/new{{ '?project=' ~ filter_project if filter_project else '' }}">{{ ui.icon('plus') }}New task</a>{% endif %}
+  </div>
+</header>
+{% if file_problem %}<div class="banner danger" role="alert"><span class="text">{{ file_problem }}</span></div>{% endif %}
+{% if error and error != file_problem %}<div class="banner {{ 'warning' if '修改' in error else 'danger' }}" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+{% if saved %}<div class="flash">{{ ui.icon('check', 'sm') }}{% if saved == 'created' %}已加入待办。{% else %}已保存。{% endif %}</div>{% endif %}
+
+<div class="toolbar task-toolbar">
+  <div class="segmented" role="tablist" aria-label="看哪些">
+    {% for v, label in [('week', '本周'), ('overdue', '逾期'), ('all', '全部')] %}<a href="/tasks?view={{ v }}{% if filter_project %}&project={{ filter_project }}{% endif %}"{% if view == v %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </div>
+  {% if projects | length > 1 %}
+  <form method="get" action="/tasks" class="row"><input type="hidden" name="view" value="{{ view }}">
+    <select name="project" onchange="this.form.submit()" aria-label="只看一个课题"><option value="">全部课题</option>{% for slug, p in projects.items() %}<option value="{{ slug }}"{% if slug == filter_project %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+  </form>
+  {% endif %}
+  <span class="spacer"></span>
+  <span class="muted small">快捷键 <kbd>?</kbd></span>
+</div>
+
+{% set form_open = editing or open_new %}
+{% if form_open %}
+<form class="card stack task-form" method="post" action="{% if editing %}/tasks/{{ editing.id }}/edit{% else %}/tasks{% endif %}" id="task-form">
+  <input type="hidden" name="sha" value="{{ sha }}"><input type="hidden" name="filter" value="{{ filter_project }}">
+  <div class="field"><label for="tf-title">{% if editing %}编辑待办{% else %}要做什么{% endif %}</label>
+    <input type="text" id="tf-title" name="title" required maxlength="120" value="{{ values.title }}" placeholder="例如：把 Goh 和 Ba 两本书归入文献地图" autofocus></div>
+  <div class="grid-2">
+    <div class="field"><label for="tf-project">课题</label>
+      <select id="tf-project" name="project" required>{% if not values.project %}<option value="">选择课题…</option>{% endif %}{% for slug, p in projects.items() %}<option value="{{ slug }}"{% if slug == values.project %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="tf-due">截止日期</label>
+      <input type="date" id="tf-due" name="due" value="{{ values.due or '' }}"><p class="help">可以留空；本周日前到期的会出现在首页的本周待办里。</p></div>
+  </div>
+  <div class="field"><label for="tf-note">备注</label><textarea id="tf-note" name="note" rows="2" placeholder="可以留空">{{ values.note }}</textarea></div>
+  <div class="form-actions"><button class="btn" type="submit">{% if editing %}Save{% else %}Add task{% endif %}</button>
+    <a class="btn ghost" href="{{ '/tasks?project=' ~ filter_project if filter_project else '/tasks' }}">Cancel</a></div>
+</form>
+{% endif %}
+
+{% include "partials/_task_tree.html" %}
+<div class="task-help card" id="task-help" hidden>
+  <div class="card-head"><h3>快捷键</h3><button class="btn ghost icon small" type="button" data-help-close aria-label="关闭">{{ ui.icon('x', 'sm') }}</button></div>
+  <dl class="kv">
+    <dt><kbd>j</kbd> <kbd>k</kbd></dt><dd>上下移动焦点</dd>
+    <dt><kbd>x</kbd> 或 空格</dt><dd>完成 / 改回待办</dd>
+    <dt><kbd>s</kbd></dt><dd>在这条下面添加子任务</dd>
+    <dt><kbd>n</kbd> <kbd>w</kbd></dt><dd>截止改到下周五 / 本周五</dd>
+    <dt><kbd>p</kbd></dt><dd>搁置</dd>
+    <dt><kbd>Enter</kbd></dt><dd>编辑</dd>
+    <dt><kbd>Alt</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>调整顺序</dd>
+    <dt><kbd>v</kbd></dt><dd>切换本周 / 逾期 / 全部</dd>
+  </dl>
+</div>
+{% endblock %}

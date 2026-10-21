@@ -1,0 +1,21 @@
+{% import "partials/ui.html" as ui with context %}
+{% import "partials/_issue_ui.html" as iu with context %}
+<form action="/issues" method="post" class="issue-compose" data-issue-create>
+  <input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="parent" value="{{ parent.id if parent else '' }}">
+  <header class="compose-header"><span>{{ ui.icon('folder','sm') }}{{ active_direction.name if active_direction else '研究档案' }}</span>{% if parent %}{{ ui.icon('chevron-right','sm') }}<span class="truncate">{{ parent.title }}</span>{% endif %}<span class="grow"></span><button type="button" class="btn ghost icon small" data-composer-close aria-label="关闭新建议题">{{ ui.icon('x') }}</button></header>
+  <h2 class="sr-only">{{ '新建子议题' if parent else '新建议题' }}</h2>
+  <div class="compose-content">
+  <input class="compose-title inline-edit" name="title" placeholder="议题标题" aria-label="议题标题" required maxlength="120" autofocus>
+  <textarea class="compose-description inline-edit" name="description" placeholder="添加描述…" aria-label="议题描述" rows="4" data-autogrow maxlength="30000"></textarea>
+  </div>
+  <div class="compose-properties">
+    {{ iu.select('status','状态',issue_states,'todo','circle-dot') }}
+    {{ iu.select('priority','优先级',issue_priorities,'none','chart-column') }}
+    {% set project_options = {} %}{% for slug,p in project_choices.items() %}{% set _ = project_options.update({slug:p.name}) %}{% endfor %}
+    {% if parent %}<input type="hidden" name="project" value="{{ selected_project }}"><span class="compose-fixed-property">{{ ui.icon('folder','sm') }}{{ project_options.get(selected_project,'课题') }}</span>{% else %}{{ iu.select('project','课题',project_options,selected_project,'folder') }}{% endif %}
+    <details class="issue-popover choice-picker"><summary>{{ ui.icon('calendar','sm') }}<span data-property-caption="due" data-placeholder="截止日期">截止日期</span></summary><div class="issue-popover-panel"><input type="date" name="due" aria-label="预期截止日期"></div></details>
+    <details class="issue-popover choice-picker"><summary>{{ ui.icon('bookmark','sm') }}<span>标签</span><span data-label-count></span></summary><div class="issue-popover-panel">{% for label in issue_labels %}<label class="issue-check-option"><input type="checkbox" name="labels" value="{{ label }}">{{ iu.label(label) }}</label>{% endfor %}</div></details>
+  </div>
+  {% if not project_choices %}<p class="form-error">这个方向还没有课题。<a href="/projects/new">先创建课题</a></p>{% endif %}
+  <footer class="compose-footer"><span class="muted small">⌘ ↩ 创建</span><span class="grow"></span><label class="compose-more"><input type="checkbox" name="create_more">继续创建</label><button class="btn" type="submit"{% if not project_choices %} disabled{% endif %}>{{ 'Create sub-issue' if parent else 'Create issue' }}</button></footer>
+</form>

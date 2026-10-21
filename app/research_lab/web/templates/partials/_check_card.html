@@ -1,0 +1,35 @@
+<article class="card check-card{% if k.origin == 'ai-suggested' %} suggested{% endif %}" id="check-{{ k.id }}">
+  <header class="row">
+    <strong>{{ k.title }}</strong>
+    <span class="chip">{{ L.check_status[k.status] }}</span>
+    {% if k.origin == 'ai-suggested' %}<span class="chip">建议</span>{% endif %}
+    {% if k.claim_code or k.claim_statement %}<span class="mono muted">检验 {{ k.claim_code or '' }} {{ (k.claim_statement or '')[:60] }}</span>{% endif %}
+    {% if k.artifact_ref %}<a class="chip" href="/artifacts/{{ k.artifact_ref }}">{{ k.artifact_ref }}</a>{% endif %}
+  </header>
+  {% if error %}<p class="banner warning" role="alert"><span class="text">{{ error }}</span></p>{% endif %}
+  <dl class="check-fields">
+    <dt>预测（查看数据之前）</dt><dd>{{ k.prediction }}</dd>
+    {% if k.data_needed %}<dt>所需数据</dt><dd>{{ k.data_needed }}</dd>{% endif %}
+    {% if k.method %}<dt>方法</dt><dd>{{ k.method }}</dd>{% endif %}
+    {% if k.would_weaken_if %}<dt>什么结果会削弱这个主张</dt><dd>{{ k.would_weaken_if }}</dd>{% endif %}
+  </dl>
+  {% if k.origin == 'ai-suggested' %}
+  <div class="row">
+    <button class="btn small" hx-post="/projects/{{ slug }}/checks/{{ k.id }}/accept" hx-target="#check-{{ k.id }}" hx-swap="outerHTML">Accept</button>
+    <button class="btn small secondary" hx-post="/projects/{{ slug }}/checks/{{ k.id }}/discard" hx-target="#check-{{ k.id }}" hx-swap="outerHTML">Discard</button>
+  </div>
+  {% else %}
+  <form class="stack" hx-post="/projects/{{ slug }}/checks/{{ k.id }}" hx-target="#check-{{ k.id }}" hx-swap="outerHTML">
+    <div class="pill-group">{% for s in statuses %}<label><input type="radio" name="status" value="{{ s }}"{% if k.status == s %} checked{% endif %}><span>{{ L.check_status[s] }}</span></label>{% endfor %}</div>
+    {% if k.status == 'planned' %}<div><label>预测</label><textarea name="prediction">{{ k.prediction }}</textarea></div>{% endif %}
+    <div><label>脚本（仓库路径，如 analysis/bypass.py@v1）</label><input type="text" class="mono" name="script_ref" value="{{ k.script_ref or '' }}"></div>
+    {% if k.status in ('run', 'recorded') %}
+    <div><label>结果记录</label><textarea name="result_note">{{ k.result_note or '' }}</textarea></div>
+    <div><label>解读（一段话，你自己写）</label><textarea name="reading">{{ k.reading or '' }}</textarea></div>
+    {% endif %}
+    <div class="row"><button class="btn small" type="submit">Save</button>
+      {% if k.status == 'recorded' %}<button class="btn small secondary" type="button" hx-post="/projects/{{ slug }}/checks/{{ k.id }}/export" hx-target="#check-{{ k.id }}" hx-swap="outerHTML">Export analysis</button>{% endif %}
+    </div>
+  </form>
+  {% endif %}
+</article>

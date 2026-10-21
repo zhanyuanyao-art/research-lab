@@ -1,0 +1,79 @@
+# Synthetic sources for offline tests
+journals:
+  - {"abbr": "SD", "name": "Security Dialogue", "issn": ["1460-3640", "0967-0106"], "weight": 80, "pool": "core"}
+  - {"abbr": "EJIR", "name": "European Journal of International Relations", "issn": ["0000-0000"], "weight": 100, "pool": "core"}
+  - {"abbr": "EJPG", "name": "Synthetic EJPG", "issn": ["0000-0000"], "weight": 40, "pool": "hunt", "gp_filter": true}
+  - {"abbr": "GLQ", "name": "Synthetic GLQ", "issn": ["0000-0000"], "weight": 40, "pool": "hunt", "gp_filter": true}
+  - {"abbr": "PG", "name": "Synthetic PG", "issn": ["0000-0000"], "weight": 40, "pool": "hunt", "gp_filter": true}
+  - {"abbr": "SEX", "name": "Synthetic SEX", "issn": ["0000-0000"], "weight": 40, "pool": "hunt", "gp_filter": true}
+  - {"abbr": "SIGNS", "name": "Synthetic SIGNS", "issn": ["0000-0000"], "weight": 40, "pool": "hunt", "gp_filter": true}
+  - {"abbr": "SYN0", "name": "Synthetic Journal 0", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN1", "name": "Synthetic Journal 1", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN2", "name": "Synthetic Journal 2", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN3", "name": "Synthetic Journal 3", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN4", "name": "Synthetic Journal 4", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN5", "name": "Synthetic Journal 5", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN6", "name": "Synthetic Journal 6", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN7", "name": "Synthetic Journal 7", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN8", "name": "Synthetic Journal 8", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN9", "name": "Synthetic Journal 9", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN10", "name": "Synthetic Journal 10", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN11", "name": "Synthetic Journal 11", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN12", "name": "Synthetic Journal 12", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN13", "name": "Synthetic Journal 13", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN14", "name": "Synthetic Journal 14", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN15", "name": "Synthetic Journal 15", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN16", "name": "Synthetic Journal 16", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN17", "name": "Synthetic Journal 17", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN18", "name": "Synthetic Journal 18", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN19", "name": "Synthetic Journal 19", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN20", "name": "Synthetic Journal 20", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN21", "name": "Synthetic Journal 21", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN22", "name": "Synthetic Journal 22", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN23", "name": "Synthetic Journal 23", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN24", "name": "Synthetic Journal 24", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN25", "name": "Synthetic Journal 25", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN26", "name": "Synthetic Journal 26", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN27", "name": "Synthetic Journal 27", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN28", "name": "Synthetic Journal 28", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN29", "name": "Synthetic Journal 29", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN30", "name": "Synthetic Journal 30", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+  - {"abbr": "SYN31", "name": "Synthetic Journal 31", "issn": ["0000-0000"], "weight": 40, "pool": "expansion"}
+  - {"abbr": "SYN32", "name": "Synthetic Journal 32", "issn": ["0000-0000"], "weight": 40, "pool": "core"}
+  - {"abbr": "SYN33", "name": "Synthetic Journal 33", "issn": ["0000-0000"], "weight": 40, "pool": "watch"}
+  - {"abbr": "SYN34", "name": "Synthetic Journal 34", "issn": ["0000-0000"], "weight": 40, "pool": "hunt"}
+news:
+  - {name: "BBC World", url: "https://example.org/feed/0", lane: "world"}
+  - {name: "Al Jazeera", url: "https://example.org/feed/1", lane: "world"}
+  - {name: "UN News", url: "https://example.org/feed/2", lane: "world"}
+  - {name: "World Source 0", url: "https://example.org/feed/3", lane: "world"}
+  - {name: "World Source 1", url: "https://example.org/feed/4", lane: "world"}
+  - {name: "World Source 2", url: "https://example.org/feed/5", lane: "world"}
+  - {name: "World Source 3", url: "https://example.org/feed/6", lane: "world"}
+  - {name: "World Source 4", url: "https://example.org/feed/7", lane: "world"}
+  - {name: "World Source 5", url: "https://example.org/feed/8", lane: "world"}
+  - {name: "World Source 6", url: "https://example.org/feed/9", lane: "world"}
+  - {name: "Foreign Affairs", url: "https://example.org/research/0"}
+  - {name: "Crisis Group", url: "https://example.org/research/1"}
+  - {name: "Fulcrum", url: "https://fulcrum.sg/feed/"}
+  - {name: "Research Source 1", url: "https://example.org/research/3"}
+  - {name: "Research Source 2", url: "https://example.org/research/4"}
+  - {name: "Research Source 3", url: "https://example.org/research/5"}
+  - {name: "Research Source 4", url: "https://example.org/research/6"}
+  - {name: "Research Source 5", url: "https://example.org/research/7"}
+  - {name: "Research Source 6", url: "https://example.org/research/8"}
+  - {name: "Research Source 7", url: "https://example.org/research/9"}
+  - {name: "Research Source 8", url: "https://example.org/research/10"}
+  - {name: "Research Source 9", url: "https://example.org/research/11"}
+  - {name: "Research Source 10", url: "https://example.org/research/12"}
+  - {name: "Research Source 11", url: "https://example.org/research/13"}
+  - {name: "Research Source 12", url: "https://example.org/research/14"}
+  - {name: "Research Source 13", url: "https://example.org/research/15"}
+  - {name: "Research Source 14", url: "https://example.org/research/16"}
+  - {name: "Research Source 15", url: "https://example.org/research/17"}
+  - {name: "Research Source 16", url: "https://example.org/research/18"}
+  - {name: "Foreign Policy", url: "https://foreignpolicy.com/feed/", weight: 88}
+  - {name: "East Asia Forum", url: "https://example.org/disabled", enabled: false, note: "Disabled synthetic fixture"}
+  - {name: "CSIS", url: "https://example.org/disabled", enabled: false, note: "Disabled synthetic fixture"}
+gp_terms: [" war", "foreign policy", "security"]
+radar_terms: ["gender", "feminis", "care "]

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('weekly.css') }}">{% endblock %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">月度收获</span>{% endblock %}
+{% block content %}
+{% set kind_label = {'monthly': '月度', 'quarterly': '季度', 'annual': '年度'} %}
+<h1>收获</h1>
+<p class="kicker">每周 产出 → 月度收获 → 季度研究地图 → 第一年成果集</p>
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+
+{% if due.due %}
+<div class="banner warning" role="status">
+  
+  <span class="text">该做月度收获了：{% if due.since %}自 {{ due.since }} 以来{% endif %}已有 {{ due.count }} 个计数 产出。</span>
+  <a class="btn" href="/harvest/new?kind=monthly&period={{ suggestions.monthly }}">Start harvest</a>
+</div>
+{% else %}
+<p class="muted">{% if due.since %}自 {{ due.since }} 以来，{% endif %}计数 产出 {{ due.count }} / {{ due.threshold }}。达到 {{ due.threshold }} 个时开启月度收获。</p>
+{% endif %}
+
+{% if items %}
+<ul class="artifact-list">
+  {% for it in items %}{% set h = it.h %}
+  <li>
+    <span class="week">{{ {'monthly': '月', 'quarterly': '季', 'annual': '年'}.get(h.kind, (h.kind or '?')[:1] | upper) }}</span>
+    <a class="title" href="/harvest/{{ h.name }}">{{ h.title }}</a>
+    <span class="tail"><span class="chip">{{ kind_label.get(h.kind, h.kind) }} · {{ h.period }}</span><span class="chip" title="{{ h.from_week }} → {{ h.to_week }}">{{ h.from_week | week_short_zh }} → {{ h.to_week | week_short_zh }}</span><span class="chip">{{ it.n }} 个 产出</span></span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted"><em>还没有收获。积累四个计数 产出 后，就该做第一次月度收获了。</em></p>
+{% endif %}
+
+<section class="panel">
+  <h2>新建收获</h2>
+  <form method="get" action="/harvest/new" class="row">
+    <label class="inline">类型
+      <select name="kind" data-period-defaults='{"monthly": "{{ suggestions.monthly }}", "quarterly": "{{ suggestions.quarterly }}", "annual": "{{ suggestions.annual }}"}'>
+        <option value="monthly">月度</option><option value="quarterly">季度</option><option value="annual">年度</option>
+      </select></label>
+    <label class="inline">周期 <input type="text" name="period" value="{{ suggestions.monthly }}" class="mono short" pattern="\d{4}(-(0[1-9]|1[0-2])|-Q[1-4])?"></label>
+    <button class="btn secondary" type="submit">Preview</button>
+  </form>
+  <p class="muted small">周期写法：<code>2026-10</code>（月）、<code>2026-Q4</code>（季度）、<code>2026</code>（年）。一个周期包含周四落在其中的所有 ISO 周。</p>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('weekly.js') }}" defer></script>{% endblock %}

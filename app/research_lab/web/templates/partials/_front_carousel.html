@@ -1,0 +1,99 @@
+{# News and papers share one carousel; project progress sits below the brief task list. Also rendered alone by
+   GET /feed/front for the swap after 刷新今天 (card 0104). #}
+{% import "partials/ui.html" as ui with context %}
+{% set has_brief = brief is defined and brief and brief.events %}
+{% set has_news = has_brief or (front and front.news) %}
+{% set has_papers = front and front.papers %}
+{% set slides = ['news', 'papers'] %}
+{% set names = {'news': '新闻', 'papers': '论文'} %}
+
+{% macro kicker(it) -%}
+<div class="kicker"><span class="src">{{ it.origin_label }}</span>{% if it.date and it.date | length >= 10 %}<span>{{ it.date[5:7] | int }}月{{ it.date[8:10] | int }}日</span>{% endif %}{% if it.stream == 'papers' and it.radar_terms %}<span class="radar">雷达</span>{% endif %}{% if it.direction %}{{ ui.dir_tag(it.direction, link=false) }}{% endif %}{% if it.stream == 'papers' and not (it.zh_title or '').strip() %}<span class="zh-missing">待翻译</span>{% endif %}</div>
+{%- endmacro %}
+{% macro title(it, tag) -%}
+<{{ tag }} class="headline serif"{% if it.stream == 'papers' and not (it.zh_title or '').strip() %} lang="en"{% endif %}>{% if it.url %}<a href="{{ it.url }}" target="_blank" rel="noopener">{{ it.display_title }}</a>{% else %}{{ it.display_title }}{% endif %}</{{ tag }}>
+{%- endmacro %}
+{% macro orig(it) -%}
+{% if it.stream == 'papers' and it.orig_title %}<p class="orig" lang="en">{{ it.orig_title }}</p>{% endif %}
+{%- endmacro %}
+{% macro stream_slide(s, items, more_href, more_label) -%}
+{#- Same frame as the 本周 page (Leo, 10-02): the lead as the big serif headline with its source line under it,
+    the actions on the right, the other two as → rows across the full width. -#}
+{% set lead = items[0] %}
+<div class="today front-stream">
+  <div>
+    {{ title(lead, 'h2') }}
+    {{ orig(lead) }}
+    {% set deck = (lead.angle if s == 'news' else None) or lead.zh_text %}
+    {% if deck %}<p class="deck">{{ deck | truncate(120) }}</p>{% elif s == 'papers' %}<p class="deck pending">中文摘要待翻译</p>{% endif %}
+    <div class="this-week">{{ kicker(lead) }}</div>
+  </div>
+  <div class="actions-col">
+    <a class="btn ghost" href="{{ more_href }}">{{ more_label }}</a>
+    {% if lead.url %}<a class="btn" href="{{ lead.url }}" target="_blank" rel="noopener">Read original</a>{% endif %}
+  </div>
+  {% if items | length > 1 %}
+  <div class="todo-strip">
+    {% for it in items[1:3] %}<a href="{{ it.url or more_href }}"{% if it.url %} target="_blank" rel="noopener"{% endif %}{% if it.orig_title %} title="{{ it.orig_title }}"{% endif %}>{{ ui.icon('arrow-right', 'sm') }}<span class="row-title"{% if it.stream == 'papers' and not (it.zh_title or '').strip() %} lang="en"{% endif %}>{{ it.display_title }}</span>{% if it.stream == 'papers' and not (it.zh_title or '').strip() %}<span class="zh-missing">待翻译</span>{% endif %}<span class="row-meta">{{ it.origin_label }}{% if it.date and it.date | length >= 10 %} · {{ it.date[5:7] | int }}月{{ it.date[8:10] | int }}日{% endif %}</span></a>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{% macro brief_slide(b) -%}
+{#- 今日要闻 as the day's world-politics brief (card 0062, Leo 10-02: 「简报放在首屏」): the heaviest event as the
+    headline with what happened, its region and sources; the next two as → rows; the rest on the 推送 page. -#}
+{% set lead = b.events[0] %}
+<div class="today front-stream front-brief">
+  <div>
+    <h2 class="headline serif">{% if lead.sources %}<a href="{{ lead.sources[0].url }}" target="_blank" rel="noopener">{{ lead.title }}</a>{% else %}{{ lead.title }}{% endif %}</h2>
+    <p class="deck">{{ lead.what }}{% if lead.why %} {{ lead.why }}{% endif %}</p>
+    {#- A brief from an earlier day says so (before 8 o'clock Beijing time, or when today's failed); the assistant wrote it. -#}
+    <div class="this-week"><div class="kicker">{% if b.yesterday %}<span class="brief-day">昨天 · {{ b.date[5:7] | int }}月{{ b.date[8:10] | int }}日的简报</span>{% endif %}<span class="brief-by">助手整理</span>{% if lead.region %}<span class="src">{{ lead.region }}</span>{% endif %}{% if lead.direction %}{{ ui.dir_tag(lead.direction, link=false) }}{% endif %}<span>{{ lead.sources | map(attribute='source') | unique | join('、') }}</span></div></div>
+  </div>
+  <div class="actions-col">
+    <a class="btn ghost" href="/feed?tab=news&amp;day={{ b.date }}">Today's picks</a>
+    {% if lead.sources %}<a class="btn" href="{{ lead.sources[0].url }}" target="_blank" rel="noopener">Read original</a>{% endif %}
+  </div>
+  {% if b.events | length > 1 %}
+  <div class="todo-strip">
+    {% for ev in b.events[1:3] %}<a href="{{ ev.sources[0].url if ev.sources else '/feed?tab=news' }}"{% if ev.sources %} target="_blank" rel="noopener"{% endif %} title="{{ ev.what }}">{{ ui.icon('arrow-right', 'sm') }}<span class="row-title">{{ ev.title }}</span><span class="row-meta">{{ ev.region or '' }}{% if ev.sources %} · {{ ev.sources | map(attribute='source') | unique | list | length }} 家报道{% endif %}</span></a>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+<section class="front card glass{% if slides | length == 1 %} single{% endif %}" id="front"
+  {% if slides | length > 1 %}aria-roledescription="carousel" aria-label="今日"{% endif %}>
+  {% if slides | length > 1 %}
+  <header class="front-head">
+    <div class="front-eyebrow">
+      <span class="front-when">{{ today_label }} {{ weekday }} · {{ current_week | week_zh }}</span>
+      {#- The news refresh that opening 首页 starts (card 0063) shows here, polls, and brings the new items in. -#}
+      {% if st is defined %}{% with status_only = true %}{% include "partials/_feed_status.html" %}{% endwith %}{% endif %}
+    </div>
+    <div class="front-controls">
+      {#- 刷新今天 (card 0104): news, papers, today's brief and picks; front.js fills in the count left today. -#}
+      <button type="button" class="btn ghost icon small front-refresh" data-front="refresh" aria-label="刷新今天的新闻和论文" title="刷新今天的新闻和论文">{{ ui.icon('refresh-cw', 'sm') }}</button>
+      <button type="button" class="btn ghost icon small front-prev" data-front="prev" aria-label="上一页">{{ ui.icon('chevron-right', 'sm') }}</button>
+      <div class="segmented small front-tabs" role="tablist" aria-label="选择一页">
+        {% for s in slides %}<button type="button" role="tab" id="front-tab-{{ s }}" aria-controls="front-{{ s }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}"{% if loop.first %} class="on"{% endif %}>{{ names[s] }}</button>{% endfor %}
+      </div>
+      <button type="button" class="btn ghost icon small" data-front="next" aria-label="下一页">{{ ui.icon('chevron-right', 'sm') }}</button>
+    </div>
+  </header>
+  {% endif %}
+
+  <div class="front-track" aria-live="off">
+    {% for s in slides %}
+    <article class="front-slide front-{{ s }}" id="front-{{ s }}"{% if slides | length > 1 %} role="tabpanel" aria-roledescription="slide" aria-labelledby="front-tab-{{ s }}"{% endif %}>
+      {% if s == 'news' and has_brief %}{{ brief_slide(brief) }}
+      {% elif s == 'news' and has_news %}{{ stream_slide('news', front.news, '/feed?tab=news', "Today's picks") }}
+      {% elif s == 'papers' and has_papers %}{{ stream_slide('papers', front.papers, '/feed?tab=papers', "Today's picks") }}
+      {% elif s in ('news','papers') %}
+      <div class="today"><div><h2 class="headline">{{ '今日新闻' if s == 'news' else '论文发现' }}</h2><p class="muted">{{ '还没有新的新闻，进入新闻页查看全部来源。' if s == 'news' else '新论文整理后会出现在这里，也可以进入论文页浏览。' }}</p></div><div class="actions-col"><a class="btn secondary" href="/feed?tab={{ 'news' if s == 'news' else 'papers' }}">Today's picks</a></div></div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>

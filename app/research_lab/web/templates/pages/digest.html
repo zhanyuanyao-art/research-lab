@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('papers.css') }}">{% endblock %}
+{% block crumbs %}<a href="/">首页</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">旧简报存档</span>{% endblock %}
+{% block content %}
+<header class="page-header"><div class="titles"><h1 class="page-title">旧简报存档</h1><p class="page-desc">旧简报仓库的最后几期。新的论文与时评推送由本机每 6 小时抓取一次。</p></div>
+  <div class="page-actions"><a class="btn" href="/feed">{{ ui.icon('newspaper') }}Open feed</a></div></header>
+<nav class="radar-tabs view-toggle" aria-label="雷达分栏">
+  {% for key, label in tabs.items() %}<a class="filter-link{% if key == tab %} on{% endif %}" href="/digest?tab={{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
+
+{% if tab == 'papers' %}
+<p class="muted">每周扫描十二种核心 IR 期刊。保存条目会建立一条论文记录（DOI 可解析时自动核验元数据），并按关键词推测的方向归类；PDF 以后拖进来即可附上。</p>
+{% if digest %}
+<div class="jtable" style="margin: 14px 0 22px">
+  {% for j in digest.journals %}<span class="j{% if j.new %} hot{% endif %}">{{ j.code }} {{ j.new }}{% if j.hits %} · 命中 {{ j.hits }}{% endif %}</span>{% endfor %}
+</div>
+{% endif %}
+{% set limit = 100 %}
+{% include "partials/_radar.html" with context %}
+
+{% else %}
+{% if not news %}
+<p class="muted">没有找到时评简报。时评由 digest 仓库的 <code>news_pool.py</code> 写入 <code>digests/news/news-YYYY-MM-DD.md</code>。</p>
+{% else %}
+<div class="radar-head">
+  <span>时评精选 <strong>{{ news.date }}</strong></span><span>· {{ news.items | length }} 条</span>{% if news.window %}<span class="muted">· {{ news.window }}</span>{% endif %}
+</div>
+{% if news_dates|length > 1 %}<div class="filter-row news-dates"><span class="filter-label">往期</span>{% for d in news_dates %}<a class="filter-link{% if d == news.date %} on{% endif %}" href="/digest?tab=news&amp;date={{ d }}">{{ d[5:] }}</a>{% endfor %}</div>{% endif %}
+
+<section id="news-arrangement" class="card news-arrangement"{% if news_polling %} hx-get="/digest?tab=news&amp;date={{ news.date }}" hx-select="#news-arrangement" hx-target="#news-arrangement" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  <div class="summary-head">
+    <p class="kicker">AI 整理 · 按主题聚类并关联项目，只使用本期条目</p>
+    <form hx-post="/digest/news/arrange"><input type="hidden" name="date" value="{{ news.date }}"><button class="btn small secondary">{{ 'Reorganize' if arrangement else 'Organize with AI' }}<span class="spinner"></span></button></form>
+  </div>
+  {% if news_job and news_job.status in ('queued', 'claimed') %}
+    {% if news_job.status == 'claimed' %}<p class="job-status">助手正在处理 · <span class="mono">{{ news_job.id }}</span></p>
+    {% elif ai_mode == 'agent' %}<p class="job-status">已排入助手队列 · <span class="mono">{{ news_job.id }}</span> — 运行 <code>uv run rl agent claim {{ news_job.id }}</code></p>
+    {% else %}<p class="job-status">正在整理（DeepSeek）· <span class="mono">{{ news_job.id }}</span><span class="spinner"> …</span></p>{% endif %}
+  {% elif news_job and news_job.status == 'failed' and not arrangement %}
+    <p class="crit small-note">整理失败（{{ news_job.id }}）：{{ (news_job.error or '')[:200] }}</p>
+  {% endif %}
+  {% if arrangement %}
+    {% for grp in clustered %}
+    <div class="dir-group">
+      <h3><span class="chip dir-chip">{{ grp.name }}</span></h3>
+      {% for c in grp.clusters %}
+      <div class="cluster">
+        <p class="cluster-theme"><strong>{{ c.theme }}</strong></p>
+        {% if c.why_it_matters %}<p class="muted">{{ c.why_it_matters }}</p>{% endif %}
+        <ul class="cluster-items">{% for it in c['items'] %}<li><a href="{{ it.url }}" target="_blank" rel="noopener">{{ it.zh_title }}</a> <span class="muted mono">{{ it.id }} · {{ it.source }}</span>
+          {% for l in project_links.get(it.id, []) %}<span class="chip" title="{{ l.note or '' }}">→ {{ projects.get(l.project_slug, {}).get('name', l.project_slug) }}</span>{% endfor %}</li>{% endfor %}</ul>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="muted">AI 没有给出可用的聚类。</p>{% endfor %}
+    {% if arrangement.project_links %}
+    <h3 class="fields-head">与项目的关联</h3>
+    <ul class="read-first">{% for l in arrangement.project_links %}<li><span class="mono">{{ l.item_id }}</span> → <a href="/projects/{{ l.project_slug }}">{{ projects.get(l.project_slug, {}).get('name', l.project_slug) }}</a>{% if l.note %}：{{ l.note }}{% endif %}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if unclustered %}<p class="muted small-note">未归类：{% for it in unclustered %}<span class="mono">{{ it.id }}</span>{% if not loop.last %}、{% endif %}{% endfor %}</p>{% endif %}
+  {% elif not news_job %}
+    <p class="muted">还没有整理。点“用 AI 整理”按主题和方向归类本期时评。</p>
+  {% endif %}
+</section>
+
+<h2>本期全部条目</h2>
+<ul class="radar-list news-list">
+  {% for it in news['items'] %}
+  <li class="radar-item" id="news-{{ it.id }}">
+    <a class="t" href="{{ it.url }}" target="_blank" rel="noopener">{{ it.zh_title }}</a>
+    {% if it.title != it.zh_title %}<div class="m orig-title">{{ it.title }}</div>{% endif %}
+    <div class="m"><span class="mono">{{ it.id }}</span><span class="chip">{{ it.source }}</span><span>· {{ it.date }}</span>
+      {% if it.direction %}<span class="chip dir-chip" data-direction="{{ it.direction }}" title="按 directions.yml 关键词推测">{{ it.direction_name or it.direction }}</span>{% endif %}</div>
+    {% if it.summary %}<p class="news-summary">{{ it.summary }}</p>{% endif %}
+    {% if it.angle %}<p class="small-note muted">✍️ {{ it.angle }}</p>{% endif %}
+    {% if it.paper_title %}<p class="small-note">📎 <a href="{{ it.paper_url }}" target="_blank" rel="noopener">《{{ it.paper_title }}》</a>{% if it.paper_note %} <span class="muted">{{ it.paper_note }}</span>{% endif %}</p>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endif %}
+{% endblock %}

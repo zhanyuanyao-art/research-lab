@@ -1,0 +1,17 @@
+{# Candidate records from the last unverified lookup; picking one verifies the paper (method-layer rule 1). #}
+{% if lookup and lookup.candidates %}
+<div class="candidates">
+  <p class="kicker">元数据候选{% if lookup.query %}（检索词“{{ lookup.query }}”）{% endif %}</p>
+  <ol class="candidate-list">
+    {% for c in lookup.candidates %}
+    <li>
+      <span class="c-title">{{ c.title }}</span>
+      <span class="muted mono">{{ (c.authors or [])[:2] | join('; ') }}{% if (c.authors or [])|length > 2 %} 等{% endif %} · {{ c.year or '年份不详' }}{% if c.venue %} · {{ c.venue }}{% endif %} · {{ c.source }} · 匹配度 {{ c.match | round | int }}{% if c.doi %} · doi:{{ c.doi }}{% endif %}</span>
+      {% if c.doi %}<button class="btn small" hx-post="/papers/{{ paper.id }}/candidates/{{ loop.index0 }}" hx-target="#paper-card" hx-swap="outerHTML">This one</button>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% elif paper.metadata_status != 'verified' %}
+<p class="muted small-note">Crossref 没有给出候选记录{% if lookup and lookup.errors %}（{{ lookup.errors | join('，') }}）{% endif %}。可以在下面填写 DOI 后重新查询，或直接手动填写引用信息。</p>
+{% endif %}

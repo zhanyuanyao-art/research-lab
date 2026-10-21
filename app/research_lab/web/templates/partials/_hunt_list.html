@@ -1,0 +1,22 @@
+{% set verdict_zh = {"untested": "未检验", "survives": "通过", "strengthened": "得到加强", "weakened": "被削弱", "eliminated": "已排除"} %}
+<section id="hunt" class="hunt" hx-get="/projects/{{ slug }}/hunt" hx-trigger="matrix-changed from:body" hx-swap="outerHTML">
+  <h2>待查清单</h2>
+  <p class="kicker">覆盖率：已判定 {{ coverage.resolved }} / {{ coverage.total }} 个单元格（{{ coverage.pct }}%）</p>
+  <div class="meter"><span style="width: {{ coverage.pct }}%"></span></div>
+  {% if hunt %}
+  <ol class="hunt-list">
+    {% for it in hunt %}
+    <li class="{{ 'forced' if it.forced else '' }}">
+      <a href="#" hx-get="/projects/{{ slug }}/cells/{{ it.cell_id }}" hx-target="#cell-panel"><strong>{{ it.code }} × {{ it.case_label }}</strong></a>
+      {% if it.test_type %}<span class="chip" data-test-type="{{ it.test_type }}">{{ L.test_type[it.test_type] if L is defined else it.test_label }}</span>{% endif %}
+      <span class="mono muted" title="优先级">p {{ '%g' % it.priority }}</span>
+      <p><span class="kicker">检验</span> {{ it.implication or '先写下推论，再去查看证据。' }}{% if it.implication_placeholder %} <span class="chip status-draft">占位</span>{% endif %}</p>
+      <p><span class="kicker">去哪里找</span> {{ it.where_to_look or '给这个单元格补一条「去哪里找」。' }}</p>
+      {% if it.reason %}<p class="kicker warn">{{ it.reason }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}<p class="muted">没有要查的：没有「缺失」或「弱」的单元格。</p>{% endif %}
+  <h3>判定</h3>
+  <ul class="verdicts">{% for code, v in verdicts.items() %}<li><span class="mono">{{ code }}</span> <span class="chip v-{{ v }}">{{ verdict_zh.get(v, v) }}</span></li>{% endfor %}</ul>
+</section>

@@ -1,0 +1,22 @@
+{% import "partials/ui.html" as ui with context %}
+{% if palette_groups is defined %}
+{% if palette_empty %}<p class="palette-note" role="status">没有匹配结果</p>{% endif %}
+{% for title, hits in palette_groups if hits %}
+<div role="group" aria-label="{{ title }}"><p class="palette-group">{{ title }}</p>
+{% set hit_icon = 'file-text' if title in ['文献','全文'] else ('list-checks' if title == '课题与议题' else 'arrow-right') %}
+{% for h in hits %}
+{% if h.url %}<a href="{{ h.url }}" class="palette-hit" role="option" aria-selected="false" tabindex="-1">{% else %}<button type="button" class="palette-hit" role="option" aria-selected="false" tabindex="-1" data-import-open>{% endif %}
+{{ ui.icon(hit_icon, 'sm') }}<span class="palette-hit-text"><span>{{ h.title }}</span>{% if h.detail %}<small>{{ h.detail }}</small>{% endif %}</span>
+{% if h.url %}</a>{% else %}</button>{% endif %}
+{% endfor %}</div>
+{% endfor %}
+{% else %}
+<dialog id="command-palette" class="command-palette" aria-label="快速跳转">
+  <form class="palette-search" action="/search" method="get">
+    {{ ui.icon('search') }}<input type="search" name="q" maxlength="200" placeholder="搜索文献、课题或议题" aria-label="快速跳转" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="palette-results" autocomplete="off">
+    <button type="button" class="btn ghost icon small" data-palette-close aria-label="关闭">{{ ui.icon('x','sm') }}</button>
+  </form>
+  <div id="palette-results" class="palette-results" role="listbox" aria-label="跳转结果" aria-busy="false"></div>
+  <footer class="palette-foot"><span>↑↓ 选择</span><span>↵ 打开</span><span>⌘↵ 全部结果</span></footer>
+</dialog>
+{% endif %}

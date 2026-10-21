@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('papers.css') }}">{% endblock %}
+{% block crumbs %}{% if everything and heading == '文献' %}<span class="current">文献</span>{% elif in_direction %}<a href="{{ direction_url(request, '') }}">文献</a>{{ ui.icon('chevron-right','sm') }}<span class="current">{{ direction_name }}</span>{% else %}<a href="/papers">文献</a>{{ ui.icon('chevron-right','sm') }}{% if collection %}<a href="/papers?view=folders">集合</a>{{ ui.icon('chevron-right','sm') }}{% endif %}<span class="current">{{ heading }}</span>{% endif %}{% endblock %}
+{% block content %}
+{#- The library (card 0128, docs/design/LIBRARY-UI.md §3.1): header, the 方向 bar (card 0066), one toolbar, then the
+    rows, grouped by 方向 on 全部, with the preview column from 1600px. A 集合 (card 0132) keeps its own header with
+    Rename; the 集合 page itself is pages/collections.html. -#}
+{% macro qlink(changes) %}/papers?{{ dict(base_q, **changes) | dictsort | selectattr(1) | list | urlencode }}{% endmacro %}
+<div class="lib-page">
+<header class="page-header">
+  <div class="titles{% if selected_collection %} collection-row{% endif %}"{% if selected_collection %} data-current-folder="{{ collection }}"{% endif %}>
+    <div class="folder-display"><h1 class="page-title">{{ heading }}</h1>{% if selected_collection %}<button class="btn ghost icon small" type="button" data-rename-collection="{{ collection }}" aria-label="重命名集合">{{ ui.icon('pencil','sm') }}</button>{% endif %}</div>
+    {% if selected_collection %}<form action="/paper-collections/{{ collection }}/rename" method="post" data-library-form class="folder-name-form" hidden><input type="hidden" name="version" value="{{ selected_collection.version }}"><input class="inline-edit" name="name" value="{{ selected_collection.name }}" aria-label="集合名称" required maxlength="60"><button class="btn secondary small" type="submit">Save</button><button type="button" class="btn ghost small" data-cancel-folder>Cancel</button></form>{% endif %}
+    <p class="page-desc muted">{{ rail.total }} 篇有原文 · {{ no_summary }} 篇还没有概要{% if missing_count and not missing %} · <a href="/papers?src=missing">待补原文 {{ missing_count }}</a>{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <details class="menu">
+      <summary class="btn ghost icon" aria-label="更多" title="更多">{{ ui.icon('ellipsis') }}</summary>
+      <div class="menu-panel">
+        <a href="/excerpts">{{ ui.icon('highlighter','sm') }}全部划线</a>
+        <a href="/papers?view=folders">{{ ui.icon('layers','sm') }}集合</a>
+        {% if missing_count %}<a href="/papers?src=missing">{{ ui.icon('file-x','sm') }}待补原文 {{ missing_count }}</a>{% endif %}
+      </div>
+    </details>
+    <form id="dropzone" class="inline-upload" action="/papers" method="post" enctype="multipart/form-data"><input type="hidden" name="page" value="{{ request.url.path }}?{{ request.url.query }}">
+      <label class="btn" for="dropfile">{{ ui.icon('plus') }}Import</label>
+      <input type="file" name="files" accept="application/pdf" multiple id="dropfile" hidden>
+    </form>
+  </div>
+</header>
+{% if dir_filter is defined %}{% include "partials/_direction_filter.html" %}{% endif %}
+
+{% if added %}<div class="flash">{{ ui.icon('check', 'sm') }}已导入 {{ added | length }} 篇，摘要正在生成。</div>{% endif %}
+{% if dups %}<div class="flash">{{ ui.icon('check', 'sm') }}{{ dups | length }} 篇已经在文献库里。</div>{% endif %}
+{% for r in rejected %}<div class="banner danger"><span class="text">未导入：{{ r }}</span></div>{% endfor %}
+{% for p in pending %}
+<div class="card pending" style="margin-bottom: 16px">
+  <span><strong>{{ p.original_name }}</strong> 看起来和《<a href="/papers/{{ p.duplicate_of }}">已有的一篇</a>》是同一篇（{{ {'same DOI': 'DOI 相同', 'similar title': '标题相近', 'same file': '文件相同'}.get(p.reason, p.reason) }}）。</span>
+  <span class="row">
+    <form hx-post="/papers/pending/{{ p.sha12 }}/attach"><input type="hidden" name="collection" value="{{ collection }}"><input type="hidden" name="paper_id" value="{{ p.duplicate_of }}"><button class="btn small">是同一篇，附为第二个文件</button></form>
+    <form hx-post="/papers/pending/{{ p.sha12 }}/import"><input type="hidden" name="collection" value="{{ collection }}"><button class="btn secondary small" type="submit">不是，单独导入</button></form>
+  </span>
+</div>
+{% endfor %}
+
+<div class="library" id="library">
+  <div class="lib-bar" role="toolbar" aria-label="筛选">
+    <form method="get" action="/papers" class="filter-input" role="search">
+      {%- for k in ('direction','project','status','kind','src','collection','view','group','sort') %}{% if base_q[k] %}<input type="hidden" name="{{ k }}" value="{{ base_q[k] }}">{% endif %}{% endfor -%}
+      {{ ui.icon('search','sm') }}<input type="search" name="q" value="{{ q }}" placeholder="筛选标题、作者、DOI" aria-label="筛选文献" data-line-filter autocomplete="off">
+    </form>
+    <span class="spacer"></span>
+    <details class="menu"><summary class="btn ghost small pick{% if status != 'all' %} set{% endif %}" aria-label="阅读状态">{{ status_labels[status] if status != 'all' else '状态' }}{{ ui.icon('chevron-down','sm') }}</summary><div class="menu-panel">{% for key, label in status_labels.items() %}<a href="{{ qlink({'status': key if key != 'all' else ''}) }}"{% if key == status %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</div></details>
+    <details class="menu"><summary class="btn ghost small pick{% if kind %} set{% endif %}" aria-label="出版物类型">{{ (kind_tabs | selectattr('key','equalto',kind) | map(attribute='label') | first) if kind else '类型' }}{{ ui.icon('chevron-down','sm') }}</summary><div class="menu-panel">{% for t in kind_tabs %}<a href="{{ qlink({'kind': t.key}) }}"{% if t.key == kind %} aria-current="true"{% endif %}>{{ t.label }} <span class="count">{{ t.count }}</span></a>{% endfor %}</div></details>
+    {#- A row dropped on a 集合 here moves into it (papers.js, data-drop-collection). -#}
+    <details class="menu pick-wide"><summary class="btn ghost small pick{% if collection %} set{% endif %}" aria-label="集合">{{ selected_collection.name if selected_collection else '集合' }}{{ ui.icon('chevron-down','sm') }}</summary><div class="menu-panel">{% for c in collections %}<a href="/papers?collection={{ c.id }}" data-drop-collection="{{ c.id }}"{% if c.id == collection %} aria-current="true"{% endif %}>{{ ui.icon('layers','sm') }}{{ c.name }} <span class="count">{{ c.total }}</span></a>{% endfor %}{% if collections %}<hr>{% endif %}<a href="/papers?view=folders">全部集合</a></div></details>
+    <span class="sep pick-wide"></span>
+    <details class="menu"><summary class="btn ghost icon small tip end" data-tip="显示：{{ ('按方向分组 · ' if grouped else '') ~ '按' ~ sorts[sort] }}" aria-label="显示">{{ ui.icon('sliders-horizontal','sm') }}</summary><div class="menu-panel">
+      {% if everything %}<div class="issue-menu-heading">分组</div><a href="{{ qlink({'group': ''}) }}"{% if grouped %} aria-current="true"{% endif %}>按方向</a><a href="{{ qlink({'group': 'none'}) }}"{% if not grouped %} aria-current="true"{% endif %}>不分组</a><hr>{% endif %}
+      <div class="issue-menu-heading">排序</div>{% for key, label in sorts.items() %}<a href="{{ qlink({'sort': key if key != 'created' else ''}) }}"{% if key == sort %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+    </div></details>
+    <span class="total" data-line-total>{{ papers | length }} 篇</span>
+  </div>
+
+  {% if papers %}
+  <div class="lib-split">
+    <div class="lib-list" data-line-list>
+      {% if groups %}
+      {% for g in groups %}
+      <section class="lib-group" data-line-group>
+        <header><a class="dir-tag" style="--dc: {{ direction_color(g.slug) if g.slug else 'var(--d-other)' }}" href="{{ direction_url(request, g.slug) if g.slug else '/papers?direction=_none' }}">{{ g.name }}</a><span class="n">{{ g['items'] | length }}</span>{% if g.unread %}<span class="unread">{{ g.unread }} 篇未读</span>{% endif %}</header>
+        <ul class="paper-lines">{% for paper in g['items'] %}{% include "partials/_paper_line.html" %}{% endfor %}</ul>
+      </section>
+      {% endfor %}
+      {% else %}
+      {% set show_dir = not in_direction %}
+      <ul class="paper-lines">{% for paper in papers %}{% include "partials/_paper_line.html" %}{% endfor %}</ul>
+      {% endif %}
+      <p class="lib-none" data-line-none hidden>当前列表里没有符合的文献。按回车在全部文献里搜。</p>
+    </div>
+    <aside class="lib-peek card" id="lib-peek" aria-label="预览" aria-live="polite"></aside>
+  </div>
+  <template id="paper-line-menu">
+    <form method="post" action="/papers/__ID__/archive"><input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+      <button type="submit" formaction="/papers/__ID__/status" name="state" value="done" data-when="unread reading">{{ ui.icon('check','sm') }}Mark as read</button>
+      <button type="submit" formaction="/papers/__ID__/status" name="state" value="unread" data-when="done">{{ ui.icon('circle-dot','sm') }}Mark as unread</button>
+      <div class="issue-menu-heading">Set direction</div>
+      {% for d in directions %}<button type="submit" name="direction" value="{{ d.slug }}"><span class="dir-dot" style="--dc: {{ d.color }}" aria-hidden="true"></span>{{ d.name }}</button>{% endfor %}
+      {% if projects %}<div class="issue-menu-heading">Add to project</div>
+      {% for slug, pr in projects.items() %}<button type="submit" name="project" value="{{ slug }}">{{ ui.icon('folder','sm') }}{{ pr.name }}</button>{% endfor %}{% endif %}
+    </form>
+    {% if collections %}<div class="issue-menu-heading">Add to collection</div>
+    {% for c in collections if c.id != collection %}<form method="post" action="/papers/__ID__/archive" data-library-form><input type="hidden" name="collection" value="{{ c.id }}"><button type="submit">{{ ui.icon('layers','sm') }}{{ c.name }}</button></form>{% endfor %}{% endif %}
+    {% if selected_collection %}<form method="post" action="/papers/__ID__/archive" data-library-form><input type="hidden" name="collection" value="{{ collection }}"><input type="hidden" name="remove" value="1"><button type="submit">{{ ui.icon('x','sm') }}Remove from collection</button></form>{% endif %}
+    <hr><a href="/papers/__ID__/pdf" target="_blank" rel="noopener" data-when-file>{{ ui.icon('file-text','sm') }}Open PDF</a>
+  </template>
+  {% elif q or status != 'all' or direction or project or collection or kind or missing or filter %}
+  {% if missing and not q and status == 'all' and not kind %}{{ ui.empty('check', '没有待补原文的文献', '这一格里的文献都有原文了。', qlink({'src': ''}), 'Back') }}
+  {% elif direction == 'none' and not q and status == 'all' and not kind and not missing %}{{ ui.empty('check', '所有文献都已归档', '', '/papers?view=all', '看全部文献') }}
+  {% elif collection and not q and status == 'all' and not kind and not missing %}{{ ui.empty('layers', '这个集合还没有文献', '在文献列表里点一行的 ⋯，选 Add to collection 放进来；在这里导入的 PDF 也会放进这个集合。', '/papers?view=all', 'All papers') }}
+  {% elif direction and not q and status == 'all' and not kind and not missing %}{{ ui.empty('book-open', '这个方向还没有文献', '导入文献后，在阅读页设置研究方向。', '/papers?direction=', '返回文献') }}
+  {% elif project and not q and status == 'all' and not kind and not missing %}{{ ui.empty('book-open', '这个课题还没有文献', '导入时选择课题，或在文献详情中关联。', '/papers', '看全部文献') }}
+  {% elif kind and not q and status == 'all' %}{{ ui.empty('book-open', '这一栏还没有' ~ (kind_tabs | selectattr('key', 'equalto', kind) | map(attribute='label') | first), '', qlink({'kind': ''}), '看全部') }}
+  {% else %}{{ ui.empty('search', '没有符合条件的文献', '换一个筛选条件试试。', qlink({'q':'','status':'all','kind':''}), 'Clear filters') }}{% endif %}
+  {% else %}
+  <label class="dropzone" for="dropfile-empty">{{ ui.icon('file-up') }}<strong>导入第一篇文献</strong><span>把 PDF 拖到这里，或点击选择文件</span>
+    <form action="/papers" method="post" enctype="multipart/form-data" id="empty-upload"><input type="file" name="files" accept="application/pdf" multiple id="dropfile-empty" onchange="document.body.classList.add('importing'); this.form.submit()"></form>
+  </label>
+  {% endif %}
+</div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('papers.js') }}" defer></script>{% endblock %}

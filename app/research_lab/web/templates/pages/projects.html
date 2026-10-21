@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block crumbs %}<span class="current">课题</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles"><h1 class="page-title">课题</h1><p class="page-desc">每个课题属于一个方向，有阶段和下一步。打开课题整理它的文献、划线、产出和文件。</p></div>
+  <div class="page-actions"><a class="btn" href="/projects/new">{{ ui.icon('plus') }}New project</a></div>
+</header>
+{% if saved %}<div class="flash">{{ ui.icon('check', 'sm') }}已保存。</div>{% endif %}
+{% for g in groups %}
+<div class="section-head">
+  <h2>{% if g.direction %}{{ ui.dir_tag(g.direction) }}{% else %}未指定方向{% endif %}</h2>
+  <div class="aside">{{ g.rows | length }} 个课题</div>
+</div>
+<div class="project-grid">{% for p in g.rows %}{{ ui.project_card(p) }}{% endfor %}</div>
+{% endfor %}
+{% if not rows %}{{ ui.empty('folder-plus', '还没有课题', '一个课题是一个方向下的具体问题，有阶段和下一步。', '/projects/new', 'New project') }}{% endif %}
+{% endblock %}

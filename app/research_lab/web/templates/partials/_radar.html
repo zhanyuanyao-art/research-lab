@@ -1,0 +1,30 @@
+{# Journal radar panel (papers). Variables: digest, digest_status, digest_saved, limit (optional).
+   Items carry a keyword-guessed direction (digest.annotate_directions); saving sets papers.direction from it. #}
+<div class="radar-head">
+  {% if digest %}
+    <span>简报 <strong>{{ digest.date }}</strong></span>
+    <span>· 新论文 {{ digest.total }} 篇 · 命中 {{ digest.hits }} 篇 · {{ digest.journals | length }} 种期刊</span>
+  {% endif %}
+  {% if digest_status.state == 'fresh' %}<span class="chip status-active">按时更新</span>
+  {% elif digest_status.state == 'stalled' %}<span class="chip status-draft" title="{{ digest_status.note }}">已停更 {{ digest_status.days }} 天</span>
+  {% else %}<span class="chip">没有简报</span>{% endif %}
+  <a class="chip" href="/digest">打开雷达 →</a>
+</div>
+{% if digest_status.state != 'fresh' %}<p class="kicker warn">{{ digest_status.note }}</p>{% endif %}
+{% if digest and digest.items %}
+<ul class="radar-list">
+  {% for it in digest.items[:(limit or 5)] %}
+  <li class="radar-item">
+    <a class="t" href="{{ it.url }}" target="_blank" rel="noopener">{{ it.title }}</a>
+    <div class="m"><span class="chip{% if it.hit %} status-active{% endif %}">{{ it.journal }}</span><span>{{ it.journal_name }}</span>{% if it.authors %}<span>· {{ it.authors }}</span>{% endif %}<span>· {{ it.date }}</span>
+      {% if it.direction %}<span class="chip dir-chip" data-direction="{{ it.direction }}" title="按 directions.yml 关键词推测">{{ it.direction_name or it.direction }}</span>{% endif %}</div>
+    {% if it.abstract %}<details><summary>摘要</summary><p>{{ it.abstract }}</p></details>{% endif %}
+    <div class="act" id="radar-save-{{ it.index }}">
+      {% set s = digest_saved.get(it.index) %}
+      {% if s %}<a class="chip status-active" href="/papers/{{ s.id }}">已保存 → {{ s.id }}</a>
+      {% else %}<button class="btn small secondary" hx-post="/digest/save/{{ it.index }}" hx-target="#radar-save-{{ it.index }}" hx-swap="innerHTML"{% if it.direction %} hx-vals='{"direction": "{{ it.direction }}"}'{% endif %}>Save to library</button>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% elif digest %}<p class="muted">最新一期简报没有新论文。</p>{% endif %}

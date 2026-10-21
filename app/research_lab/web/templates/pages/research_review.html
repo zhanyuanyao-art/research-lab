@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/chat/{{ session.thread_id or '' }}">助手</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">审阅产出</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles"><h1 class="page-title">{{ draft.title if draft else kind_title }}</h1>
+    <p class="page-desc">核对正文、来源与未确定事项；采纳后会作为初稿进入研究档案。</p></div>
+  <a class="btn secondary" href="/chat/{{ session.thread_id or '' }}">Back to chat</a>
+</header>
+{% if error %}<div class="banner warning"><span class="text">{{ error }}</span></div>{% endif %}
+{% if form.get("conflict_body") %}<details class="card"><summary>你的未保存修改</summary><pre style="white-space: pre-wrap">{{ form.conflict_body }}</pre></details>{% endif %}
+{% if running %}<p class="banner warning">助手仍在处理这一轮。完成后刷新，审阅最新版本。</p>{% endif %}
+<div class="stack">
+  <section class="card stack">
+    <p class="muted">{{ kind_title }}{% if draft %} · 第 {{ draft.revision }} 版 · {{ {'working':'整理中','review':'待审阅','accepted':'已采纳'}[draft.status] }}{% endif %}</p>
+    <p>{{ checkpoint.scope or session.question }}</p>
+    {% if draft %}<div class="prose">{{ preview }}</div>{% else %}<p class="muted">尚未形成产出。助手会先确定范围、检索并核读来源。</p>{% endif %}
+  </section>
+  {% if draft %}
+  <section class="card stack">
+    <h2>来源与核读范围</h2>
+    <p class="muted">来源已经留存；是否支持对应论断仍需你核对。书目、搜索摘要和研究笔记不能替代原文。</p>
+    {% for c in citations %}
+    <div class="stack">
+      <p><strong>{{ loop.index }}. {{ c.title }}</strong> · {{ source_labels.get(c.kind, '来源') }}</p>
+      <p>{{ c.supports }}</p>
+      <p class="muted small">{{ c.locator }} · {{ c.retrieved_at[:10] }}</p>
+      <p><a href="/chat/research/{{ session.id }}/sources/{{ c.id }}">查看留存原文</a> · <a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">打开来源</a></p>
+    </div>
+    {% else %}<p class="muted">还没有核读来源。请继续补查，形成有来源的版本后再采纳。</p>{% endfor %}
+  </section>
+  {% endif %}
+  {% for label, key in [('排除与范围限制','exclusions'), ('仍待核查','uncertainties'), ('下一轮','next_actions')] %}
+  {% if checkpoint.get(key) %}<section class="card"><h2>{{ label }}</h2><ul>{% for x in checkpoint[key] %}<li>{{ x }}</li>{% endfor %}</ul></section>{% endif %}
+  {% endfor %}
+  <details class="card"><summary>检索范围与记录</summary>
+    <p class="muted">本地资料、Crossref 文献检索和已知公开来源读取可用。通用网页搜索{{ '已连接' if web_search_ready else '尚未连接' }}。检索失败或未命中不表示资料不存在。</p>
+    <ul>{% for q in searches %}<li>{{ {'local':'本地资料','literature':'学术文献','web':'网页','read':'读取来源'}.get(q.backend,q.backend) }} · {{ q.query }} · {{ {'ok':'已返回结果','empty':'本次未命中','blocked':'尚未连接','error':'读取失败'}.get(q.status,q.status) }}{% if q.cutoff %} · 截止 {{ q.cutoff }}{% endif %}</li>{% else %}<li>尚未检索</li>{% endfor %}</ul>
+  </details>
+  {% if draft and draft.status == 'accepted' %}
+  <section class="card"><p>这一版已经采纳。<a class="btn" href="/artifacts/{{ draft.artifact_ref }}">Open archive</a></p><p class="muted">继续修改会产生下一版；已采纳的档案保留原样。</p></section>
+  {% elif draft and draft.status == 'review' and not running %}
+  <form class="card stack" method="post" action="/chat/research/{{ session.id }}/adopt">
+    <h2>修改并采纳</h2>
+    <input type="hidden" name="draft_id" value="{{ draft.id }}"><input type="hidden" name="revision" value="{{ draft.revision }}">
+    <div class="field"><label for="review-title">标题</label><input id="review-title" name="title" value="{{ form.get('title', draft.title) }}" required maxlength="180"></div>
+    <div class="field"><label for="review-body">正文</label><textarea id="review-body" name="body" rows="18" required maxlength="50000">{{ form.get('body', draft.body) }}</textarea></div>
+    <div class="grid-2">
+      <div class="field"><label for="review-project">课题</label><select id="review-project" name="project"><option value="">暂不归入课题</option>{% for slug,p in projects.items() %}<option value="{{ slug }}" {% if form.get('project') == slug %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="review-direction">方向</label><select id="review-direction" name="direction"><option value="">随课题或暂未分类</option>{% for d in directions %}<option value="{{ d.slug }}" {% if form.get('direction') == d.slug %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+    </div>
+    <p class="muted">采纳表示你已审阅这版正文及来源。内容保存在助手整理区，个人判断和证据状态由你填写。</p>
+    <div class="form-actions"><button class="btn" type="submit">Adopt</button></div>
+  </form>
+  {% endif %}
+  {% if not running %}
+  <form class="card stack" method="post" action="/chat/research/{{ session.id }}/feedback">
+    <h2>继续修改</h2><div class="field"><label for="review-feedback">本轮需要补查或调整的内容</label><textarea id="review-feedback" name="feedback" rows="3" required maxlength="10000" placeholder="例如：补查接收方资料，把公告与实际执行分开。"></textarea></div>
+    <div class="form-actions"><button class="btn secondary" type="submit">Send back</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

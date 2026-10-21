@@ -1,0 +1,94 @@
+{#- Deck v2 preview (card 0196): the slides of replication/slides.py, on the grid deck.css describes. Every piece of
+    slide text carries data-edit="<slide>|<field path>" (report_content.EDITABLE), so the deck page can edit it in place. -#}
+{%- macro ed(si, path) %} data-edit="{{ si }}|{{ path }}"{% endmacro -%}
+{%- macro card(c, si, ci) -%}
+<div class="dk-card {{ c.tone }}">
+  {%- if c.tag %}<span class="dk-tag"{{ ed(si, 'cards.' ~ ci ~ '.tag') }}>{{ c.tag }}</span>{% endif %}
+  {%- if c.big %}<div class="dk-big"{{ ed(si, 'cards.' ~ ci ~ '.big') }}>{{ c.big }}</div>{% endif %}
+  {%- if c.head %}<h3{{ ed(si, 'cards.' ~ ci ~ '.head') }}>{{ c.head }}</h3>{% endif %}
+  {%- if c.points %}<ul>{% for p in c.points[:6] %}<li{{ ed(si, 'cards.' ~ ci ~ '.points.' ~ loop.index0) }}>{{ p }}</li>{% endfor %}</ul>
+  {%- elif c.body %}<p{{ ed(si, 'cards.' ~ ci ~ '.body') }}>{{ c.body }}</p>{% endif %}
+  {%- if c.note %}<div class="dk-note"{{ ed(si, 'cards.' ~ ci ~ '.note') }}>{{ c.note }}</div>{% endif %}
+</div>
+{%- endmacro -%}
+{%- macro code(text, head) -%}
+{%- if head %}<div class="dk-codehead">{{ head }}</div>{% endif %}
+<pre class="dk-code">{{ code_lines(text) | join("\n") }}</pre>
+{%- endmacro -%}
+<div class="dk" data-testid="deck-preview">
+{%- for s in slides %}
+{%- set si = loop.index0 %}
+<section class="dk-slide dk-{{ s.kind }}{% if s.lede %} dk-has-lede{% endif %}{% if s.kind == 'cover' and not sizes.get(s.thumb) %} dk-nothumb{% endif %}" id="slide-{{ loop.index }}">
+ <div class="dk-in">
+ {%- if s.kind == "cover" %}
+  {%- if s.kicker %}<div class="dk-kicker"{{ ed(si, 'kicker') }}>{{ s.kicker }}</div>{% endif %}
+  <h1{{ ed(si, 'title') }}>{{ s.title }}</h1>
+  {%- if s.subtitle %}<div class="dk-zh"{{ ed(si, 'subtitle') }}>{{ s.subtitle }}</div>{% endif %}
+  <div class="dk-rule"></div>
+  <div class="dk-meta">{% for m in s.meta[:4] %}<span{{ ed(si, 'meta.' ~ loop.index0) }}>{{ m }}</span>{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
+  {%- if sizes.get(s.thumb) %}<img class="dk-thumb" src="{{ asset_url(s.thumb) }}" alt="">{% endif %}
+ {%- elif s.kind == "section" %}
+  <div class="dk-bar"></div>
+  <div class="dk-no">{{ s.no }}</div>
+  <h1{{ ed(si, 'title') }}>{{ s.title }}</h1>
+  {%- if s.sub %}<div class="dk-sub"{{ ed(si, 'sub') }}>{{ s.sub }}</div>{% endif %}
+  {%- if s.topics %}<div class="dk-topics">{{ s.topics[:6] | join(" · ") }}</div>{% endif %}
+  <div class="dk-pno">{{ loop.index }}</div>
+ {%- else %}
+  {%- if s.crumb %}<div class="dk-crumb">{{ s.crumb }}</div>{% endif %}
+  <h2 class="dk-title"{{ ed(si, 'title') }}>{{ s.title }}</h2>
+  {%- if s.lede %}<div class="dk-lede"{{ ed(si, 'lede') }}>{{ s.lede }}</div>{% endif %}
+  <div class="dk-body">
+  {%- if s.kind == "cards" %}
+   <div class="dk-grid">{% for c in s.cards[:4] %}{{ card(c, si, loop.index0) }}{% endfor %}</div>
+  {%- elif s.kind == "flow" %}
+   <div class="dk-flow">{% for c in s.cards[:4] %}{{ card(c, si, loop.index0) }}{% if not loop.last %}<div class="dk-arrow">→</div>{% endif %}{% endfor %}</div>
+  {%- elif s.kind == "method" %}
+   <div class="dk-two">
+    <div class="dk-col">{% if s.cards %}{{ card(s.cards[0], si, 0) }}{% endif %}{% if s.formula %}{{ code(s.formula, "模型") }}{% endif %}</div>
+    <div class="dk-col">{% if s.cards|length > 1 %}{{ card(s.cards[1], si, 1) }}{% endif %}{% if s.code %}{{ code(s.code, s.code_head) }}{% endif %}</div>
+   </div>
+  {%- elif s.kind == "table" %}
+   <table class="dk-table">
+    <tr>{% for c in s.columns %}<th>{{ c }}</th>{% endfor %}</tr>
+    {%- for r in s.rows[:10] %}{% set chip = s.chips[loop.index0] if s.chips|length > loop.index0 else "" %}
+    <tr>{% for v in r %}<td>{% if loop.last and chip %}<span class="dk-chip{% if chip != 'ok' %} no{% endif %}">{{ v }}</span>{% else %}{{ v }}{% endif %}</td>{% endfor %}</tr>
+    {%- endfor %}
+   </table>
+  {%- elif s.kind == "compare" %}
+   <div class="dk-cmp">
+    <div>{% if sizes.get(s.image) %}<div class="dk-lbl">{{ s.image_label }}</div><div class="dk-orig"><img src="{{ asset_url(s.image) }}" alt=""></div>
+      {%- elif s.image_label %}<div class="dk-lbl">{{ s.image_label }}</div><div class="dk-empty"></div>{% endif %}</div>
+    <div>
+     {%- if sizes.get(s.image2) %}
+     <div class="dk-lbl">{{ s.image2_label or "复现的图" }}</div><div class="dk-orig"><img src="{{ asset_url(s.image2) }}" alt=""></div>
+     {%- elif s.columns and s.rows %}
+     <div class="dk-lbl">复现结果 · 主要系数</div>
+     <table class="dk-table dk-rep">
+      <tr>{% for c in s.columns %}<th{% if loop.index > 2 %} class="v"{% endif %}>{{ c }}</th>{% endfor %}</tr>
+      {%- for r in s.rows[:10] %}{% set hit = s.hits[loop.index0] if s.hits|length > loop.index0 else false %}
+      <tr>{% for v in r %}<td{% if loop.index > 2 %} class="v{% if loop.last and hit %} hit{% endif %}"{% endif %}>{{ v }}</td>{% endfor %}</tr>
+      {%- endfor %}
+     </table>
+     {%- else %}<div class="dk-empty"></div>{% endif %}
+     {%- if s.verdict and not s.image2 %}<div class="dk-verdict"><span class="dk-chip{% if not s.verdict_ok %} no{% endif %}">{{ s.verdict }}</span><span{{ ed(si, 'verdict_note') }}>{{ s.verdict_note }}</span></div>{% endif %}
+    </div>
+   </div>
+  {%- elif s.kind == "chart" %}
+   <div class="dk-chart">{% if sizes.get(s.image) %}<img src="{{ asset_url(s.image) }}" alt="">{% endif %}</div>
+  {%- elif s.kind == "questions" %}
+   <div class="dk-qs">
+    <div>{% if s.cards %}{{ card(s.cards[0], si, 0) }}{% endif %}</div>
+    <ol class="dk-q">{% for q in s.points[:5] %}<li><b>{{ "%02d" % loop.index }}</b><span{{ ed(si, 'points.' ~ loop.index0) }}>{{ q }}</span></li>{% endfor %}</ol>
+   </div>
+  {%- elif s.kind == "points" %}
+   <ul class="dk-points">{% for p in s.points[:12] %}<li{{ ed(si, 'points.' ~ loop.index0) }}>{{ p }}</li>{% endfor %}</ul>
+  {%- endif %}
+  </div>
+  {%- if s.src %}<div class="dk-src"{{ ed(si, 'src') }}>{{ s.src }}</div>{% endif %}
+  <div class="dk-pno">{{ loop.index }}</div>
+ {%- endif %}
+ </div>
+</section>
+{%- endfor %}
+</div>

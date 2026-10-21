@@ -1,0 +1,77 @@
+{# A batch of assistant changes under its chat message (docs/design/ISSUE-AGENT.md §5). Context: p from
+   chat/cards.plan_view(): state proposed | applied | undone | dismissed, head, source, rows (proposed),
+   flagged / plain (the other states), locked, flash. The 执行 / 不用了 / 撤销 posts answer with this whole
+   card for an outerHTML swap of #plan-<batch>; chat.js keeps the 执行 count and the busy state. #}
+{% set b = p.batch_id %}
+{% macro change(r) -%}
+  {%- if r.action == 'create' -%}
+  <span class="plan-name">{{ r.what }}「{% if r.url %}<a href="{{ r.url }}">{{ r.label }}</a>{% else %}{{ r.label }}{% endif %}」</span>
+  {%- if r.where %}<span class="plan-change">{{ r.where }}</span>{% endif -%}
+  {%- else -%}
+  <span class="plan-name">{% if r.url %}<a href="{{ r.url }}">{{ r.label }}</a>{% else %}{{ r.label }}{% endif %}</span>
+  <span class="plan-what">{{ r.what }}</span>
+  <span class="plan-change">{% if r.old %}{{ r.old }} <span aria-hidden="true">→</span><span class="sr-only">改为</span> {% endif %}{{ r.new }}</span>
+  {%- endif -%}
+{%- endmacro %}
+{% macro line(r) -%}
+<li class="plan-line{% if r.tone %} is-{{ r.tone }}{% endif %}">{{ change(r) }}{% if r.note %}<span class="plan-note">{{ r.note }}</span>{% endif %}</li>
+{%- endmacro %}
+<div class="chat-card chat-card-plan is-{{ p.state }}" id="plan-{{ b }}" data-plan="{{ b }}" data-card-kind="plan">
+  <header class="plan-head">
+    <strong>{{ p.head }}</strong>{% if p.source %}<span class="plan-source">来自「{{ p.source }}」</span>{% endif %}
+    {% if p.undoable and p.state != 'proposed' %}
+    <form class="plan-undo" method="post" action="/chat/changes/{{ b }}/undo" hx-post="/chat/changes/{{ b }}/undo"
+      hx-target="#plan-{{ b }}" hx-swap="outerHTML"><button type="submit" class="btn small secondary">Undo</button></form>
+    {% endif %}
+  </header>
+  {% if p.reason %}<p class="plan-reason muted small">{{ p.reason }}</p>{% endif %}
+  {% if p.flash %}<p class="plan-flash small" role="status">{{ p.flash }}</p>{% endif %}
+  {% if p.state == 'proposed' %}
+  <form class="plan-form" method="post" action="/chat/changes/{{ b }}/apply" hx-post="/chat/changes/{{ b }}/apply"
+    hx-target="#plan-{{ b }}" hx-swap="outerHTML">
+    <input type="hidden" name="shown" value="{{ p.shown }}">
+    <ul class="plan-rows">
+      {% for r in p.rows %}
+      <li class="plan-row{{ ' is-create' if r.action == 'create' else '' }}{{ ' is-invalid' if r.invalid else '' }}" data-plan-row>
+        <input type="checkbox" class="plan-tick" name="ids" value="{{ r.id }}" id="plan-{{ b }}-{{ r.id }}"
+          {%- if r.ticked %} checked{% endif %}{% if p.locked %} disabled{% endif %}
+          aria-label="执行：{{ r.title or r.label }} {{ r.what }}">
+        <div class="plan-body">
+          {% if r.action == 'create' %}
+          <input type="text" class="plan-title" name="title-{{ r.id }}" value="{{ r.title }}" maxlength="{{ p.title_max }}"
+            aria-label="新议题的标题" data-plan-title{% if r.invalid %} aria-invalid="true"{% endif %}{% if p.locked %} readonly{% endif %}>
+          <span class="plan-detail"><span class="plan-what">{{ r.what }}</span><span class="plan-change">{{ r.where }}</span>
+          {%- else %}
+          <label class="plan-name" for="plan-{{ b }}-{{ r.id }}">{{ r.label }}</label>
+          <span class="plan-detail"><span class="plan-what">{{ r.what }}</span>
+            <span class="plan-change">{% if r.old %}{{ r.old }} <span aria-hidden="true">→</span><span class="sr-only">改为</span> {% endif %}{{ r.new }}</span>
+          {%- endif %}
+            {% if r.hint %}<span class="plan-note">{{ r.hint }}</span>{% endif %}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if p.flagged %}<ul class="plan-lines plan-settled">{% for r in p.flagged %}{{ line(r) }}{% endfor %}</ul>{% endif %}
+    {% if p.locked %}<p class="plan-wait muted small"><span class="chat-pulse" aria-hidden="true"></span>助手还在处理，结束后可以执行。</p>{% endif %}
+    <div class="plan-actions">
+      <button type="submit" class="btn small" data-plan-apply{% if p.locked or not p.ticked %} disabled{% endif %}>Apply <span data-plan-count>{{ p.ticked }}</span></button>
+      <button type="submit" class="btn small secondary" form="plan-{{ b }}-dismiss"{% if p.locked %} disabled{% endif %}>Dismiss</button>
+    </div>
+  </form>
+  <form id="plan-{{ b }}-dismiss" method="post" action="/chat/changes/{{ b }}/dismiss" hx-post="/chat/changes/{{ b }}/dismiss"
+    hx-target="#plan-{{ b }}" hx-swap="outerHTML" hidden></form>
+  {% else %}
+  {% if p.flagged or p.plain %}
+  <ul class="plan-lines">
+    {% for r in p.flagged %}{{ line(r) }}{% endfor %}
+    {% if not p.fold %}{% for r in p.plain %}{{ line(r) }}{% endfor %}{% endif %}
+  </ul>
+  {% if p.fold %}
+  <details class="plan-fold"><summary>{{ '查看' if not p.flagged else '其余' }} {{ p.plain | length }} 处</summary>
+    <ul class="plan-lines">{% for r in p.plain %}{{ line(r) }}{% endfor %}</ul>
+  </details>
+  {% endif %}
+  {% endif %}
+  {% if p.more %}<p class="plan-more muted small">{{ p.more }}</p>{% endif %}
+  {% endif %}
+</div>

@@ -1,0 +1,25 @@
+name: Synthetic tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: macos-latest
+    env:
+      TZ: Asia/Shanghai
+      PYTHON_DOTENV_DISABLED: '1'
+      RL_CLAUDE_BIN: none
+      RL_AI_WORKER: '0'
+      RL_FEEDS_AUTO: '0'
+      RL_PM_AUTO: '0'
+      RL_AUTOFIX: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: uv sync --locked
+      - run: uv run pytest -q app/tests

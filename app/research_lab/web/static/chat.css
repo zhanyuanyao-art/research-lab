@@ -1,0 +1,305 @@
+/* Chat layer: the composer, the conversation page (thread list + stream), the floating assistant, message
+   bubbles and the cards under assistant replies.
+   Colors come only from the app tokens so light/dark follow app.css. */
+
+/* ---- composer ---- */
+.composer { position: sticky; bottom: 0; z-index: 5; box-sizing: border-box; width: 100%; max-width: 800px; margin: 0 auto;
+  padding: 18px 20px 14px; background: linear-gradient(to bottom, transparent, var(--bg) 22px); }
+body.wide .composer { max-width: 1080px; }
+.composer-box { display: flex; align-items: flex-end; gap: 6px; background: var(--surface); border: 1px solid var(--border-2);
+  border-radius: var(--r-lg); padding: 6px 6px 6px 8px; box-shadow: var(--shadow-1);
+  transition: border-color .15s ease, box-shadow .15s ease; }
+.composer-box:focus-within { border-color: var(--accent); box-shadow: var(--focus-ring); }
+.composer.is-drop .composer-box { border-color: var(--accent); border-style: dashed; background: var(--accent-soft); }
+.composer textarea.composer-input { flex: 1; min-height: 24px; max-height: 40vh; resize: none; border: 0; outline: 0;
+  background: transparent; color: var(--fg); font: inherit; font-size: 0.95rem; line-height: 1.5; padding: 6px 4px; margin: 0;
+  box-shadow: none; overflow-y: hidden; }
+.composer textarea.composer-input::placeholder { color: var(--muted); }
+.composer-attach { position: relative; display: inline-grid; place-items: center; width: 34px; height: 34px; flex: none;
+  border-radius: 8px; color: var(--muted); cursor: pointer; }
+.composer-attach:hover { color: var(--accent); background: var(--accent-soft); }
+.composer-attach input[type=file] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.composer-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.composer-send { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: none; border: 0; border-radius: 8px;
+  background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.composer-send:disabled { opacity: .45; cursor: default; }
+.composer.is-busy .composer-send { opacity: .6; }
+.composer-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 4px 0; font-size: 0.75rem; color: var(--muted); }
+.composer-cmds { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.composer-cmd { font-family: inherit; font-size: 0.74rem; color: var(--muted); background: transparent;
+  border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; cursor: pointer; }
+.composer-cmd:hover { color: var(--accent); border-color: var(--accent); }
+.composer-status { flex: 1; min-width: 0; }
+.composer-status.is-error, .composer-error { color: var(--critical); }
+.composer-keys kbd { font-size: 0.7rem; }
+.composer-files { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 2px 8px; }
+.composer-file-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 280px; padding: 3px 6px 3px 10px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--fg); font-size: 0.78rem; }
+.composer-file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composer-file-chip button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0 4px; }
+@media (max-width: 640px) { .composer { padding: 14px 12px 10px; } .composer-keys { display: none; } }
+
+/* ---- conversation page ----
+   One panel that fills the main column under the top bar, so the page itself never scrolls: the thread list
+   and the conversation each scroll inside their own pane. Both panes open with a pane head of the same height,
+   type and rule. The composer sits in an opaque dock under the stream, never over it, and chat.js follows the
+   newest message by scrolling .chat-scroll. */
+.main:has(> .content > .chat-layout) { height: 100vh; height: 100dvh; }
+.content:has(> .chat-layout) { display: flex; flex-direction: column; min-height: 0; padding-top: 24px; padding-bottom: 24px; }
+.chat-layout { --chat-head: 52px; flex: 1; min-height: 0; display: grid; grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr); background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--r-xl);
+  overflow: hidden; overflow: clip; }
+.chat-side { display: flex; min-height: 0; min-width: 0; border-right: 1px solid var(--border); }
+.chat-threads { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.chat-pane-head { display: flex; align-items: center; gap: 10px; height: var(--chat-head); padding: 0 12px 0 18px; flex: none;
+  border-bottom: 1px solid var(--border); }
+.chat-pane-head h2, .chat-pane-head .chat-title { margin: 0; flex: 1; min-width: 0; font-family: inherit; font-size: 0.95rem; font-weight: 600;
+  line-height: 1.3; letter-spacing: 0; text-transform: none; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-thread-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px; }
+.chat-thread-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.chat-thread-list li { max-width: none; }
+.chat-thread-list a { display: grid; gap: 3px; padding: 8px 10px; border-radius: var(--r); color: var(--fg-2); text-decoration: none;
+  transition: background var(--t-fast) ease, color var(--t-fast) ease; }
+.chat-thread-list a:hover { background: var(--hover); color: var(--fg); }
+.chat-thread-list li.active a { background: var(--hover); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); }
+.chat-thread-title { font-size: 0.88rem; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-thread-meta { display: flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chat-thread-meta .badge.small { margin-left: auto; font-size: 0.7rem; padding: 0 6px; }
+.chat-empty { margin: 6px 10px; font-size: 0.85rem; line-height: 1.6; }
+.chat-jobs-link { display: flex; align-items: center; gap: 8px; flex: none; margin: 0; padding: 0 18px; height: 44px;
+  border-top: 1px solid var(--border); color: var(--fg-2); font-size: 0.88rem; }
+.chat-jobs-link:hover, .chat-jobs-link.active { background: var(--hover); color: var(--fg); text-decoration: none; }
+.chat-jobs-link .badge { margin-left: auto; }
+.chat-main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.chat-head { padding: 0 16px 0 24px; }
+.chat-head-actions { display: flex; align-items: center; gap: 8px; }
+/* overflow-anchor: none, so only chat.js decides when the stream moves (WebKit has no scroll anchoring anyway). */
+.chat-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; overflow-anchor: none; }
+.chat-dock { position: relative; flex: none; background: var(--card-bg); }
+.chat-dock::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 14px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+/* Messages, the welcome and the composer share one column, so bubbles and the input sit on the same centre line. */
+.chat-col { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 24px; box-sizing: border-box; }
+.chat-stream { display: flex; flex-direction: column; gap: 22px; padding: 24px 0 20px; }
+.chat-dock .composer { position: static; max-width: none; padding: 4px 0 14px; background: none; }
+.jobs-scroll { display: flex; flex-direction: column; gap: 16px; padding: 18px 24px 24px; }
+.jobs-scroll > .page-desc { margin: 0; }
+.jobs-scroll > .card + .card { margin-top: 0; }
+@media (max-width: 900px) { .content:has(> .chat-layout) { padding: 16px; } }
+/* Stacked: one row of pane heads (对话 + … 后台任务), the threads as a sideways strip, then the conversation. */
+@media (max-width: 860px) {
+  .chat-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .chat-side { border-right: 0; border-bottom: 1px solid var(--border); }
+  .chat-threads { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .chat-threads > .chat-pane-head { grid-area: 1 / 1; }
+  .chat-jobs-link { grid-area: 1 / 2; height: var(--chat-head); padding: 0 14px; border-top: 0; border-bottom: 1px solid var(--border); }
+  .chat-thread-scroll { grid-area: 2 / 1 / 3 / 3; overflow-x: auto; overflow-y: hidden; }
+  .chat-thread-list { display: flex; gap: 6px; }
+  .chat-thread-list a { width: 180px; }
+  .chat-col { padding: 0 16px; }
+  .jobs-scroll { padding: 16px; }
+}
+
+/* ---- floating assistant (partials/_assistant_dock.html) ----
+   A glass button bottom-right on every page outside /chat opens a glass panel above it: head, the stream
+   (scrolls by itself), the composer. The panel is the same glass as the sidebar and topbar (Leo asked for
+   glass); the blur keeps its text legible in the app's WebKit. Below 640px the panel is a full-height sheet. The dock sits above the PDF
+   drop overlay (z 50) so files can be dropped on it, and under toasts (z 60). */
+.assistant-dock { position: fixed; right: 20px; bottom: 20px; z-index: 55; }
+/* room under the last row of any page, so the button never sits on a card's arrow or a bottom sheet's button */
+body:has(.assistant-dock) .content { padding-bottom: 88px; }
+.dock-fab { position: relative; display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border-radius: 50%;
+  border: 1px solid transparent; background: var(--glass); color: var(--accent); cursor: pointer;
+  backdrop-filter: blur(var(--blur)) saturate(1.6); -webkit-backdrop-filter: blur(var(--blur)) saturate(1.6);
+  box-shadow: var(--shadow-2); transition: background var(--t-fast) ease; }
+.dock-fab:hover { background: var(--glass-strong); }
+.dock-fab:focus-visible { outline: 0; box-shadow: var(--focus-ring), var(--shadow-2); }
+.dock-fab-open, .assistant-dock.is-open .dock-fab-close { display: inline-grid; place-items: center; }
+.dock-fab-close, .assistant-dock.is-open .dock-fab-open { display: none; }
+.dock-count { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 600; line-height: 20px; text-align: center;
+  font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--bg); }
+.assistant-dock.is-open .dock-count { display: none; }
+.dock-panel { position: absolute; right: 0; bottom: calc(100% + 12px); display: flex; flex-direction: column;
+  width: min(420px, calc(100vw - 40px)); height: min(70vh, 660px); border: 1px solid transparent; border-radius: var(--r-lg);
+  background: var(--glass); backdrop-filter: blur(var(--blur)) saturate(1.6); -webkit-backdrop-filter: blur(var(--blur)) saturate(1.6);
+  box-shadow: var(--shadow-3); transform-origin: bottom right;
+  visibility: hidden; opacity: 0; transform: translateY(8px) scale(.98); pointer-events: none;
+  transition: opacity var(--t) var(--ease), transform var(--t) var(--ease), visibility 0s linear var(--t); }
+.assistant-dock.is-open .dock-panel { visibility: visible; opacity: 1; transform: none; pointer-events: auto;
+  transition: opacity var(--t) var(--ease), transform var(--t) var(--ease), visibility 0s; }
+.assistant-dock.is-restoring .dock-panel { transition: none; }
+.dock-head { display: flex; align-items: center; gap: 2px; height: 48px; padding: 0 8px; flex: none; border-bottom: 1px solid var(--glass-border); }
+.dock-switch { flex: 1; min-width: 0; }
+.dock-switch > summary { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: var(--control-h); padding: 0 8px;
+  border-radius: var(--r); font-size: var(--text-ui); font-weight: 600; color: var(--fg); }
+.dock-switch > summary:hover, .dock-switch[open] > summary { background: var(--hover); }
+.dock-switch > summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-switch > summary .i { color: var(--muted); }
+.dock-threads { left: 0; right: auto; width: min(320px, calc(100vw - 56px)); max-height: 46vh; overflow-y: auto; transform-origin: top left; }
+.dock-threads .dock-thread { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; }
+.dock-threads .dock-thread.active { background: var(--hover); }
+.dock-thread-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-thread-time { grid-column: 1 / -1; font-size: var(--text-meta); color: var(--muted); font-variant-numeric: tabular-nums; }
+.dock-thread .badge.small { height: 18px; font-size: 11px; }
+.dock-thread-empty { margin: 6px 8px; font-size: var(--text-ui); }
+.dock-threads .dock-thread-all { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0; color: var(--fg-2); }
+.dock-scroll { flex: 1; min-height: 0; overflow-x: hidden; }
+.dock-scroll .chat-stream { gap: 18px; padding: 16px 16px 18px; }
+.dock-foot { position: relative; flex: none; padding: 0 12px; }
+.dock-foot::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 12px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--glass)); }
+.dock-foot .composer { position: static; max-width: none; padding: 4px 0 12px; background: none; }
+.dock-panel .chat-welcome { margin: 12px 0 4px; }
+.dock-panel .chat-welcome h2 { font-size: 1.05rem; }
+.dock-panel .chat-bubble { max-width: 85%; }
+.dock-panel .chat-text table { display: block; max-width: 100%; overflow-x: auto; }
+.dock-panel .chat-card { padding: 12px 14px; }
+.chat-older { align-self: center; font-size: var(--text-meta); color: var(--muted); }
+/* Out of the button's way: toasts, the 待办 shortcut card, and the whole dock while an excerpt is being captured. */
+body:has(> .assistant-dock) .toast-stack { bottom: 84px; }
+body:has(> .assistant-dock) .task-help { bottom: 88px; }
+body:has(.excerpt-drawer:not([hidden])) > .assistant-dock { display: none; }
+@media (max-width: 640px) {
+  .assistant-dock { right: 16px; bottom: 16px; }
+  /* a sheet over the whole page gains nothing from glass: opaque, so nothing shows through in any engine */
+  .dock-panel { position: fixed; inset: 0; width: auto; height: auto; border: 0; border-radius: 0; background: var(--bg);
+    backdrop-filter: none; -webkit-backdrop-filter: none; transform-origin: bottom center; }
+  .dock-foot::before { background: linear-gradient(to bottom, transparent, var(--bg)); }
+  .assistant-dock.is-open .dock-fab { visibility: hidden; }
+  html:has(.assistant-dock.is-open) { overflow: hidden; }
+  body:has(> .assistant-dock) .toast-stack { bottom: 80px; }
+}
+@media (max-width: 559px) {
+  /* Keep the issue's bottom sheet reachable; closing it restores the dock automatically. */
+  body:has(.issue-popover[open]) > .assistant-dock { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .dock-panel, .dock-fab { transition: none; } }
+
+/* ---- welcome ---- */
+.chat-welcome { margin: 10vh 0 4vh; }
+.chat-welcome h2 { font-family: var(--serif, Georgia, serif); font-size: 1.3rem; line-height: 1.3; font-weight: 600; margin: 0 0 10px; max-width: 36ch;
+  text-transform: none; letter-spacing: -0.01em; color: var(--fg); }
+.chat-welcome p { max-width: 60ch; }
+
+/* ---- messages ---- */
+.chat-msg { display: flex; flex-direction: column; min-width: 0; }
+.chat-msg-user { align-items: flex-end; }
+.chat-bubble { max-width: min(78%, 60ch); background: var(--accent-soft); color: var(--fg); border-radius: 12px 12px 4px 12px;
+  padding: 9px 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-reply { min-width: 0; }
+.chat-text { overflow-wrap: anywhere; }
+.chat-text > :first-child { margin-top: 0; }
+.chat-text > :last-child { margin-bottom: 0; }
+.chat-text p, .chat-text li { max-width: 72ch; }
+.chat-text ul, .chat-text ol { padding-left: 1.3em; }
+.chat-text pre { overflow-x: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.chat-msg.is-pending .chat-text:empty { display: none; }
+.chat-failed { font-size: 0.88rem; }
+.chat-suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chat-cmd { cursor: pointer; font-family: inherit; border: 1px solid var(--border); background: var(--surface); }
+.chat-cmd:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- cards ---- */
+.chat-card { margin-top: 12px; background: var(--surface); border: 0; border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow-1); }
+.chat-card > .card, .chat-card .summary-card, .chat-card .excerpt-row, .chat-card .assoc-panel { margin: 0; border: 0; padding: 0; box-shadow: none; background: transparent; }
+.chat-card .hunt h2 { font-size: 1rem; margin-top: 0; }
+.chat-card-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.chat-card-head strong { font-weight: 600; }
+.chat-card-head .btn { margin-left: auto; }
+.chat-card-foot { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 0.82rem; }
+.chat-card-body > :first-child { margin-top: 0; }
+.chat-card-body > :last-child { margin-bottom: 0; }
+.chat-card .artifact-list { margin: 0 0 10px; }
+.chat-hits { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.chat-hits li { max-width: none; }
+.chat-snip { font-size: 0.86rem; color: var(--muted); }
+.chat-snip mark { background: var(--accent-soft); color: var(--fg); padding: 0 2px; border-radius: 3px; }
+.chat-serif { font-family: var(--serif, Georgia, serif); }
+.chat-search h4 { margin: 10px 0 6px; }
+.chat-alert { padding: 8px 12px; border-radius: 8px; border-left: 3px solid var(--warn); background: var(--surface-2); }
+.chat-alert-red { border-left-color: var(--critical); }
+.chat-alert-nudge { border-left-color: var(--accent); }
+.chat-ladder-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 16px; font-size: 0.86rem; }
+.chat-ladder-list li { max-width: none; color: var(--muted); }
+.chat-ladder-list li.passed { color: var(--fg); }
+.chat-ladder-list li.passed span[aria-hidden] { color: var(--accent); }
+.chat-ladder-list li.next { color: var(--fg); font-weight: 600; }
+.chat-job-line { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.88rem; color: var(--muted); flex-wrap: wrap; }
+.chat-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: chat-pulse 1.4s ease-in-out infinite; }
+@keyframes chat-pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .chat-pulse { animation: none; } }
+
+/* Task card: status line, live steps, collapsed trace when finished. */
+.task-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.task-head .badge { display: inline-flex; align-items: center; gap: 6px; }
+.task-stop { margin-left: auto; }
+.task-steps { margin: 10px 0 0; padding-left: 20px; font-size: 0.86rem; line-height: 1.75; color: var(--fg-2); }
+.task-steps .k-error { color: var(--danger); }
+.task-trace { margin-top: 8px; }
+.task-trace > summary { font-size: 0.85rem; color: var(--muted); }
+.task-usage { margin: 8px 0 0; }
+.jobs-main .badge { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Confirmation card (partials/_issue_plan.html): tick, issue, field, old → new, note. In the ~400px dock a row
+   is two lines (issue, then field and change); where the card has room the four parts line up as columns. */
+.chat-card-plan { container-type: inline-size; }
+.plan-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-bottom: 8px; }
+.plan-head strong { font-weight: 600; }
+.plan-source { min-width: 0; color: var(--muted); font-size: var(--text-meta); overflow-wrap: anywhere; }
+.plan-undo { margin-left: auto; align-self: center; }
+.plan-reason, .plan-flash { margin: 0 0 8px; }
+.plan-flash { color: var(--fg-2); }
+.plan-wait { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; }
+.plan-rows, .plan-lines { list-style: none; margin: 0; padding: 0; }
+.plan-rows li, .plan-lines li { max-width: none; }
+.plan-row { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 0;
+  border-top: 1px solid var(--border); }
+.plan-row:last-child { border-bottom: 1px solid var(--border); }
+.plan-tick { margin: 3px 0 0; }
+.plan-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; transition: opacity var(--t-fast) var(--ease); }
+.plan-row:has(.plan-tick:not(:checked)) .plan-body { opacity: .55; }
+.plan-name { overflow-wrap: anywhere; cursor: pointer; }
+.plan-detail { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: var(--text-meta); color: var(--fg-2); }
+.plan-what { color: var(--muted); }
+.plan-change { font-variant-numeric: tabular-nums; }
+.plan-note { color: var(--warning); font-size: var(--text-meta); }
+.plan-row.is-invalid .plan-note { color: var(--danger); }
+.plan-row.is-create .plan-body { gap: 5px; }
+.plan-title { height: var(--control-h-sm); }
+@container (min-width: 600px) {
+  .plan-body { display: grid; grid-template-columns: minmax(0, 10fr) 5.6em minmax(0, 9fr) minmax(0, 8fr); column-gap: 14px;
+    align-items: baseline; }
+  .plan-detail { display: contents; font-size: inherit; }
+  /* a new issue's title is the thing to edit: it takes the issue and field columns */
+  .plan-row.is-create .plan-body { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: center; }
+  .plan-row.is-create .plan-detail { display: flex; font-size: var(--text-meta); }
+}
+.plan-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.plan-lines .plan-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 3px 0; font-size: 0.88rem; }
+.plan-line .plan-what, .plan-line .plan-change { color: var(--fg-2); }
+.plan-line .plan-what { color: var(--muted); }
+.plan-line.is-crit .plan-note { color: var(--danger); }
+.plan-line.is-muted .plan-note { color: var(--muted); }
+.plan-settled { margin-top: 6px; }
+.plan-settled .plan-line { color: var(--muted); }
+.plan-fold { margin-top: 4px; }
+.plan-fold > summary { font-size: var(--text-meta); color: var(--muted); }
+.plan-more { margin: 6px 0 0; }
+/* Done with: said plainly, without the raised card. */
+.chat-card-plan.is-undone, .chat-card-plan.is-dismissed { background: var(--surface-2); box-shadow: none; }
+.chat-card-plan.is-undone .plan-head strong, .chat-card-plan.is-dismissed .plan-head strong { font-weight: 500; color: var(--fg-2); }
+.chat-card-plan.is-undone .plan-line:not(.is-warn):not(.is-crit), .chat-card-plan.is-dismissed .plan-line:not(.is-warn):not(.is-crit) { color: var(--muted); }
+.chat-card-plan.is-posting .plan-form { pointer-events: none; }
+
+/* Progress card (cards._progress, docs/design/ISSUE-AGENT.md §6): a line per 课题, its attention items under it. */
+.chat-progress .chat-card-head { gap: 4px 10px; margin-bottom: 8px; }
+.progress-group + .progress-group { margin-top: 12px; }
+.progress-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin: 0; }
+.progress-line a { font-weight: 600; }
+.progress-line .muted { font-size: 0.88rem; }
+.progress-meter { max-width: 220px; height: 4px; margin: 6px 0 2px; }
+.progress-meter span { background: var(--accent); }
+.progress-items { list-style: none; margin: 6px 0 0; padding: 0 0 0 12px; display: grid; gap: 4px; border-left: 2px solid var(--border); }
+.progress-items li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; max-width: none; font-size: 0.88rem; }
+.progress-items .badge { height: 20px; }

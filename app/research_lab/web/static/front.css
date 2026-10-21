@@ -1,0 +1,27 @@
+/* 首页轮播 (partials/_front_carousel.html), loaded after app.css on the home page only. The base carousel
+   rules still live in app.css's 首页 section; this file carries the current layout and moves there when that
+   section is next cleaned up. It keeps the three type sizes (--front-lead / --front-body / --front-meta). */
+
+/* 今日要闻 and 新论文 use the 本周 page's frame (.today: content left, actions right, → rows under both), so the
+   three pages read as one card (Leo, 10-02). The lead headline takes the 本周 question's size and measure. */
+/* The .today frame brings its own padding, as on 本周: the slide adds none (it had 18px 24px of its own, which put
+   these headlines 24px further in than the 本周 question and made them jump on every page change). */
+.front-slide.front-news, .front-slide.front-papers { padding: 0; }
+.front .front-stream .headline { font-size: var(--front-lead); line-height: 1.35; font-weight: 600; max-width: 36ch; }
+.front .front-stream .deck { margin: 10px 0 0; max-width: 60ch; }
+.front .front-stream .this-week { margin-top: 12px; }
+.front .front-stream .this-week .kicker { margin: 0; }
+.front .front-stream .todo-strip a { min-width: 0; }
+.front .front-stream .row-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg); }
+.front .front-stream .row-meta { flex: none; margin-left: auto; padding-left: 16px; font-size: var(--front-meta); color: var(--muted); }
+
+/* English original under a paper's Chinese title: one line, quiet. */
+.front .orig { margin: 4px 0 0; font-size: var(--front-meta); line-height: 1.45; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.front .front-stream .orig { margin-top: 6px; max-width: 72ch; }
+.front .deck.pending { font-size: var(--front-meta); color: var(--muted); }
+.front .kicker .zh-missing, .front .todo-strip .zh-missing { padding: 0 6px; border-radius: var(--r-sm); background: var(--hover); color: var(--muted); font-weight: 500; }
+
+@media (max-width: 760px) {
+  .front .front-stream .row-meta { display: none; }
+}

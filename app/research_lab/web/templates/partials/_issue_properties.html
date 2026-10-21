@@ -1,0 +1,79 @@
+{#- The issue's properties (docs/design/ISSUES-LINEAR.md §2.5): every menu saves on the click, no 保存 button;
+    the toast that follows offers 撤销 (issues.js). Menus open with a filter field and show their shortcut.
+    Rendered twice by pages/issue.html: the column on the right (default) and, with `chips`, a row of chips
+    under the title that phones show instead (each menu opens as a bottom sheet). -#}
+{% import "partials/ui.html" as ui with context %}
+{% import "partials/_issue_ui.html" as iu with context %}
+{% macro hidden(field) %}<input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="field" value="{{ field }}">{% endmacro %}
+{% macro heading(title, key='') %}<div class="issue-menu-heading"><span>{{ title }}</span>{% if key %}<kbd>{{ key }}</kbd>{% endif %}</div>
+<input class="issue-menu-filter inline-edit" type="text" placeholder="筛选…" aria-label="筛选{{ title }}" autocomplete="off" data-menu-filter>{% endmacro %}
+{% macro picker(field, title, options, selected, icon, key='') %}
+<details class="issue-popover" data-prop="{{ field }}" data-title="{{ title }}"{% if key %} data-key="{{ key }}"{% endif %}><summary aria-label="{{ title }}：{{ options.get(selected, '未设置') }}{% if key %}，快捷键 {{ key }}{% endif %}">{% if field == 'status' %}<span class="issue-state {{ selected }}">{% if selected == 'done' %}{{ ui.icon('check','sm') }}{% endif %}</span>{% else %}{{ ui.icon(icon) }}{% endif %}<span>{{ options.get(selected, '未设置') }}</span></summary>
+<div class="issue-popover-panel">{{ heading(title, key) }}<form action="/issues/{{ issue.id }}/property" method="post" data-issue-form>{{ hidden(field) }}{% for k,v in options.items() %}<button type="submit" name="value" value="{{ k }}" class="issue-menu-option{% if k == selected %} selected{% endif %}" data-filter-text="{{ v }}"><span>{{ v }}</span>{% if k == selected %}{{ ui.icon('check','sm') }}{% endif %}</button>{% endfor %}</form></div></details>
+{% endmacro %}
+{% macro due_picker() %}{% set tn = due_tone(issue.due, issue.status) %}
+<details class="issue-popover" data-prop="due" data-title="截止日期" data-key="⇧D" data-current="{{ issue.due }}"><summary aria-label="截止日期：{{ issue.due or '未设置' }}，快捷键 Shift D">{{ ui.icon('calendar') }}<span{% if tn %} class="due-{{ tn }}"{% endif %}>{% if issue.due %}{{ due_label(issue.due) }}{% else %}设置截止日期{% endif %}</span></summary>
+<div class="issue-popover-panel issue-due-panel"><div class="issue-menu-heading"><span>截止日期</span><kbd>⇧D</kbd></div>
+<form method="post" action="/issues/{{ issue.id }}/property" data-issue-form data-due-form>{{ hidden('due') }}
+  <input class="issue-menu-filter inline-edit" type="text" placeholder="试试：明天、3天、下周三、10月20日" aria-label="输入截止日期" autocomplete="off" data-due-text>
+  <p class="issue-due-reading" data-due-reading aria-live="polite"></p>
+  <button type="submit" name="value" value="" hidden data-due-submit tabindex="-1"></button>
+  <button type="button" class="issue-menu-option" data-due-custom aria-expanded="false"><span>Custom…</span>{{ ui.icon('calendar','sm') }}</button>
+  <div class="issue-due-calendar" data-due-calendar data-value="{{ issue.due }}" hidden></div>
+  {%- for p in due_presets %}{# the key, worked out by the server when pressed (routes/issues.py) #}<button type="submit" name="value" value="{{ p.key }}" class="issue-menu-option{% if p.iso == issue.due %} selected{% endif %}"><span>{{ p.name }}</span><span class="issue-menu-hint">{{ due_label(p.date) }}</span></button>{% endfor %}
+  {% if issue.due %}<button type="submit" name="value" value="" class="issue-menu-option"><span>Clear due date</span></button>{% endif %}
+</form></div></details>
+{% endmacro %}
+{#- 类型 (ISSUES-LINEAR.md §5): set on the 课题 (projects.yml), shown read-only on its sub-issues. -#}
+{% macro type_picker() %}{% set kind = (projects.get(issue.project) or {}).get('type') or '' %}
+{% if issue.project_root %}<details class="issue-popover" data-prop="type" data-title="类型"><summary aria-label="类型：{{ kind or '未设置' }}">{{ ui.icon('layers') }}<span>类型：{{ kind or '未设置' }}</span></summary>
+<div class="issue-popover-panel"><div class="issue-menu-heading"><span>这个课题的成果类型</span></div><form action="/issues/{{ issue.id }}/property" method="post" data-issue-form>{{ hidden('type') }}{% for t in issue_types %}<button type="submit" name="value" value="{{ t }}" class="issue-menu-option{% if t == kind %} selected{% endif %}" data-filter-text="{{ t }}"><span>{{ t }}</span>{% if t == kind %}{{ ui.icon('check','sm') }}{% endif %}</button>{% endfor %}{% if kind %}<button type="submit" name="value" value="" class="issue-menu-option"><span>Clear type</span></button>{% endif %}</form></div></details>
+{% elif kind %}<span class="issue-related-link" title="跟随课题「{{ projects[issue.project].name }}」">{{ ui.icon('layers','sm') }}<span>类型：{{ kind }}</span></span>{% endif %}
+{% endmacro %}
+{#- 分配人 (ISSUES-LINEAR.md §7): Zhanyuan Yao by default, or an assistant from the roster; a mark only. -#}
+{% macro avatar(value) %}{% if value and value in assignees %}<span class="issue-avatar is-assistant" aria-hidden="true">{{ ui.icon('sparkles','sm') }}</span>{% else %}<span class="issue-avatar" aria-hidden="true">{{ assignees.get('', '我')[:1].upper() }}</span>{% endif %}{% endmacro %}
+{% macro assignee_picker() %}{% set cur = issue.assignee if issue.assignee in assignees else '' %}
+<details class="issue-popover" data-prop="assignee" data-title="分配人" data-key="A"><summary aria-label="分配人：{{ assignees[cur] }}，快捷键 A">{{ avatar(cur) }}<span>{{ assignees[cur] }}</span></summary>
+<div class="issue-popover-panel">{{ heading('分配人', 'A') }}<form action="/issues/{{ issue.id }}/property" method="post" data-issue-form>{{ hidden('assignee') }}{% for k, v in assignees.items() %}<button type="submit" name="value" value="{{ k }}" class="issue-menu-option{% if k == cur %} selected{% endif %}" data-filter-text="{{ v }}"><span class="issue-assignee-option">{{ avatar(k) }}{{ v }}</span>{% if k == cur %}{{ ui.icon('check','sm') }}{% endif %}</button>{% endfor %}</form><p class="issue-menu-note">交给助手后，它先在评论里写计划，你点「开始」才动手；改回 {{ assignees.get('', '我') }} 就停下。</p></div></details>
+{% endmacro %}
+{% macro labels_picker(summary) %}
+<details class="issue-popover" data-prop="labels" data-title="标签" data-key="L" data-stay-open><summary aria-label="内容标签，快捷键 L">{{ summary }}</summary><div class="issue-popover-panel">{{ heading('内容标签', 'L') }}<form method="post" action="/issues/{{ issue.id }}/property" data-issue-form data-instant>{{ hidden('labels') }}{% for label in issue_labels %}<label class="issue-check-option" data-filter-text="{{ L.issue_label[label] }} {{ label }}"><input type="checkbox" name="value" value="{{ label }}"{% if label in issue.labels %} checked{% endif %}>{{ iu.label(label) }}</label>{% endfor %}</form></div></details>
+{% endmacro %}
+{% set dir_options = {} %}{% for d in directions %}{% if d.slug and d.slug != '_none' %}{% set _ = dir_options.update({d.slug: d.name}) %}{% endif %}{% endfor %}
+{% if chips %}
+{% set label_names = [] %}{% for l in issue.labels %}{% set _ = label_names.append(L.issue_label[l]) %}{% endfor %}
+<div class="issue-chips" aria-label="议题属性">
+  {{ picker('status', '状态', issue_states, issue.status, 'circle-dot', 'S') }}
+  {{ picker('priority', '优先级', issue_priorities, issue.priority, 'chart-column', 'P') }}
+  {{ assignee_picker() }}
+  {{ due_picker() }}
+  {{ type_picker() }}
+  {{ labels_picker(ui.icon('bookmark','sm') ~ (label_names | join('、') or '标签')) }}
+  {{ picker('direction', '研究方向', dir_options, issue.direction, 'folder') }}
+</div>
+{% else %}
+<aside class="issue-properties" aria-label="议题属性">
+  <section><h2>属性</h2>
+    {{ picker('status', '状态', issue_states, issue.status, 'circle-dot', 'S') }}
+    {{ picker('priority', '优先级', issue_priorities, issue.priority, 'chart-column', 'P') }}
+    {{ assignee_picker() }}
+    {{ due_picker() }}
+    {{ type_picker() }}
+    {{ picker('direction', '研究方向', dir_options, issue.direction, 'folder') }}
+  </section>
+  <section><h2>标签</h2><div class="issue-labels">{% for label in issue.labels %}{{ iu.label(label) }}{% endfor %}</div>
+    {{ labels_picker(ui.icon('plus','sm') ~ ('编辑标签' if issue.labels else '添加标签')) }}
+  </section>
+  {% if projects.get(issue.project) %}
+  {#- A sub-issue's 课题 is shown, not changed here: work moves between 课题 from the 课题 page or the composer. -#}
+  <section><h2>课题</h2>
+    {% if not issue.project_root %}<a href="/issues?project={{ issue.project }}" class="issue-related-link">{{ ui.icon('folder','sm') }}<span>{{ projects[issue.project].name }}</span></a>{% endif %}
+    <a href="/projects/{{ issue.project }}" class="issue-secondary-link">打开课题材料 {{ ui.icon('external-link','sm') }}</a>
+  </section>
+  {% endif %}
+  <section><h2>关联</h2>
+    {% for r in related %}<a href="{{ r.url }}" class="issue-related-link"><span class="issue-state {{ r.status }}"></span><span>{{ r.title }}</span></a>{% endfor %}
+    <details class="issue-popover" data-prop="related" data-title="关联" data-stay-open><summary>{{ ui.icon('plus','sm') }}关联议题</summary><div class="issue-popover-panel issue-related-picker">{{ heading('关联议题') }}<form action="/issues/{{ issue.id }}/property" method="post" data-issue-form data-instant>{{ hidden('related') }}{% for r in related_choices %}<label class="issue-check-option" data-filter-text="{{ r.title }}"><input type="checkbox" name="value" value="{{ r.id }}"{% if r.id in issue.related or issue.id in r.related %} checked{% endif %}><span>{{ r.title }}</span></label>{% endfor %}</form></div></details>
+  </section>
+</aside>
+{% endif %}

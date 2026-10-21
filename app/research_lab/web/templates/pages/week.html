@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% import "partials/_artifact_meta.html" as am with context %}
+{% block head %}<link rel="stylesheet" href="{{ asset('weekly.css') }}">{% endblock %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">本周工作台</span>{% endblock %}
+{% block content %}
+
+
+<header class="page-header"><div class="titles"><h1 class="page-title">本周工作台</h1><p class="page-desc">{{ week | week_zh }}。左边是本周的产出，右边是这周的划线：把划线放进证据段，然后写下结论。</p></div></header>
+
+<div class="week-grid">
+  <section class="week-file">
+    {% if error %}<p class="warn">{{ error }}</p>{% endif %}
+    {% if saved %}<p class="ok">已写入 {{ row.path if row else '文件' }}。</p>{% endif %}
+    {% if inserted is not none %}<p class="ok">已把 {{ inserted }} 条证据插入 § Evidence。</p>{% endif %}
+
+    {% if art %}
+      <h2 class="week-title" style="margin-top:0"><a href="/artifacts/{{ art.ref }}">{{ art.front.get('title') }}</a></h2>
+      <p class="muted small">{{ L.group[L.type_group[art.front.get('type')]] }} · {{ L.type[art.front.get('type')] }} · {{ L.level[art.front.get('level')] }} · {% if row.counts %}已有结论{% else %}<span class="warn">结论待写</span>{% endif %} · <a href="/artifacts/{{ art.ref }}?tab=edit">用编辑器打开</a></p>
+
+      {% if conflict %}
+      <div class="conflict" role="alert">
+        <p class="crit">此页面打开后文件已在磁盘上被修改，本次没有写入。请对比差异，在下方编辑框里手动合并，然后再写入一次。</p>
+        <pre class="diff">{% for line in conflict.diff.splitlines() %}{% set c = 'add' if line.startswith('+') else 'del' if line.startswith('-') else 'hunk' if line.startswith('@') else '' %}<span class="{{ c }}">{{ line }}</span>
+{% endfor %}</pre>
+        <div class="two-col">
+          <div><h3>磁盘上的当前版本</h3><textarea class="mono" readonly rows="14">{{ conflict.current }}</textarea></div>
+          <div><h3>你的编辑</h3><textarea class="mono" readonly rows="14">{{ conflict.proposed }}</textarea></div>
+        </div>
+        <p class="muted small">下方编辑框仍保留你的编辑，并已换成磁盘版本的指纹：再次写入会用编辑框里的文本替换文件。</p>
+      </div>
+      {% endif %}
+
+      <div class="tabs" data-tabs>
+        <button type="button" class="tab on" data-tab="rendered">Preview</button>
+        <button type="button" class="tab" data-tab="editor">Edit Markdown</button>
+      </div>
+      <article class="artifact rendered" data-pane="rendered"{% if conflict or error %} hidden{% endif %}>{{ art.body | md | safe }}</article>
+      <form method="post" action="/week/save" class="stack editor" data-pane="editor" data-dirty-guard{% if not (conflict or error) %} hidden{% endif %}>
+        <input type="hidden" name="ref" value="{{ art.ref }}">
+        <input type="hidden" name="sha" value="{{ sha }}">
+        <textarea name="text" class="mono" rows="32" spellcheck="true">{{ text }}</textarea>
+        <div class="row"><button class="btn" type="submit">Write file</button><span class="muted small">纯 Markdown。如果文件在你打开后被改过，会拒绝写入。</span></div>
+      </form>
+    {% else %}
+      <h1>{{ week | week_short_zh }}还没有 产出</h1>
+      <p>一个种子就是一个问题、一个发现或一条证据，二十分钟就够。</p>
+      {{ am.new_artifact_form(next='/week', preset_type=preset_type, default_project=default_project, submit='Create seed', week_label=week) }}
+    {% endif %}
+
+    <section class="panel" id="now-panel">
+      <h2>更新 Now</h2>
+      <form class="stack" hx-post="/week/now" hx-select="#now-panel" hx-target="#now-panel" hx-swap="outerHTML">
+        <input type="hidden" name="sha" value="{{ now_sha or '' }}">
+        <div><label for="now-this">本周</label><input type="text" id="now-this" name="this_week" value="{{ now_fields.this_week }}"></div>
+        <div><label for="now-next">下周</label><input type="text" id="now-next" name="next_week" value="{{ now_fields.next_week }}"></div>
+        <div><label for="now-puzzle">谜题</label><textarea id="now-puzzle" name="puzzle" rows="2">{{ now_fields.puzzle }}</textarea></div>
+        <div class="row"><button class="btn secondary" type="submit">Write now.yml</button><a class="small" href="/now">全部 Now 字段 →</a></div>
+        {% if now_message %}<p class="{{ 'ok' if now_status == 200 else 'warn' }}">{{ '●' if now_status == 200 else '▲' }} {{ now_message }}</p>{% endif %}
+      </form>
+    </section>
+
+    <section class="panel" id="commit-panel">
+      <h2>提交</h2>
+      {% if git is none %}
+      <p class="muted">这个文件夹不是 git 仓库，无法从这里提交。</p>
+      {% else %}
+      <p class="kicker">git status --porcelain · _artifacts _data _harvests projects</p>
+      <pre class="porcelain">{% if git %}{{ git | join('\n') }}{% else %}干净，没有改动{% endif %}</pre>
+      {% if row %}
+      <form class="stack" hx-post="/week/commit" hx-select="#commit-panel" hx-target="#commit-panel" hx-swap="outerHTML">
+        <input type="hidden" name="ref" value="{{ row.ref }}">
+        <div><label for="commit-msg">提交说明</label><input type="text" id="commit-msg" name="message" value="{{ commit_message }}"></div>
+        <div class="row"><button class="btn" type="submit">Submit</button><span class="muted small">只暂存 <code>{{ row.path }}</code> 和 <code>_data/now.yml</code>。推送仍需手动 <code>git push</code>。</span></div>
+      </form>
+      {% endif %}
+      {% if commit_result %}<p class="ok">已提交 <code>{{ commit_result.hash }}</code>：{{ commit_result.files | join('、') }}。</p>{% endif %}
+      {% if commit_error %}<p class="warn">{{ commit_error }}</p>{% endif %}
+      {% endif %}
+    </section>
+  </section>
+
+  <aside class="week-side">
+    {% include "partials/_basket.html" %}
+    <section id="draft-panel" class="panel">{% if draft %}{% include "partials/_draft_result.html" %}{% endif %}</section>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('weekly.js') }}" defer></script>{% endblock %}

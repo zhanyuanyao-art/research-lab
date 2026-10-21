@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('agent.css') }}">{% endblock %}
+{% block crumbs %}<a href="/settings">设置</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">任务</span>{% endblock %}
+{% block content %}
+<p class="kicker"><a href="/agent">队列</a> · {{ L.job_kind[job.kind] }} <span class="mono">{{ job.kind }}</span></p>
+<h1 class="mono">{{ job.id }}</h1>
+
+<dl class="kv">
+  <dt>状态</dt><dd><span class="status {{ job.status }}">{{ L.job_status[job.status] }}</span> <span class="muted">· 已尝试 {{ job.attempts }} 次</span></dd>
+  <dt>对象</dt><dd>{{ {'paper': '论文', 'excerpt': '划线', 'week': '本周', 'harvest': '收获', 'project': '项目'}.get(job.target_type, job.target_type or '') }} {% if url %}<a href="{{ url }}">{{ job.target_id }}</a>{% else %}{{ job.target_id or '' }}{% endif %}</dd>
+  <dt>创建于</dt><dd class="mono">{{ job.created_at }}（{{ age }}）</dd>
+  {% if job.claimed_at %}<dt>领取于</dt><dd class="mono">{{ job.claimed_at }}</dd>{% endif %}
+  {% if job.completed_at %}<dt>结束于</dt><dd class="mono">{{ job.completed_at }}</dd>{% endif %}
+</dl>
+
+<div class="row" style="margin: 14px 0">
+  {% if job.status in ('queued', 'claimed') %}
+  <div class="cmd"><code>uv run rl agent claim {{ job.id }}</code><button type="button" class="copy" data-copy="uv run rl agent claim {{ job.id }}">Copy</button></div>
+  {% endif %}
+  {% if can_run and job.status in ('queued', 'failed') %}<button class="btn small" hx-post="/agent/{{ job.id }}/run" hx-vals='{"next": "/agent/{{ job.id }}"}'>Run on DeepSeek</button>{% endif %}
+  {% if job.status in ('failed', 'claimed', 'cancelled') %}<button class="btn small secondary" hx-post="/agent/{{ job.id }}/requeue" hx-vals='{"next": "/agent/{{ job.id }}"}'>Requeue</button>{% endif %}
+  {% if job.status in ('queued', 'claimed') %}<button class="btn small secondary" hx-post="/agent/{{ job.id }}/cancel" hx-vals='{"next": "/agent/{{ job.id }}"}' hx-confirm="取消 {{ job.id }}？">Cancel</button>{% endif %}
+</div>
+
+{% if job.error %}
+<div class="banner danger" role="alert"><span class="text mono">{{ job.error }}</span></div>
+{% endif %}
+
+{% if result %}
+<h2>结果</h2>
+<pre>{{ result }}</pre>
+{% endif %}
+
+{% if runs %}
+<h2>运行记录</h2>
+<table class="data">
+  <thead><tr><th>#</th><th>服务商</th><th>模型</th><th>Token：输入 / 缓存 / 输出 / 推理</th><th>费用</th><th>有效</th><th>日志</th></tr></thead>
+  <tbody>
+  {% for r in runs %}
+  <tr>
+    <td class="mono">{{ r.id }}</td><td class="mono">{{ r.provider }}</td><td class="mono">{{ r.model }}</td>
+    <td class="mono">{{ r.prompt_tokens or 0 }} / {{ r.cache_hit_tokens or 0 }} / {{ r.completion_tokens or 0 }} / {{ r.reasoning_tokens or 0 }}</td>
+    <td class="mono">${{ '%.5f' | format(r.cost_usd or 0) }}</td>
+    <td class="mono">{{ '是' if r.valid else ('—' if r.valid is none else '否') }}{% if r.repaired %} · 已修复{% endif %}</td>
+    <td class="mono">{{ r.log_rel or '' }}{% if r.error %}<div class="crit">{{ r.error[:160] }}</div>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Claude Code 看到的任务</h2>
+<p class="muted">与 <code>uv run rl agent show {{ job.id }}</code> 的输出相同。输入文件只列路径，不展示内容。</p>
+<div class="card jobmd">{{ md_html | safe }}</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.copy');
+  if (!b || !navigator.clipboard) return;
+  navigator.clipboard.writeText(b.dataset.copy).then(function () { b.textContent = '已复制'; setTimeout(function () { b.textContent = '复制'; }, 1200); });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% set no_global_drop = true %}
+{% from "partials/_data_macros.html" import fmt, flash, dtype_label %}
+{% block head %}<link rel="stylesheet" href="{{ asset('data.css') }}">{% endblock %}
+{% block crumbs %}<a href="/data">数据</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">{{ title }}</span>{% endblock %}
+{% block content %}
+{% if mode == 'new' %}
+<header class="page-header"><div class="titles"><h1 class="page-title">新建分析</h1><p class="page-desc">选方法和数据集，填变量。结果表都标明样本量和缺失，同时保存能原样重跑的代码。</p></div></header>
+{% if error %}<p class="ds-flash err" role="alert">{{ error }}</p>{% endif %}
+
+<form class="ds-picker" method="get" action="/data/runs/new" data-autosubmit>
+  <div><span class="field-label">方法</span>
+    <div class="pill-group">{% for key, m in methods.items() %}<label title="{{ m.blurb }}"><input type="radio" name="method" value="{{ key }}"{% if key == method_key %} checked{% endif %}>{{ m.label }}</label>{% endfor %}</div></div>
+  <div class="row">
+    <div class="ds-grow"><label class="field-label" for="pick-ds">数据集</label>
+      <select id="pick-ds" name="dataset"><option value="">（选择数据集）</option>
+        {% for d in all_datasets %}<option value="{{ d.id }}"{% if ds and d.id == ds.id %} selected{% endif %}>{{ d.name }}（{{ d.rows }} 行）</option>{% endfor %}</select></div>
+    <div class="ds-grow"><label class="field-label" for="pick-plan">复现方案（可选）</label>
+      <select id="pick-plan" name="plan"><option value="">（不关联）</option>
+        {% for pp in all_plans %}<option value="{{ pp.id }}"{% if pp.id == plan_id %} selected{% endif %}>{{ pp.id }} · {{ (pp.paper_title or '')|truncate(40) }}</option>{% endfor %}</select></div>
+  </div>
+  <noscript><button class="btn small secondary" type="submit">Select</button></noscript>
+</form>
+
+{% if not all_datasets %}
+<div class="ds-empty"><p><strong>还没有数据集。</strong></p><p>先在 <a href="/data">数据复现</a> 导入一个数据文件。</p></div>
+{% elif not method %}
+<p class="muted">先选择一种方法。</p>
+<ul class="ds-list">{% for key, m in methods.items() %}<li><a class="ds-title" href="/data/runs/new?method={{ key }}{% if ds %}&dataset={{ ds.id }}{% endif %}">{{ m.label }}</a><div class="ds-meta">{{ m.blurb }}</div></li>{% endfor %}</ul>
+{% elif not ds %}
+<p class="muted">再选择数据集。</p>
+{% else %}
+<form class="stack ds-run-form card" method="post" action="/data/runs">
+  <input type="hidden" name="method" value="{{ method.key }}">
+  <input type="hidden" name="dataset_id" value="{{ ds.id }}">
+  <input type="hidden" name="plan_id" value="{{ plan_id }}">
+  <p class="kicker">{{ method.label }} · {{ ds.name }}（{{ ds.rows }} 行 × {{ ds.cols }} 列）· {{ method.blurb }}</p>
+  {% for f in method.fields %}
+    {% set cur = values.get(f.name) %}
+    {% set opts = numeric_cols if f.numeric else ds.columns %}
+    <div class="ds-field">
+    {% if f.kind == 'col' %}
+      <label for="f-{{ f.name }}">{{ f.label }}{% if f.required %} *{% endif %}</label>
+      <select id="f-{{ f.name }}" name="{{ f.name }}"{% if f.required %} required{% endif %}>
+        <option value="">{{ '（选择）' if f.required else '（不选）' }}</option>
+        {% for c in opts %}<option value="{{ c }}"{% if cur == c %} selected{% endif %}>{{ c }} · {{ dtype_label(kinds.get(c)) }}</option>{% endfor %}
+      </select>
+    {% elif f.kind == 'cols' %}
+      <span class="field-label">{{ f.label }}{% if f.required %} *{% endif %}</span>
+      <div class="pill-group">{% for c in opts %}<label><input type="checkbox" name="{{ f.name }}" value="{{ c }}"{% if cur and (c in cur if cur is not string else c == cur) %} checked{% endif %}>{{ c }}</label>{% endfor %}</div>
+    {% elif f.kind == 'choice' %}
+      <label for="f-{{ f.name }}">{{ f.label }}</label>
+      <select id="f-{{ f.name }}" name="{{ f.name }}">{% for v, l in f.choices %}<option value="{{ v }}"{% if (cur or f.default) == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    {% elif f.kind == 'bool' %}
+      <label class="ds-check"><input type="checkbox" name="{{ f.name }}" value="1"{% if cur or (cur is none and f.default) %} checked{% endif %}> {{ f.label }}</label>
+    {% else %}
+      <label for="f-{{ f.name }}">{{ f.label }}</label>
+      <input id="f-{{ f.name }}" type="text" name="{{ f.name }}" value="{{ cur or '' }}">
+    {% endif %}
+    {% if f.help %}<p class="muted ds-caption">{{ f.help }}</p>{% endif %}
+    </div>
+  {% endfor %}
+  <div><button class="btn" type="submit">Run</button> <span class="muted spinner"></span></div>
+</form>
+{% endif %}
+
+{% else %}
+{% set res = run.result or {} %}
+<div class="ds-head">
+  <h1 class="page-title">{{ run.method_label }}{% if run.dataset_name %} · {{ run.dataset_name }}{% endif %}</h1>
+  <div class="row">
+    {% if run.dataset_id %}<a class="chip" href="/data/datasets/{{ run.dataset_id }}">数据集 {{ run.dataset_name or run.dataset_id }}</a>{% else %}<span class="chip">数据集已删除</span>{% endif %}
+    {% if plan %}<a class="chip" href="/data/plans/{{ plan.id }}">复现方案</a>{% endif %}
+    {% if check %}<a class="chip ds-user" href="/projects/{{ check.project_slug }}/checks">检验 #{{ check.id }} {{ check.title|truncate(30) }}</a>{% endif %}
+    {% if run.artifact_ref %}<a class="chip" href="/artifacts/{{ run.artifact_ref }}">成果 {{ run.artifact_ref }}</a>{% endif %}
+    <span class="chip">{{ (run.updated_at or run.created_at) | local_time('%Y-%m-%d %H:%M') }}</span>
+  </div>
+</div>
+{{ flash(msg, err) }}
+{% if res.params_label %}<p class="muted">设置：{{ res.params_label }}</p>{% endif %}
+{% if run.status == 'error' %}<p class="ds-flash err" role="alert">运行出错：{{ res.error }}</p>{% endif %}
+
+<div class="row ds-actions">
+  <form method="post" action="/data/runs/{{ run.id }}/rerun"><button class="btn small" type="submit">Rerun</button></form>
+  <a class="btn small secondary" href="/data/runs/new?method={{ run.method }}{% if run.dataset_id %}&dataset={{ run.dataset_id }}{% endif %}{% if run.plan_id %}&plan={{ run.plan_id }}{% endif %}">Rerun with changes</a>
+  <a class="btn small secondary" href="/data/runs/{{ run.id }}/code.py">Download code</a>
+</div>
+
+{% if res.tables %}
+<h2>结果</h2>
+{% with result=res %}{% include "partials/_data_result.html" %}{% endwith %}
+{% endif %}
+
+{% if has_figure %}
+<h2>图</h2>
+<figure class="ds-figure"><img src="/data/runs/{{ run.id }}/figure.png?v={{ (run.updated_at or run.created_at)|urlencode }}" alt="{{ run.method_label }} 的图"></figure>
+{% endif %}
+
+<h2>我的解读</h2>
+<form class="stack" method="post" action="/data/runs/{{ run.id }}/reading" hx-post="/data/runs/{{ run.id }}/reading" hx-target="#reading-status" hx-swap="innerHTML">
+  <textarea class="inline-edit" name="reading" rows="3" data-autogrow placeholder="用一段话写下这些数字告诉了你什么、没有告诉你什么。这段由你来写；AI 建议只在下方单独显示。">{{ run.reading or '' }}</textarea>
+  <div class="row"><button class="btn small" type="submit">Save</button><span id="reading-status" class="muted"></span></div>
+</form>
+
+<h2>AI 解读建议</h2>
+{% include "partials/_data_ai_reading.html" %}
+
+<h2>记为检验结果</h2>
+{% if run.status != 'done' %}<p class="muted">运行成功后才能记为检验结果。</p>
+{% elif checks %}
+<form class="row" method="post" action="/data/runs/{{ run.id }}/check">
+  <select name="check_id" aria-label="检验">{% for k in checks %}<option value="{{ k.id }}"{% if run.check_id == k.id %} selected{% endif %}>#{{ k.id }} · {{ k.project_slug }} · {{ k.title|truncate(50) }}（{{ k.status }}）</option>{% endfor %}</select>
+  <button class="btn small secondary" type="submit">Use as test result</button>
+</form>
+<p class="muted ds-caption">会把检验设为“已记录”，结果说明写入这次运行的数字（n、系数、置信区间等），解读用你上面写的那段，script_ref = {{ run.id }}。需要先写好解读。</p>
+{% else %}<p class="muted">还没有已接受的检验。可在项目的检验页新建。</p>{% endif %}
+
+<h2>导出</h2>
+<form class="row" method="post" action="/data/runs/{{ run.id }}/export">
+  <select name="project" aria-label="项目">{% for pr in projects %}<option value="{{ pr.slug }}"{% if pr.slug == default_project %} selected{% endif %}>{{ pr.name }}</option>{% endfor %}</select>
+  <button class="btn secondary small" type="submit"{% if run.status != 'done' %} disabled{% endif %}>Export analysis</button>
+</form>
+<p class="muted ds-caption">结果表与图的链接写入 Evidence，代码写入 Reproduction；Claim 与“我这周弄明白了什么”留给你写。</p>
+
+<h2>代码</h2>
+<p class="muted ds-caption">这段 Python 从数据集的 Parquet 副本重现上面的数字（pandas / statsmodels / networkx）。</p>
+<div class="ds-code"><button class="btn small secondary ds-copy" type="button" data-copy="#run-code">Copy</button>
+<pre><code id="run-code">{{ run.code or '' }}</code></pre></div>
+
+<h2>删除</h2>
+<form method="post" action="/data/runs/{{ run.id }}/delete" data-confirm="删除运行 {{ run.id }}？">
+  <button class="btn secondary ds-danger small" type="submit">Delete run</button>
+</form>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('data.js') }}" defer></script>{% endblock %}

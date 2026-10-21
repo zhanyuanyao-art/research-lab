@@ -1,0 +1,154 @@
+/* 阅读页 (card 0129, docs/design/LIBRARY-UI.md §3.2, §五 6–7, §六; layout from library-mock reader-next.css).
+   One header row, then the document and the side panel side by side, each scrolling on its own; the page itself
+   never scrolls on a desktop, so there is one scrollbar per pane. Shared controls come from app.css. */
+
+/* Property rows: label, then the value or a menu button; 32px rows, 12px labels, like the issue sidebar.
+   app-next.css proposes this for app.css; it lives here while card 0052 holds app.css, and the library's preview
+   keeps a scoped copy in papers.css. Move both into app.css, unchanged, when it is free. */
+.prop-list { display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 12px; align-items: center; margin: 0; font-size: var(--text-ui); }
+.prop-list > dt { color: var(--muted); font-size: var(--text-meta); line-height: 32px; align-self: start; }
+.prop-list > dd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-height: 32px; margin: 0; max-width: none; padding: 4px 0; min-width: 0; }
+.prop-list .prop-val { font: inherit; border: 0; background: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 6px; margin-left: -6px; border-radius: var(--r-sm); color: var(--fg); list-style: none; }
+.prop-list .prop-val::-webkit-details-marker { display: none; }
+.prop-list .prop-val:hover { background: var(--hover); text-decoration: none; }
+.prop-list .prop-val.unset { color: var(--faint); cursor: default; }
+.prop-list summary.prop-val.unset { cursor: pointer; }
+.prop-list .prop-val .i { width: 13px; height: 13px; }
+.prop-list dd > .btn.ghost:first-child, .prop-list dd > form:first-child > .btn.ghost, .prop-list dd > form:first-child > label.btn.ghost { margin-left: -10px; }
+.prop-list .paper-cite { flex-basis: 100%; line-height: 1.55; user-select: text; }
+.prop-list a.ext .i { width: 12px; height: 12px; margin-left: 3px; vertical-align: -1px; }
+.prop-list dd form { margin: 0; display: inline-flex; }
+.prop-menu > .menu-panel { left: -6px; right: auto; transform-origin: top left; }
+.prop-menu > .menu-panel [aria-current] { font-weight: 500; }
+.prop-menu .dir-dot { margin-left: 0; }
+
+/* .app raises it over chat.css's dock padding (body:has(.assistant-dock) .content). */
+.app .content:has(> .read-page) { max-width: none; padding: 0 24px; }
+.read-page { --side-w: 340px; display: flex; flex-direction: column; height: calc(100dvh - 53px); }
+@media (min-width: 1600px) { .read-page { --side-w: 400px; } }
+.read-page > .flash, .read-page > .banner { margin: 10px 0 0; }
+
+.read-head { display: flex; align-items: center; gap: 8px; height: 52px; flex: none; min-width: 0; }
+.read-head h1 { min-width: 0; margin: 0 0 0 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--serif); font-size: 18px; font-weight: 600; letter-spacing: 0; }
+.read-by { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-meta); color: var(--muted); white-space: nowrap; }
+.read-by.tip { overflow: visible; }
+.read-head .spacer { flex: 1; }
+.read-pos { font-size: var(--text-meta); color: var(--faint); font-variant-numeric: tabular-nums; margin-right: 2px; white-space: nowrap; }
+.read-head .sep { width: 1px; height: 16px; margin: 0 4px; background: var(--border); flex: none; }
+.read-head .nav-btn[disabled] { opacity: .35; }
+.read-head .side-toggle[aria-pressed="true"] { color: var(--fg); }
+
+.read-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--side-w); gap: 20px; padding-bottom: 16px; position: relative; }
+.read-page.side-closed .read-body { grid-template-columns: minmax(0, 1fr); }
+.read-page.side-closed .read-side { display: none; }
+.read-doc { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.read-tools { display: flex; align-items: center; gap: 2px; height: 36px; flex: none; min-width: 0; }
+.read-tools .page-no { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-meta); color: var(--muted); }
+.read-tools .page-no input { width: 44px; height: var(--control-h-sm); padding: 0 6px; text-align: center; font-size: var(--text-meta); }
+.read-tools .zoom { width: auto; height: var(--control-h-sm); padding: 0 26px 0 8px; border-color: transparent; background-color: transparent; color: var(--muted); font-size: var(--text-meta); }
+.read-tools .zoom:hover { background-color: var(--hover); color: var(--fg); }
+.read-tools .spacer { flex: 1; }
+.read-tools .sep { width: 1px; height: 16px; margin: 0 6px; background: var(--border); flex: none; }
+.read-find { display: flex; align-items: center; gap: 4px; margin: 0 0 8px; flex: none; flex-wrap: wrap; }
+.read-find[hidden] { display: none; }
+.read-find input { flex: 1; min-width: 110px; height: var(--control-h-sm); }
+
+/* PDF.js renders white pages; the pane around them is a step darker than the canvas in both themes. */
+.reading-stage { display: flex; position: relative; flex: 1; min-height: 0; border-radius: var(--r-lg); overflow: hidden; background: color-mix(in srgb, var(--fg) 5%, var(--bg)); }
+.pdf-surface { position: relative; flex: 1; min-width: 0; }
+#pdf-container { position: absolute; inset: 0; overflow: auto; overscroll-behavior: contain; }
+#pdf-viewer { --scale-factor: 1; padding: 8px 0; }
+#pdf-outline { width: 240px; max-width: 55%; overflow: auto; margin: 8px 0 8px 8px; padding: 12px; }
+#pdf-outline[hidden] { display: none; }
+#pdf-outline ul { padding-left: 16px; margin: 4px 0; list-style: none; }
+#pdf-outline > ul { padding: 0; }
+#pdf-outline .btn { white-space: normal; height: auto; text-align: start; justify-content: start; margin-bottom: 4px; }
+.reading-message { position: absolute; inset: 20px 20px auto; z-index: 2; }
+.reading-message[hidden] { display: none; }
+.reading-translation { flex: 1; min-width: 0; overflow: auto; padding: 16px 24px; background: var(--bg); }
+.reading-page { margin-bottom: 40px; }
+.reading-stage.view-both .reading-translation { max-width: 42%; border-left: 1px solid var(--border); }
+.reading-biblio { flex: 1; min-height: 0; overflow: auto; padding: 24px 28px; border-radius: var(--r-lg); background: var(--surface); }
+.reading-biblio .prose { margin-top: 16px; }
+
+.read-side { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.side-head { display: flex; align-items: center; gap: 8px; height: 36px; flex: none; }
+/* The bottom padding lets the last line scroll above the floating assistant button. */
+.side-scroll { flex: 1; min-height: 0; overflow: auto; padding: 8px 4px 72px 2px; overscroll-behavior: contain; }
+.side-panel[hidden] { display: none; }
+#paper-props { padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+.summary-card .sum-state { margin: 16px 0 8px; }
+.sum { margin: 4px 0 0; }
+.sum dt { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 18px 0 6px; font-size: var(--text-meta); color: var(--muted); }
+.sum dd { margin: 0; max-width: none; font-size: 13.5px; line-height: 1.8; color: var(--fg); }
+.sum .refs { display: inline-flex; gap: 8px; flex: none; }
+.sum .refs a, .read-first .page-ref { font-size: var(--text-meta); font-variant-numeric: tabular-nums; }
+.sum-light { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 20px 0 4px; padding: 12px 14px; border-radius: var(--r-lg); background: var(--surface-2); font-size: var(--text-meta); color: var(--muted); }
+.side-fold { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.side-fold summary { font-size: var(--text-ui); cursor: pointer; }
+.side-fold .count { margin-left: 4px; color: var(--faint); font-size: var(--text-meta); }
+.side-fold .sum dt:first-child { margin-top: 10px; }
+.read-first { margin: 8px 0 0; padding-left: 1.1em; font-size: 13px; line-height: 1.7; }
+.read-first .page-ref { margin-right: 4px; }
+.summary-review .row { align-items: start; margin-top: 10px; }
+.summary-review > p:first-of-type { margin: 8px 0 0; }
+
+.side-section h3 { margin: 18px 0 6px; font-size: var(--text-meta); font-weight: 500; color: var(--muted); }
+.side-section:first-child h3 { margin-top: 8px; }
+.side-section + .side-section { border-top: 1px solid var(--border); margin-top: 10px; }
+.side-section > .flash, .side-section > p { margin: 6px 0; }
+.side-section .abstract { line-height: 1.7; font-size: 13.5px; }
+.side-section .trans-row .state { font-size: var(--text-meta); }
+.side-section .trans-row .job-status, .side-section .trans-row .crit { flex-basis: 100%; margin: 4px 0 0; }
+.excerpt-groups h4 { margin: 12px 0 4px; font-size: var(--text-meta); font-weight: 500; }
+.excerpt-groups blockquote { margin: 0 0 10px; padding: 0 0 0 10px; border-left: 2px solid var(--border); font-size: 13px; }
+.excerpt-groups blockquote p { margin: 0 0 4px; }
+
+/* Phones and narrow windows: one column, and a rail picks 原文 · 概要 · 信息 (paper-reader.js remembers 原文). */
+.read-mtabs { display: none; }
+/* 900–1199: the side panel opens over the PDF's right side instead of narrowing it. */
+@media (max-width: 1199px) and (min-width: 721px) {
+  .read-body { grid-template-columns: minmax(0, 1fr); }
+  .read-side { position: absolute; top: 0; right: 0; bottom: 16px; width: 340px; z-index: 6; padding: 0 12px; border-radius: var(--r-lg);
+    background: var(--surface); box-shadow: var(--shadow-3); }
+}
+@media (max-width: 720px) {
+  .app .content:has(> .read-page) { padding: 0 16px; }
+  .read-page { height: auto; }
+  .read-head { height: auto; flex-wrap: wrap; align-items: flex-start; padding: 14px 0 6px; row-gap: 2px; }
+  .read-head h1 { order: 1; flex: 1 1 calc(100% - 40px); margin-left: 0; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 19px; line-height: 1.35; }
+  .read-head .read-by { order: 3; flex-basis: 100%; max-width: none; white-space: normal; }
+  .read-head .spacer, .read-head .sep, .read-head .read-pos, .read-head .nav-btn, .read-head .side-toggle { display: none; }
+  .read-head .more { order: 2; }
+  .read-mtabs { display: flex; position: sticky; top: 52px; z-index: 5; margin: 6px 0 4px; background: var(--bg); }
+  .read-mtabs button { flex: 1; justify-content: center; }
+  .read-body { display: block; }
+  .read-page.side-closed .read-side { display: block; }
+  .read-page:not(.tab-doc) .read-doc { display: none; }
+  .read-page.tab-doc .read-side { display: none; }
+  .reading-stage { height: 75dvh; }
+  .reading-stage.view-both { flex-direction: column; height: 85dvh; }
+  .reading-stage.view-both .reading-translation { max-width: none; border-left: 0; padding: 16px 8px; }
+  .reading-stage.view-both .pdf-surface { min-height: 50%; }
+  .read-tools { flex-wrap: wrap; height: auto; }
+  .side-head { display: none; }
+  .side-scroll { overflow: visible; padding: 4px 0 80px; }
+}
+
+/* The desktop shell disables selection outside research text. */
+.read-side, #pdf-container .textLayer { -webkit-user-select: text; user-select: text; }
+
+/* The 议题 picker on the reader (card 0131). It hangs from the whole row (the dd is
+   its positioned box, the details is not) and takes the row's width: the side panel scrolls, so a wider panel would be
+   cut off at its edge; phones keep the bottom sheet. Its form is a block, where the forms of a property row are
+   laid out inline. */
+[data-paper-issues] { position: relative; }
+[data-paper-issue-picker] { position: static; }
+[data-paper-issue-picker] .issue-pick-panel { left: 0; right: 0; width: auto; }
+.prop-list [data-paper-issue-picker] form { display: block; }
+@media (max-width: 560px) { [data-paper-issue-picker] .issue-pick-panel { left: 12px; right: 12px; } }
+
+/* Narrow screens (card 0161): the breadcrumb's direction and byline give way with an ellipsis instead of pushing the
+   top bar wider; each keeps its whole text in a title. */
+.topbar-crumbs > a:not(:first-child), .topbar-crumbs > .current { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

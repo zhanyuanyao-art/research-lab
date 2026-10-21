@@ -1,0 +1,24 @@
+{#- Refresh state of the push streams with the 刷新 action; polls itself while a refresh runs and, after it,
+  while today's picks are translated (feeds.store.status → enriching; cards 0063, 0083).
+  Variables: st (feeds.store.status), status_only (首页's carousel header: the state without the 刷新 button), primary (the /feed page header: a primary button), following (a poll that
+  waits for the translation), since (when this poll chain started; absent on a page render), fresh (a refresh finished
+  within this chain), finished (this response ends a poll). -#}
+{% import "partials/ui.html" as ui with context %}
+{%- set q = '?primary=1' if primary else '' -%}
+{%- set polling = st.running or following -%}
+<div class="feed-status" id="feed-status"{% if polling %} hx-get="/feed/status{{ q }}{{ '&' if q else '?' }}polling=1{% if since %}&since={{ since }}{% endif %}" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  {% if st.running %}
+    <span class="muted">正在刷新…</span>
+  {% elif following %}
+    <span class="muted">新到 {{ (st.papers_new or 0) + (st.news_new or 0) }} 条，正在翻译今日精选…</span>
+  {% elif finished %}
+    {% set found = (st.papers_new or 0) + (st.news_new or 0) %}
+    <span class="muted">{% if found %}刷新完成：论文 {{ st.papers_new or 0 }} 篇、新闻 {{ st.news_new or 0 }} 条{% else %}刷新完成，没有新内容{% endif %}</span>
+    {#- Shows the new items at once when Leo is still at the top of the page; further down, 显示 waits for him. -#}
+    {% if found %}<a href="">显示</a>{% if fresh %}<script>if (window.scrollY < 160) location.reload();</script>{% endif %}{% endif %}
+  {% else %}
+    <span class="muted">{% if st.label %}上次刷新 {{ st.last_at | local_time("%H:%M") if primary else st.label }}{% else %}还没有刷新过{% endif %}</span>
+  {% endif %}
+  {% if primary and not st.running and st.failed %}<span class="badge warning" title="没有响应：{{ st.failed | join('、') }}">{{ st.failed | length }} 个来源没有响应</span>{% endif %}
+  {% if not st.running and not status_only %}<button class="btn {{ 'secondary small' if primary else 'ghost small' }}" hx-post="/feed/refresh{{ q }}" hx-target="#feed-status" hx-swap="outerHTML">{{ ui.icon('refresh-cw') }}Refresh</button>{% endif %}
+</div>

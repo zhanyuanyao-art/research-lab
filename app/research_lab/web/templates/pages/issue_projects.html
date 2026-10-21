@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/issues">研究档案</a>{% if active_direction %}{{ ui.icon('chevron-right','sm') }}<span class="current">{{ active_direction.name }}</span>{% endif %}{% endblock %}
+{% block content %}
+<div id="issue-workspace" class="issue-projects" data-revision="{{ revision | default('') }}">
+  <header class="page-header">
+    <div><h1>{{ active_direction.name if active_direction else '研究档案' }}</h1></div>
+    <a class="btn" href="/projects/new">{{ ui.icon('plus','sm') }}New project</a>
+  </header>
+  <nav class="tabs" aria-label="研究档案视图">
+    <a href="{{ tabs.projects }}"{% if view != 'todo' %} aria-current="page"{% endif %}>课题<span class="count">{{ project_total }}</span></a>
+    <a href="{{ tabs.todo }}"{% if view == 'todo' %} aria-current="page"{% endif %}>全部待办<span class="count">{{ todo_total }}</span></a>
+  </nav>
+  {% if view == 'todo' %}
+  {#- Flat rows on the sub-issue grid, one section per due bucket, earliest first (routes/issues.py). -#}
+  <div class="issue-due-groups">
+    {% for g in due_groups %}
+    <section class="issue-due-group" aria-label="{{ g.title }}" data-due-group="{{ g.key }}">
+      <header class="section-head"><h2>{{ g.title }}<span class="count">{{ g.nodes | length }}</span></h2></header>
+      <div class="issue-subtree">{% with nodes = g.nodes %}{% include "partials/_issue_rows.html" %}{% endwith %}</div>
+    </section>
+    {% else %}<div class="empty compact"><strong>没有未完成的议题</strong></div>{% endfor %}
+  </div>
+  {% else %}
+  {% for section in sections %}
+  <section class="archive-direction" aria-label="{{ section.direction.name }}">
+    <header class="section-head"><h2><span class="issue-direction-dot" style="--dc:{{ section.direction.color }}"></span>{{ section.direction.name }}<span class="count">{{ section.projects | length }}</span></h2></header>
+    <div class="project-rows">
+      {% for p in section.projects %}{{ ui.project_progress(p, compact=true) }}{% else %}<div class="archive-project-empty">还没有课题。<a href="/projects/new">创建第一个课题</a></div>{% endfor %}
+    </div>
+  </section>
+  {% else %}<div class="empty compact"><strong>先添加一个研究方向</strong><a class="btn secondary small" href="/artifacts/directions">New direction</a></div>{% endfor %}
+  {% endif %}
+</div>
+{% include "partials/_issue_shortcuts.html" %}
+{% if view == 'todo' %}{% include "partials/_issue_delete.html" %}{% endif %}
+{% endblock %}

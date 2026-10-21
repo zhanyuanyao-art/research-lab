@@ -1,0 +1,74 @@
+/* Card 0196: layout for the replication page (PRODUCT.md: module stylesheets add no cards, badges or colors; the
+   dialog follows the issue composer's tier-3 sheet). */
+.replication { max-width: 1000px; }
+.replication-more { margin: 14px 4px 0; font-size: var(--text-meta, 12px); }
+
+/* sections and items open in place: a row like .list-item, a chevron that turns */
+.rp-sec, .rp-item { border-bottom: 1px solid var(--border); }
+.rp-sections > :last-child { border-bottom: 0; }
+details.rp-sec > summary, details.rp-item > summary, .rp-link { display: flex; width: 100%; align-items: center; gap: 12px; padding: 14px 20px; color: var(--fg); font-size: inherit; text-decoration: none; }
+details.rp-sec > summary::before, details.rp-item > summary::before { content: none; }
+details[open].rp-sec > summary, details[open].rp-item > summary { margin-bottom: 0; }
+.rp-sec > summary:hover, .rp-link:hover { background: var(--surface-2); text-decoration: none; }
+.rp-sec-head { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rp-sec-head .title { font-weight: 500; }
+.rp-sec-head .sub { font-size: 0.86rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-chev { flex: none; color: var(--muted); transition: transform var(--t-fast) ease; }
+details[open] > summary .rp-chev { transform: rotate(90deg); }
+.rp-sec-body { padding: 4px 20px 22px; }
+.rp-item { border-bottom: 1px solid var(--border); margin: 0 -20px; }
+details.rp-item > summary { padding: 12px 20px; }
+.rp-item > :not(summary) { margin-left: 20px; margin-right: 20px; }
+.rp-item[open] { padding-bottom: 16px; }
+.rp-h { font-size: 0.95rem; margin: 22px 0 10px; }
+.rp-gap { margin-top: 14px; margin-bottom: 4px; }
+.rp-more { margin: 12px 0 0; }
+
+/* 研究 */
+.rp-cols { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.rp-cols > .card { margin-top: 0; }
+.rp-model .card-head { margin-bottom: 8px; }
+.rp-model p { margin: 0 0 6px; line-height: 1.6; }
+.rp-model-name { font-size: 1.02rem; }
+.rp-tight { padding: 8px 0; gap: 8px; align-items: baseline; }
+.rp-ol, .rp-ul { margin: 0; padding-left: 1.3em; line-height: 1.7; }
+.grid-2 > .card { margin-top: 0; }
+
+/* 数据 */
+.rp-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); counter-reset: none; }
+.rp-steps > .card { margin-top: 0; }
+.rp-steps h3 { margin: 10px 0 4px; font-size: 1rem; }
+.rp-steps p { margin: 0; line-height: 1.6; }
+.rp-files { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* 方法 */
+.rp-matrix { margin: 4px 0 14px; }
+.rp-matrix .rp-c { text-align: center; width: 64px; }
+
+/* 结果: originals, our table, check charts; a picture opens large */
+.rp-result { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
+.rp-thumb { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: none; cursor: zoom-in; text-align: left; font: inherit; color: inherit; }
+.rp-thumb img { display: block; width: 100%; height: auto; max-height: 260px; object-fit: contain; object-position: top left;
+  border: 1px solid var(--border); border-radius: var(--r); }
+.rp-thumb.rp-wide { margin: 4px 0 14px; max-width: 640px; }
+.rp-thumb.rp-wide img { max-height: none; }
+
+.rp-zoom-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; max-height: calc(100dvh - 48px); }
+.rp-zoom-grid img { width: 100%; height: 100%; max-height: calc(100dvh - 48px); object-fit: contain; }
+.rp-zoom aside { padding: 22px 22px 18px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+.rp-zoom aside h3 { margin: 0; font-size: 1rem; }
+.rp-zoom aside p { margin: 0; line-height: 1.7; color: var(--fg-2); }
+.rp-zoom aside form { margin-top: auto; }
+@media (max-width: 760px) {
+  .rp-zoom-grid { grid-template-columns: 1fr; }
+  .rp-zoom-grid img { max-height: 60dvh; }
+  .rp-zoom aside { border-left: 0; border-top: 1px solid var(--border); }
+  .rp-sec > summary, .rp-item > summary, .rp-link { padding: 12px 16px; }
+  .rp-sec-body { padding: 4px 16px 18px; }
+  .rp-item { margin: 0 -16px; }
+}
+.rp-sec-body pre { white-space: pre-wrap; word-break: break-all; }
+
+/* 一键跑完 (card 0203): the box takes the row, Run again sits beside its first line. */
+#run-all .run-all-row { align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
+#run-all .run-all-row > form { flex: none; margin: 6px 0 0; }

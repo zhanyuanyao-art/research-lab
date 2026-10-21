@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('method.css') }}"><link rel="stylesheet" href="{{ asset('pm.css') }}">{% endblock %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">{{ p.name }}</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles{% if p.direction %} dir-hero{% endif %}" style="--dc: {{ direction_color(p.direction) }}">
+    <h1 class="page-title">{{ p.name }}</h1>
+    <p class="page-desc serif" style="font-size: 1.02rem; color: var(--fg-2)">{{ p.question }}</p>
+    <div class="page-meta">
+      {% if p.direction %}{{ ui.dir_tag(p.direction) }}{% endif %}
+      <span class="badge">{{ L.stage[p.stage] }}</span>
+      {{ ui.stepper(stage_index, stages|length, direction_color(p.direction)) }}
+      {% if p.since %}<span>{{ p.since }} 起</span>{% endif %}
+    </div>
+  </div>
+  <div class="page-actions">
+    <a class="btn secondary" href="/projects/{{ p.slug }}/edit">{{ ui.icon('pencil') }}Edit</a>
+    <a class="btn" href="/artifacts/new?direction={{ p.direction or '' }}">{{ ui.icon('plus') }}New output</a>
+  </div>
+</header>
+{% if saved %}<div class="flash">{{ ui.icon('check', 'sm') }}{% if saved == 'paper' %}已加入课题。{% elif saved == 'created' %}课题已创建。{% elif saved == 'upload' %}文件已放进草稿文件夹。{% elif saved == 'export' %}已导出为 Word，放在草稿文件夹里。{% else %}已保存。{% endif %}</div>{% endif %}
+{% if error %}<div class="banner warning" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+
+<nav class="tabs hub-tabs" id="project-tabs" aria-label="课题内容">
+  <a href="#overview" data-panel="overview" class="on">概览</a>
+  <a href="#papers" data-panel="papers">文献 <span class="count">{{ hub_papers|length }}</span></a>
+  <a href="#marks" data-panel="marks">划线 <span class="count">{{ hub_excerpts|length }}</span></a>
+  <a href="#outputs" data-panel="outputs">产出 <span class="count">{{ project_artifacts|length }}</span></a>
+  <a href="#tasks" data-panel="tasks">待办 <span class="count">{{ task_counts.open }}</span></a>
+  <a href="#files" data-panel="files">文件</a>
+  <a href="#tools" data-panel="tools">研究工具</a>
+</nav>
+
+<section class="tab-panel" id="panel-overview">
+  <div class="grid-4" style="margin-bottom: 16px">
+    <a class="card stat interactive" href="#papers" data-goto="papers"><span class="n">{{ hub_papers|length }}</span><span class="l">篇文献</span></a>
+    <a class="card stat interactive" href="#marks" data-goto="marks"><span class="n">{{ hub_excerpts|length }}</span><span class="l">条划线</span></a>
+    <a class="card stat interactive" href="#outputs" data-goto="outputs"><span class="n">{{ project_artifacts|length }}</span><span class="l">个产出</span></a>
+    <a class="card stat interactive" href="/projects/{{ p.slug }}/matrix"><span class="n">{{ counts.cells_resolved }}<span class="muted" style="font-size: 1rem; font-weight: 400"> / {{ counts.cells_total }}</span></span><span class="l">证据格已判定</span></a>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>下一步</h3><a class="btn ghost small" href="#tools" data-goto="tools">View progress</a></div>
+    {% if next %}
+      <p style="font-size: 1.02rem; margin: 0 0 6px"><strong>{{ L.milestone[next.milestone] }}</strong></p>
+      {% if next.failing %}<p class="muted">{{ next.failing }}</p>{% endif %}
+    {% else %}<p class="muted">当前阶段的目标都已完成。</p>{% endif %}
+    <p class="muted small" style="margin-top: 12px"><a href="#tasks" data-goto="tasks">待办 {{ task_counts.open }} 项，本周到期 {{ task_counts.week }} 项</a></p>
+    {% if task_parents %}<ul class="list" style="margin-top: 4px">{% for pr in task_parents %}<li class="list-item" style="padding: 8px 0"><div class="body"><a class="title" href="#tasks" data-goto="tasks">{{ pr.task.title }}</a><div class="sub"><span class="{{ 'crit' if pr.overdue else '' }}">{{ pr.sentence.split(' · ', 1)[1] if ' · ' in pr.sentence else '' }}</span></div></div></li>{% endfor %}</ul>{% endif %}
+    {% if suggestion %}
+    <form method="post" action="/projects/{{ p.slug }}/stage" class="row" style="margin-top: 14px">
+      <input type="hidden" name="stage" value="{{ suggestion }}">
+      <span class="muted">这个阶段的目标都完成了。</span><button class="btn small" type="submit">Advance to {{ L.stage[suggestion] }}</button>
+    </form>
+    {% endif %}
+  </div>
+  <div class="grid-2" style="margin-top: 16px">
+    <div class="card">
+      <div class="card-head"><h3>最近的产出</h3><a class="muted small" href="#outputs" data-goto="outputs">全部</a></div>
+      {% if project_artifacts %}<ul class="list output-list">{% for a in project_artifacts[:3] %}{{ ui.output_row(a) }}{% endfor %}</ul>
+      {% else %}<p class="muted small">还没有产出。从一个研究问题开始。</p>{% endif %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>最近的划线</h3><a class="muted small" href="#marks" data-goto="marks">全部</a></div>
+      {% if hub_excerpts %}<ul class="list">{% for e in hub_excerpts[:3] %}<li class="list-item"><div class="body"><p class="hub-quote"><mark>{{ e.quote | truncate(120) }}</mark></p><div class="sub"><a href="/papers/{{ e.paper_id }}">{{ e.paper_title | truncate(40) }}</a><span>第 {{ e.locator }} 页</span></div></div></li>{% endfor %}</ul>
+      {% else %}<p class="muted small">还没有划线。在阅读器里选中一段文字，按 E 保存。</p>{% endif %}
+    </div>
+  </div>
+  {% if p.note %}<div class="card" style="margin-top: 16px"><div class="card-head"><h3>备注</h3></div><p class="serif" style="line-height: 1.7">{{ p.note }}</p></div>{% endif %}
+</section>
+
+<section class="tab-panel" id="panel-papers" hidden>
+  <form method="post" action="/projects/{{ p.slug }}/papers" class="toolbar">
+    <select name="paper_id" class="grow" required aria-label="从文献库选择" style="max-width: 520px">
+      <option value="">从文献库加入一篇…</option>
+      {% for c in hub_candidates %}<option value="{{ c.id }}">{{ c.title | truncate(70) }}{% if c.year %}（{{ c.year }}）{% endif %}</option>{% endfor %}
+    </select>
+    <button class="btn secondary" type="submit">{{ ui.icon('link') }}Add to project</button>
+    <span class="spacer"></span>
+    <span class="muted small">在这一页拖入 PDF，会直接归进这个课题。</span>
+  </form>
+  {% set _missing = hub_papers | selectattr('linked') | selectattr('ai_summary_json', 'none') | list %}
+  {% set _unsummarized = _missing | selectattr('n_files') | list %}
+  {% set _no_pdf = (_missing | length) - (_unsummarized | length) %}
+  {% if request.query_params.get('summarized') is not none %}
+  <div class="flash">{{ ui.icon('check', 'sm') }}已排入 {{ request.query_params.get('summarized') }} 篇的中文概要{% if request.query_params.get('summary_waiting', '0') != '0' %}，{{ request.query_params.get('summary_waiting') }} 篇已在生成{% endif %}{% if request.query_params.get('summary_no_file', '0') != '0' %}；{{ request.query_params.get('summary_no_file') }} 篇只有书目，补上 PDF 后会自动生成{% endif %}。</div>
+  {% elif _unsummarized %}
+  <form method="post" action="/papers/summarize" class="row summarize-all">
+    <input type="hidden" name="project" value="{{ p.slug }}"><input type="hidden" name="next" value="/projects/{{ p.slug }}?tab=papers">
+    <span class="muted small">{{ _unsummarized | length }} 篇还没有中文概要{% if _no_pdf %}（另有 {{ _no_pdf }} 篇只有书目，补上 PDF 后才能生成）{% endif %}{% if claude_left is not none %}，有 PDF 的每篇占一次每日额度，今天还剩 {{ claude_left }} 次{% endif %}。</span>
+    <button class="btn secondary small" type="submit">{{ ui.icon('sparkles', 'sm') }}Summarize all</button>
+  </form>
+  {% endif %}
+  {% if hub_papers %}
+  <div class="card flush"><ul class="list">
+    {% for r in hub_papers %}
+    <li class="list-item hub-paper">
+      <div class="body">
+        <a class="title serif" href="/papers/{{ r.id }}"{% if r.language %} lang="{{ r.language }}"{% endif %}>{{ r.title }}</a>
+        <div class="sub">
+          <span>{{ r.authors }} · {{ r.year or '年份不详' }}{% if r.venue %} · {{ r.venue }}{% endif %}</span>
+          {% if r.n_excerpts %}<span class="badge">{{ r.n_excerpts }} 条划线</span>{% endif %}
+          {% if r.camp %}<span class="badge outline">{{ r.camp }}</span>{% endif %}
+          {% if not r.linked %}<span class="badge outline" title="通过划线、文献地图或子议题的关联进入课题">间接关联</span>{% endif %}
+        </div>
+      </div>
+      <div class="trail">
+        <a class="btn ghost small" href="/papers/{{ r.id }}/read">{{ ui.icon('book-open', 'sm') }}Read</a>
+        {% if r.linked %}<form method="post" action="/projects/{{ p.slug }}/papers/{{ r.id }}/detach" class="hover-actions"><button class="btn ghost icon small" type="submit" title="移出课题" aria-label="移出课题">{{ ui.icon('unlink', 'sm') }}</button></form>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul></div>
+  {% else %}{{ ui.empty('book-open', '这个课题还没有文献', '从上面的文献库加入，或在导入 PDF 时选择这个课题。', '/papers', 'Open library') }}{% endif %}
+</section>
+
+<section class="tab-panel" id="panel-marks" hidden>
+  {% if hub_excerpts %}
+  <div class="card flush"><ul class="list">
+    {% for e in hub_excerpts %}
+    <li class="list-item"><div class="body">
+      <p class="hub-quote"><mark>{{ e.quote[:260] }}{% if e.quote|length > 260 %}…{% endif %}</mark></p>
+      {% if e.my_note %}<p class="hub-note">{{ e.my_note }}</p>{% endif %}
+      <div class="sub"><a href="/papers/{{ e.paper_id }}">{{ e.paper_title | truncate(60) }}{% if e.year %}（{{ e.year }}）{% endif %}</a><span>第 {{ e.locator }} 页</span>{% if e.status == 'used' %}<span class="badge success">已用于产出</span>{% endif %}{% if e.quote_verified %}<span class="success">已核对原文</span>{% endif %}<a href="/excerpts/{{ e.id }}">联想与去向</a></div>
+    </div></li>
+    {% endfor %}
+  </ul></div>
+  {% else %}{{ ui.empty('highlighter', '还没有划线', '在阅读器里选中一段文字，按 E 保存为划线；保存时选择这个课题。', '/papers', 'Open library') }}{% endif %}
+</section>
+
+<section class="tab-panel" id="panel-outputs" hidden>
+  {% if project_artifacts %}
+  <div class="card flush output-list"><ul class="list">{% for a in project_artifacts %}{{ ui.output_row(a) }}{% endfor %}</ul></div>
+  {% else %}{{ ui.empty('square-pen', '这个课题还没有产出', '从一个研究问题开始。', '/artifacts/new?direction=' ~ (p.direction or ''), 'New output') }}{% endif %}
+  {% if hub_datasets %}
+  <div class="section-head"><h2>相关数据集</h2></div>
+  <div class="card flush"><ul class="list">{% for d in hub_datasets %}<li class="list-item"><div class="body"><a class="title" href="/data/datasets/{{ d.id }}">{{ d.name }}</a><div class="sub"><span>{{ d.rows }} 行 · {{ d.cols }} 列</span></div></div></li>{% endfor %}</ul></div>
+  {% endif %}
+</section>
+
+<section class="tab-panel" id="panel-tasks" hidden>
+  <div class="toolbar">
+    <span class="muted small">这个课题的全部待办；父任务展开看各节，<kbd>?</kbd> 看快捷键。</span>
+    <span class="spacer"></span>
+    <a class="btn secondary small" href="/tasks/new?project={{ p.slug }}">{{ ui.icon('plus', 'sm') }}New task</a>
+  </div>
+  {% with tree = task_tree %}{% include "partials/_task_tree.html" %}{% endwith %}
+</section>
+
+<section class="tab-panel" id="panel-files" hidden>
+  <div class="card flush"><ul class="list">
+    {% for f in hub_files %}
+    <li class="list-item hub-file">
+      {{ ui.icon('file-text') }}
+      <div class="body">
+        <span class="title">{{ f.label }}</span>
+        <div class="sub"><span class="mono">{{ f.name }}</span><span>{{ f.chars }} 字</span>{% if f.generated %}<span>含导出生成的表格</span>{% endif %}</div>
+      </div>
+      <div class="trail"><a class="btn secondary small" href="/projects/{{ p.slug }}/files/{{ f.name }}">{{ ui.icon('pencil', 'sm') }}Edit</a></div>
+    </li>
+    {% endfor %}
+  </ul></div>
+  <div class="section-head">
+    <h2>交付稿</h2>
+    <div class="aside">
+      <form method="post" action="/projects/{{ p.slug }}/deliverables/upload" enctype="multipart/form-data" class="row">
+        <label class="btn secondary small" for="deliverable-file">{{ ui.icon('upload', 'sm') }}添加文件</label>
+        <input type="file" id="deliverable-file" name="file" hidden onchange="if (this.files.length) this.form.requestSubmit()">
+      </form>
+      {% if project_artifacts %}
+      <form method="post" action="/projects/{{ p.slug }}/deliverables/export" class="row">
+        <select name="ref" aria-label="导出哪份产出" style="max-width: 260px">{% for a in project_artifacts %}<option value="{{ a.ref }}">{{ a.title | truncate(36) }}</option>{% endfor %}</select>
+        <button class="btn secondary small" type="submit">{{ ui.icon('download', 'sm') }}Export Word</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% if hub_deliverables %}
+  <div class="card flush"><ul class="list">
+    {% for f in hub_deliverables %}
+    <li class="list-item hub-file">
+      {{ ui.icon('file-text') }}
+      <div class="body">
+        <form method="post" action="/projects/{{ p.slug }}/deliverables/open" class="inline-form"><input type="hidden" name="rel" value="{{ f.rel }}"><button type="submit" class="link-btn title">{{ f.name }}</button></form>
+        <div class="sub"><span class="badge outline">{{ f.kind }}</span><span>{{ f.folder_label }}{% if f.folder == 'private' %}（不进 git）{% endif %}</span><span>{{ f.mtime.strftime('%m月%d日 %H:%M') }}</span><span>{{ (f.size / 1024) | round(0) | int }} KB</span></div>
+      </div>
+      <div class="trail">
+        <form method="post" action="/projects/{{ p.slug }}/deliverables/open"><input type="hidden" name="rel" value="{{ f.rel }}"><button class="btn secondary small" type="submit">{{ ui.icon('external-link', 'sm') }}Open</button></form>
+        <form method="post" action="/projects/{{ p.slug }}/deliverables/open"><input type="hidden" name="rel" value="{{ f.rel }}"><input type="hidden" name="how" value="reveal"><button class="btn ghost icon small" type="submit" title="在访达中显示" aria-label="在访达中显示">{{ ui.icon('folder-open', 'sm') }}</button></form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul></div>
+  {% else %}
+  {{ ui.empty('files', '还没有交付稿', '把 Word、PDF 等文件拖进来，或把一份产出导出为 Word。') }}
+  {% endif %}
+
+  {% set index = hub_files[0] %}
+  {% if index.readme %}
+  <div class="card" style="margin-top: 16px"><div class="card-head"><h3>说明</h3></div><div class="prose">{{ index.readme | md | safe }}</div></div>
+  {% endif %}
+</section>
+
+<section class="tab-panel" id="panel-tools" hidden>
+  <div class="tool-grid">
+    <a class="card interactive" href="/projects/{{ p.slug }}/map">{{ ui.icon('network', 'lg') }}<strong>文献地图</strong><span class="muted small">文献按阵营排布，看谁和谁争论。</span></a>
+    <a class="card interactive" href="/projects/{{ p.slug }}/matrix">{{ ui.icon('table', 'lg') }}<strong>证据矩阵</strong><span class="muted small">各个解释在每个案例上有没有证据。</span></a>
+    <a class="card interactive" href="/projects/{{ p.slug }}/checks">{{ ui.icon('list-checks', 'lg') }}<strong>实证检验</strong><span class="muted small">先写预测，再记录结果。</span></a>
+    {% for c in concepts %}<a class="card interactive" href="/projects/{{ p.slug }}/concepts/{{ c.id }}">{{ ui.icon('layers', 'lg') }}<strong>概念：{{ c.label }}</strong><span class="muted small">定义、维度和可观测指标。</span></a>{% endfor %}
+  </div>
+  <div class="section-head"><h2>进度</h2><div class="aside">按阶段列出的目标；自动项由记录推算，其余自己勾选</div></div>
+  <div class="card">{% include "partials/_milestone_ladder.html" %}</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ asset('tasks.js') }}" defer></script>
+<script>
+function showProjectTab(name) {
+  document.querySelectorAll('#project-tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.panel === name); });
+  document.querySelectorAll('section[id^="panel-"]').forEach(function (s) { s.hidden = s.id !== 'panel-' + name; });
+}
+(function () {
+  var names = Array.prototype.map.call(document.querySelectorAll('#project-tabs a[data-panel]'), function (a) { return a.dataset.panel; });
+  document.getElementById('project-tabs').addEventListener('click', function (e) { var a = e.target.closest('a[data-panel]'); if (!a) return; e.preventDefault(); showProjectTab(a.dataset.panel); history.replaceState(null, '', '#' + a.dataset.panel); });
+  document.addEventListener('click', function (e) { var a = e.target.closest('[data-goto]'); if (!a) return; e.preventDefault(); showProjectTab(a.dataset.goto); history.replaceState(null, '', '#' + a.dataset.goto); });
+  var q = new URLSearchParams(location.search).get('tab');
+  var h = q || (location.hash || '').slice(1);
+  if (names.indexOf(h) > 0) showProjectTab(h);
+})();
+</script>
+{% endblock %}

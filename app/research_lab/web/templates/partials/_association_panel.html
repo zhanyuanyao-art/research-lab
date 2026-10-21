@@ -1,0 +1,123 @@
+{# The association panel (product-ux §3). Context: p = ai/jobs/excerpt_associate.panel(), reject_reasons, relations.
+   Every line is independently actionable; nothing is applied until the user clicks. #}
+{% set rel_label = {'supports': '支持', 'contradicts': '矛盾', 'same-case': '同一案例', 'same-concept': '同一概念',
+                    'defines': '定义', 'mechanism': '候选机制', 'parallel': '平行模式', 'about': '标签'} %}
+{% set reason_label = {'wrong-link': '关联错误', 'trivial': '太琐碎', 'already-known': '早已知道', 'overclaims': '说过头了'} %}
+{% set dst_label = {'use': '用途', 'case': '案例', 'concept': '概念', 'camp': '学派'} %}
+{% set use_label = {'definition': '定义', 'evidence': '证据', 'counter': '反证', 'mechanism': '机制', 'method': '方法',
+                    'framing': '框定', 'quotable': '可引用'} %}
+{% if not p.job %}
+<section class="assoc-panel empty" id="assoc-panel-{{ p.excerpt_id }}">
+  <p class="muted">还没有关联。
+    <button class="btn small secondary" hx-post="/excerpts/{{ p.excerpt_id }}/reassociate" hx-target="closest .assoc-panel" hx-swap="outerHTML">Find links</button></p>
+</section>
+{% elif not p.done %}
+{% with job = p.job, excerpt_id = p.excerpt_id %}{% include "partials/_job_status.html" %}{% endwith %}
+{% else %}
+<section class="assoc-panel" id="assoc-panel-{{ p.excerpt_id }}" aria-label="关联建议">
+
+  {% if p.links %}
+  <h3 class="panel-h">相关</h3>
+  <ul class="assoc-lines">
+    {% for l in p.links %}{% set a = l.assoc %}
+    <li class="assoc-line state-{{ a.status }}">
+      <div class="assoc-target">
+        {% if l.href %}<a href="{{ l.href }}"><strong>{{ l.title }}</strong></a>{% else %}<strong>{{ l.title }}</strong>{% endif %}
+        {% if l.text %}<span class="muted">：{{ l.text }}</span>{% endif %}
+      </div>
+      <div class="assoc-reason"><em>{{ rel_label.get(a.rel, a.rel) }}：</em>{{ a.reason or '' }}</div>
+      {% if a.status == 'proposed' %}
+      <form class="assoc-actions" hx-post="/_p/suggestion/{{ a.id }}/accept" hx-target="closest .assoc-panel" hx-swap="outerHTML">
+        <details class="inline-edit">
+          <summary class="btn small secondary">Edit</summary>
+          <div class="edit-body">
+            <select name="relation" aria-label="关系">{% for r in relations %}<option value="{{ r }}"{% if r == a.rel %} selected{% endif %}>{{ rel_label.get(r, r) }}</option>{% endfor %}</select>
+            <input type="text" name="reason" value="{{ a.reason or '' }}" aria-label="理由">
+          </div>
+        </details>
+        <button class="btn small" type="submit">Accept</button>
+        <details class="reject-menu">
+          <summary class="btn small secondary">Reject</summary>
+          <span class="pill-row">
+            {% for r in reject_reasons %}<button type="button" class="chip-btn" hx-post="/_p/suggestion/{{ a.id }}/reject" hx-vals='{{ {"reason": r} | tojson }}'
+              hx-target="closest .assoc-panel" hx-swap="outerHTML">{{ reason_label.get(r, r | replace('-', ' ')) }}</button>{% endfor %}
+            <button type="button" class="chip-btn" hx-post="/_p/suggestion/{{ a.id }}/reject" hx-vals='{"reason": ""}'
+              hx-target="closest .assoc-panel" hx-swap="outerHTML">不说明理由</button>
+          </span>
+        </details>
+      </form>
+      {% else %}
+      <span class="chip {{ 'status-active' if a.status == 'accepted' else '' }}">{{ L.assoc_status[a.status] }}{% if a.reject_reason %} · {{ reason_label.get(a.reject_reason, a.reject_reason | replace('-', ' ')) }}{% endif %}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if p.tags %}
+  <h3 class="panel-h">建议的标签</h3>
+  <div class="tag-suggestions">
+    {% for t in p.tags %}{% set a = t.assoc %}
+    <span class="tag-sugg state-{{ a.status }}">
+      <span class="chip{% if a.status == 'accepted' %} status-active{% endif %}">{{ dst_label.get(a.dst_type, a.dst_type) }} · {{ use_label.get(a.dst_id, a.dst_id) if a.dst_type == 'use' else (L.camp[a.dst_id] if a.dst_type == 'camp' else a.dst_id) }}</span>
+      {% if a.status == 'proposed' %}
+      <button class="icon-btn" title="接受标签" aria-label="接受标签 {{ a.dst_id }}" hx-post="/_p/suggestion/{{ a.id }}/accept" hx-target="closest .assoc-panel" hx-swap="outerHTML">✓</button>
+      <button class="icon-btn" title="拒绝标签" aria-label="拒绝标签 {{ a.dst_id }}" hx-post="/_p/suggestion/{{ a.id }}/reject" hx-target="closest .assoc-panel" hx-swap="outerHTML">✕</button>
+      {% endif %}
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if p.claim %}{% set c = p.claim %}
+  <h3 class="panel-h">可能的主张 <span class="muted">成熟度：{{ L.level[c.strength or 'seed'] }}</span></h3>
+  {% if c.status == 'proposed' %}
+  <form class="claim-box" hx-post="/_p/claim/{{ c.id }}/accept" hx-target="closest .assoc-panel" hx-swap="outerHTML">
+    <p class="claim-text">{{ c.statement }}</p>
+    <details class="inline-edit"><summary class="btn small secondary">Edit</summary>
+      <textarea name="text" rows="3" aria-label="主张文本">{{ c.statement }}</textarea></details>
+    <button class="btn small" type="submit">Use as claim</button>
+    <button class="btn small secondary" type="button" hx-post="/_p/claim/{{ c.id }}/reject" hx-target="closest .assoc-panel" hx-swap="outerHTML">Discard</button>
+  </form>
+  {% else %}
+  <p class="claim-text {{ 'muted' if c.status == 'rejected' else '' }}">{{ c.statement }} <span class="chip{% if c.status == 'accepted' %} status-active{% endif %}">{{ '已保留为主张' if c.status == 'accepted' else '已丢弃' }}</span></p>
+  {% endif %}
+  {% endif %}
+
+  {% if p.next_question %}
+  <h3 class="panel-h">下一个值得查的问题</h3>
+  <form class="nq-box" hx-post="/_p/excerpt/{{ p.excerpt_id }}/next-question" hx-target="find .nq-result" hx-swap="innerHTML">
+    <p class="nq-text">{{ p.next_question }}</p>
+    <details class="inline-edit"><summary class="btn small secondary">Edit</summary>
+      <textarea name="text" rows="2" aria-label="下一个问题">{{ p.next_question }}</textarea></details>
+    <button class="btn small" type="submit">Set as next step</button>
+    <button class="btn small secondary" type="button" onclick="this.closest('form').remove()">Discard</button>
+    <span class="nq-result"></span>
+  </form>
+  {% endif %}
+
+  {% if p.targets %}
+  <h3 class="panel-h">可以放进</h3>
+  <ul class="targets">
+    {% for t in p.targets %}
+    <li><span>{{ t.label or t.ref }}</span>{% if t.note %} <span class="muted">· {{ t.note }}</span>{% endif %}
+      {% if t.kind == 'artifact_section' %}
+      <button class="btn small" hx-post="/_p/excerpt/{{ p.excerpt_id }}/add-to-artifact" hx-vals='{{ {"section": t.section} | tojson }}'
+        hx-target="this" hx-swap="outerHTML">Add to this week's output</button>
+      {% elif t.kind == 'matrix_cell' %}<a class="btn small secondary" href="/projects/{{ data.now.project if data and data.now else '' }}/matrix">Open matrix</a>
+      {% else %}<a class="btn small secondary" href="/projects/{{ data.now.project if data and data.now else '' }}/map">Open map</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if not p.links and not p.tags and not p.claim and not p.next_question and not p.targets %}
+  <p class="muted">助手没有从这条划线里找到站得住的关联。</p>
+  {% endif %}
+
+  <footer class="panel-foot">
+    <span>{% if p.n_excerpts < 50 %}已有 {{ p.n_excerpts }} 条划线，积累到约 50 条后关联会更准确。{% endif %}</span>
+    <button class="btn small secondary" hx-post="/excerpts/{{ p.excerpt_id }}/reassociate" hx-target="closest .assoc-panel" hx-swap="outerHTML">Rerun links</button>
+  </footer>
+</section>
+{% endif %}

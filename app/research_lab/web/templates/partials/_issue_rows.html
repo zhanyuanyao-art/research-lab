@@ -1,0 +1,28 @@
+{% import "partials/ui.html" as ui with context %}
+{% import "partials/_issue_ui.html" as iu with context %}
+{#- Context actions preserve the row grid; only task rows can be deleted. -#}
+{%- macro below(n) -%}{%- set ns = namespace(c=0) -%}{%- for c in n.children -%}{%- set ns.c = ns.c + 1 + (below(c) | int) -%}{%- endfor -%}{{ ns.c }}{%- endmacro -%}
+{% macro rows(items, depth=0) %}
+{% for n in items %}{% set r = n.issue %}
+{%- set movable = row_delete is defined and row_delete and not r.artifact and not r.project_root and not n.context %}
+<div class="issue-tree-item" style="--depth:{{ depth }}" data-sort="{{ 1 if r.status in ('done', 'parked') else 0 }}{{ r.due or '9999-99-99' }}"{% if movable %} data-movable="{{ r.id }}"{% endif %}>
+  <div class="issue-list-row{% if n.context %} is-context{% endif %}" style="--depth:{{ depth }}"{% if not r.artifact and not r.project_root and not n.context %} data-issue-context="{{ r.id }}" data-key="{{ r.key }}" data-title="{{ r.title }}" data-count="{{ n.delete_count if n.delete_count is defined else below(n) }}"{% endif %}>
+    {% if movable %}<span class="issue-row-grip" draggable="true" data-issue-grip title="拖动调整顺序（Alt+↑/↓ 也可以）" aria-hidden="true"></span>{% endif %}
+    {% if n.children %}<button class="issue-disclosure" type="button" aria-label="展开或收起子议题" aria-expanded="true" data-issue-toggle>{{ ui.icon('chevron-down','sm') }}</button>{% else %}<span class="issue-disclosure"></span>{% endif %}
+    <span class="issue-state {{ r.status }}" title="{{ issue_states[r.status] }}" aria-label="{{ issue_states[r.status] }}">{% if r.status == 'done' %}{{ ui.icon('check','sm') }}{% elif r.status == 'parked' %}{{ ui.icon('x','sm') }}{% endif %}</span>
+    {% if r.key %}<span class="issue-row-key">{{ r.key }}</span>{% endif %}
+    <a class="issue-row-title" href="/issues/{{ r.id }}">{{ r.title }}</a>
+    {% if n.total %}<span class="issue-progress" title="子议题完成数"><span class="issue-progress-ring" style="--progress:{{ (n.done / n.total * 100) | round }}%"></span>{{ n.done }}/{{ n.total }}</span>{% endif %}
+    <div class="issue-row-trail">
+      {% if r.labels %}<span class="issue-row-labels">{% for label in r.labels %}{{ iu.label(label) }}{% endfor %}</span>{% endif %}
+      {% if not issue_project and projects.get(r.project) %}<span class="issue-project-tag">{{ ui.icon('folder','sm') }}{{ projects[r.project].name }}{% if projects[r.project].type %} · 类型：{{ projects[r.project].type }}{% endif %}</span>{% endif %}
+      {% if r.due %}{% set tn = due_tone(r.due, r.status) if due_tone is defined else '' %}<span class="issue-row-date{% if tn %} due-{{ tn }}{% endif %}" title="截止 {{ r.due }}">{{ ui.icon('calendar','sm') }}{{ r.due[5:7] | int }}月{{ r.due[8:10] | int }}日</span>{% endif %}
+      {% if r.assignee and assignees is defined and r.assignee in assignees %}<span class="issue-avatar is-assistant" title="分配给 {{ assignees[r.assignee] }}" aria-label="分配给 {{ assignees[r.assignee] }}">{{ ui.icon('sparkles','sm') }}</span>{% endif %}
+      {% if r.priority != 'none' %}<span class="issue-priority {{ r.priority }}" title="{{ issue_priorities[r.priority] }}优先级">{{ ui.icon('chart-column','sm') }}</span>{% endif %}
+    </div>
+  </div>
+  {% if n.children %}<div class="issue-tree-children">{{ rows(n.children, depth + 1) }}</div>{% endif %}
+</div>
+{% endfor %}
+{% endmacro %}
+{{ rows(nodes) }}

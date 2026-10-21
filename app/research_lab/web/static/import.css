@@ -1,0 +1,57 @@
+/* The import sheet (card 0130, docs/design/LIBRARY-UI.md §3.3, §五 8; from library-mock app-next.css and
+   library-next.css). .sheet, .drop-zone and .q-state are the design's app.css components; they live here while
+   app.css is held by another card, and move there unchanged when it is free. */
+
+/* Tier-3 sheet (dialog). */
+.sheet { width: min(var(--sheet-w, 620px), calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 64px); padding: 0; border: 0;
+  border-radius: var(--r-lg); color: var(--fg); background: var(--surface); box-shadow: var(--shadow-3); overflow: auto; }
+.sheet::backdrop { background: rgb(0 0 0 / .25); backdrop-filter: blur(3px); }
+.sheet:focus, .sheet:focus-visible { outline: none; }   /* showModal focuses the dialog itself; its controls show focus */
+.sheet > header { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px 20px; }
+.sheet > header h2 { margin: 0; flex: 1; font-size: 14px; font-weight: 600; }
+.sheet > footer { display: flex; align-items: center; gap: 8px; padding: 12px 16px 14px 20px; border-top: 1px solid var(--border); }
+.sheet > footer .spacer { flex: 1; }
+.sheet > footer .muted { font-size: var(--text-meta); }
+.sheet .sheet-loading { padding: 28px 20px; color: var(--muted); font-size: var(--text-ui); }
+
+/* Drop zone: dashed, quiet, the accent only while a file hovers it. */
+.drop-zone { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 76px; padding: 14px; border: 1px dashed var(--border-2);
+  border-radius: var(--r-lg); color: var(--muted); font-size: var(--text-ui); background: var(--surface-2); cursor: pointer; }
+.drop-zone:hover, .drop-zone.over { border-color: var(--accent); color: var(--fg); }
+.drop-zone .i { color: var(--faint); }
+.drop-zone strong { color: var(--fg); font-weight: 500; }
+
+/* Queue state icons: 16px, colour is status only. */
+.q-state { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex: none; color: var(--faint); }
+.q-state .i { width: 14px; height: 14px; }
+.q-state.ok { color: var(--success); }
+.q-state.warn { color: var(--warning); }
+.q-state.err { color: var(--danger); }
+.q-state.run .i { animation: spin 1.4s linear infinite; }
+
+/* Sheet internals: every left edge on the 20px padding (§五 8). */
+.imp-body { display: grid; gap: 12px; padding: 6px 20px 16px; }
+.imp-ids { display: grid; gap: 6px; }
+.imp-ids label { font-size: var(--text-meta); color: var(--muted); }
+.imp-ids textarea { min-height: 58px; font-family: var(--mono); font-size: 12.5px; }
+.imp-ids-act { display: flex; justify-content: flex-end; }
+.imp-file { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.imp-file > span { margin-right: 2px; font-size: var(--text-meta); color: var(--muted); }
+.imp-file select { width: auto; max-width: 200px; height: var(--control-h-sm); font-size: var(--text-meta); }
+.imp-queue { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.imp-queue[hidden] { display: none; }
+/* Each row: state | name over its note | actions. Two-line rows keep long notes off the name. */
+.imp-queue li { display: grid; grid-template-columns: [st] 16px [main] minmax(0, 1fr) [act] auto; column-gap: 10px; align-items: center;
+  min-height: 52px; padding: 6px 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); font-size: var(--text-ui); }
+.imp-queue .q-state { align-self: start; margin-top: 3px; }
+.imp-queue .q-main { display: flex; flex-direction: column; min-width: 0; }
+.imp-queue .name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.imp-queue .name.serif { font-family: var(--serif); font-size: 14px; }
+.imp-queue .note { font-size: var(--text-meta); color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.imp-queue .act { display: flex; gap: 4px; }
+
+@media (max-width: 720px) {
+  .imp-queue .note { white-space: normal; }
+  .imp-queue .act.two { grid-column: main / -1; grid-row: 2; margin: 6px 0 2px; }
+  .imp-file select { max-width: none; flex: 1 1 40%; }
+}

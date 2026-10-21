@@ -1,0 +1,177 @@
+/* 推送 · wide layout, scheme 1 (card 0106, docs/design/FEED-LAYOUT.md §三, §七, §八). Layout only; controls and colours
+   come from app.css. One 12-column grid with a 24px gutter fills the content area up to 1440px; every block edge sits
+   on a column line, and every cell has the same inner padding, so all titles start on a column line + 20px. */
+
+/* ---------------------------------------------------------------- page band */
+.content:has(> .feed-page) { max-width: calc(1440px + 64px); }
+.feed-page { --gutter: 24px; --cell-x: 20px; }
+.feed-page .page-header { margin-bottom: 6px; align-items: center; }
+.feed-status { display: inline-flex; align-items: center; gap: 8px; }
+
+/* Tabs and the edition pager share one rail. */
+.feed-bar { display: flex; align-items: center; gap: 16px; box-shadow: inset 0 -1px 0 var(--border); margin-bottom: 24px; }
+.feed-bar .tabs { box-shadow: none; margin: 0; flex: none; }
+/* 论文's Articles · Book reviews switch (card 0154): quiet, beside the tabs, counts in the faint tab style. */
+.feed-bar .kind-switch { flex: none; }
+.kind-switch .count { margin-left: 2px; font-size: var(--text-meta); color: var(--faint); font-variant-numeric: tabular-nums; }
+.kind-switch a.on .count { color: var(--muted); }
+/* A review cell: the reviewed book as the title, then its author, publisher and year in one grey serif line. */
+.story.review .book-by { margin-top: 3px; font-family: var(--serif); font-size: 0.92rem; line-height: 1.45; color: var(--muted);
+  overflow-wrap: anywhere; }
+.edition-nav { margin-left: auto; display: flex; align-items: center; gap: 2px; min-width: 0; }
+.edition-nav h2 { margin: 0 4px; font-size: var(--text-ui); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.edition-nav .when { margin-left: 6px; color: var(--faint); font-weight: 400; }
+.edition-nav .sep { width: 1px; height: 16px; background: var(--border); margin: 0 8px; flex: none; }
+.i.flip { transform: scaleX(-1); }
+
+/* ---------------------------------------------------------------- news: world + rail */
+.feed-layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 var(--gutter); align-items: start; }
+.feed-main, .feed-rail { grid-column: 1 / -1; min-width: 0; }
+.feed-page .section-head { margin: 0 0 10px; min-height: 22px; }
+.feed-page .section-head h3 { margin: 0; font-size: var(--text-ui); font-weight: 600; }
+.feed-page .section-head .aside { font-size: var(--text-meta); }
+.feed-rail { margin-top: 32px; }
+@media (min-width: 1280px) {
+  .feed-main { grid-column: span 8; }
+  .feed-rail { grid-column: span 4; margin-top: 0; }
+}
+@media (min-width: 1600px) {
+  .feed-main { grid-column: span 9; }
+  .feed-rail { grid-column: span 3; }
+}
+
+/* Cells sit edge to edge inside one card; the hairlines between them are each cell's right and bottom border.
+   The grid overhangs the card by 1px on the right and bottom, where the card's overflow clips the outer lines. */
+.story-grid { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 -1px -1px 0; }
+.story-grid > .story { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+@media (min-width: 720px) {
+  .story-grid.world, .story-grid.papers, .story-grid.research-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .story-grid.world > .lead { grid-column: 1 / -1; }
+  /* The last story fills its row, so the grid never ends in a hole. */
+  .story-grid.world > .story:last-child:nth-child(even) { grid-column: 1 / -1; }
+}
+@media (min-width: 1280px) {
+  .story-grid.research-wide { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 1600px) {
+  .story-grid.world, .story-grid.papers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* The lead takes two of three columns in the first row; later rows hold three. */
+  .story-grid.world > .lead { grid-column: span 2; }
+  .story-grid.world > .story:last-child:nth-child(even) { grid-column: auto; }
+  .story-grid.world > .story:last-child:nth-child(3n) { grid-column: 1 / -1; }
+  .story-grid.world > .story:last-child:nth-child(3n+1):not(:first-child) { grid-column: span 2; }
+}
+
+/* ---------------------------------------------------------------- one story cell */
+.story { display: flex; flex-direction: column; min-width: 0; padding: 18px var(--cell-x) 12px; transition: background var(--t-fast) ease; }
+.story:hover { background: var(--surface-2); }
+.story .kicker { margin-bottom: 4px; font-size: var(--text-meta); color: var(--muted); line-height: 1.4; }
+.story .title { display: block; color: var(--fg); font-family: var(--serif); font-size: 1.14rem; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
+.story a.title:hover { color: var(--accent); text-decoration: none; }
+.story .orig { margin-top: 3px; font-family: var(--serif); font-size: 0.9rem; line-height: 1.45; color: var(--faint);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.story .text { margin: 8px 0 0; max-width: 46em; font-size: 0.96rem; line-height: 1.7; color: var(--fg-2); }
+.story .text .why { color: var(--muted); }
+.story .text.pending { color: var(--faint); font-size: var(--text-meta); }
+.story .foot { display: flex; align-items: center; gap: 6px; min-height: 28px; margin-top: auto; padding-top: 10px; font-size: var(--text-meta); color: var(--muted); }
+.story .byline { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.story .byline .sep::before { content: '·'; margin: 0 5px; }
+.story .hover-acts { margin: -4px -8px -4px 0; }
+
+.story.lead .title { font-size: 1.72rem; font-weight: 600; line-height: 1.32; letter-spacing: 0; }
+.story.lead .text { margin-top: 12px; font-size: 1.04rem; line-height: 1.75; }
+.feed-rail .story .title { font-size: 1.07rem; }
+
+.feed-fold { display: flex; align-items: center; gap: 6px; padding: 10px var(--cell-x); font-size: var(--text-meta); color: var(--muted); }
+.feed-foot { display: flex; justify-content: center; margin-top: 20px; }
+
+/* ---------------------------------------------------------------- all items: one line per item */
+.stream-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.stream-tools input[type=search] { width: 320px; height: var(--control-h); }
+.stream-tools .spacer { flex: 1; }
+.stream-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; }
+.stream-head h2 { margin: 0; font-size: 1.08rem; }
+.stream-head > .btn.ghost:first-child { margin-left: -10px; }   /* the icon, not the button's padding, sits on the column line */
+.stream-list { list-style: none; margin: 0; padding: 0; }
+.stream-day { display: flex; gap: 8px; padding: 9px var(--cell-x) 7px; font-size: var(--text-meta); font-weight: 600; color: var(--fg-2); border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.stream-day .n { font-weight: 400; color: var(--faint); }
+.stream-row { display: grid; grid-template-columns: minmax(0, 1fr) 200px 64px; align-items: center; gap: 0 10px; min-height: 44px; padding: 6px var(--cell-x); border-bottom: 1px solid var(--border); }
+.stream-row:last-child { border-bottom: 0; }
+.stream-row:hover { background: var(--surface-2); }
+.stream-row .line { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stream-row .title { font-family: var(--serif); font-size: 1.04rem; color: var(--fg); }
+.stream-row .orig { margin-left: 10px; font-family: var(--serif); font-size: 0.9rem; color: var(--faint); }
+.stream-row .src-col { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.stream-row .src { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-meta); color: var(--muted); }
+.stream-row .hover-acts { justify-self: end; margin-right: -8px; }
+
+/* ---------------------------------------------------------------- narrow screens */
+@media (max-width: 719px) {
+  .feed-page { --cell-x: 16px; }
+  .feed-page .page-header { flex-wrap: nowrap; }
+  .feed-page .feed-status .muted { display: none; }
+  .feed-bar { flex-wrap: wrap; gap: 0; box-shadow: none; margin-bottom: 16px; }
+  .feed-bar .tabs { width: 100%; box-shadow: inset 0 -1px 0 var(--border); }
+  .feed-bar .kind-switch { margin-top: 8px; }
+  .edition-nav { width: 100%; margin: 8px 0 0; }
+  .edition-nav .when { display: none; }
+  .edition-nav .push { margin-left: auto; }
+  .story { padding: 14px var(--cell-x) 8px; }
+
+  .story.lead .title { font-size: 1.36rem; }
+  .story .text { font-size: 0.96rem; }
+  .feed-rail { margin-top: 28px; }
+  .stream-tools { flex-wrap: wrap; }
+  .stream-tools input[type=search] { width: 100%; }
+  .stream-tools .spacer { display: none; }
+  .stream-row { grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding: 10px var(--cell-x); }
+  .stream-row .line { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .stream-row .orig { display: none; }
+  .stream-row .src-col { grid-column: 1; grid-row: 2; margin-top: 2px; }
+  .stream-row .dir-dot.none { display: none; }
+  .stream-row .hover-acts { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+}
+
+/* ---------------------------------------------------------------- details kept from the old page */
+.story .foot > .dir-dot.none:first-child { margin-left: -4px; }
+.story .byline:has(+ .feed-outlets) { flex: 0 1 auto; }
+.feed-outlets { margin-right: auto; flex: none; }
+.feed-outlets > summary { list-style: none; cursor: pointer; color: var(--muted); }
+.feed-outlets > summary::-webkit-details-marker { display: none; }
+.feed-outlets > summary::before { content: none; }    /* app.css gives every summary a chevron */
+.feed-outlets > .menu-panel { top: auto; bottom: calc(100% + 6px); left: 0; right: auto; transform-origin: bottom left;
+  max-height: 260px; overflow-y: auto; }
+.feed-outlets[open] > summary::after { display: none; }   /* the open list replaces the tooltip */
+.story.dismissed { padding-top: 12px; padding-bottom: 12px; justify-content: center; }
+.story.dismissed .foot { margin-top: 0; padding-top: 0; }
+.story .note { margin: 6px 0 0; }
+.story-grid.saved-news { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .story-grid.saved-news { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1600px) { .story-grid.saved-news { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.feed-rail.alone { grid-column: 1 / -1; }
+.feed-fold { cursor: pointer; list-style: none; border-top: 1px solid var(--border); }
+.feed-fold::-webkit-details-marker { display: none; }
+.feed-overflow > .feed-fold::before { content: none; }
+.feed-overflow[open] > .feed-fold .i { transform: rotate(180deg); }
+.feed-overflow[open] > .feed-fold { border-bottom: 1px solid var(--border); }
+/* The overflow's own grid restarts its rows: no lead there, and its last cell fills its row like the first grid's. */
+.story-grid.world.more > .lead { grid-column: auto; }
+.stream-tools .menu-panel { width: 260px; padding: 10px; display: grid; gap: 8px; }
+.stream-tools .menu-panel select { width: 100%; height: var(--control-h); }
+.stream-row.dismissed .line { font-size: var(--text-meta); }
+.stream-row .note { grid-column: 1 / -1; }
+.stream-more { display: flex; justify-content: center; }
+@media (max-width: 719px) {
+  .stream-tools .menu-panel { left: 0; right: auto; transform-origin: top left; }
+  .stream-head .count { display: none; }
+}
+/* World grids without a lead (the overflow, or picks before the brief) fill their last row the other way round. */
+@media (min-width: 720px) {
+  :is(.story-grid.world.more, .story-grid.world.plain) > .story:last-child:nth-child(even) { grid-column: auto; }
+  :is(.story-grid.world.more, .story-grid.world.plain) > .story:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@media (min-width: 1600px) {
+  :is(.story-grid.world.more, .story-grid.world.plain) > .story:last-child:nth-child(n) { grid-column: auto; }
+  :is(.story-grid.world.more, .story-grid.world.plain) > .story:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+  :is(.story-grid.world.more, .story-grid.world.plain) > .story:last-child:nth-child(3n+2) { grid-column: span 2; }
+}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">{{ direction.name }}</span>{% endblock %}
+{% block content %}
+{% set kind = request.query_params.get('kind', '') %}
+{% set pfilter = request.query_params.get('project', '') %}
+<header class="page-header">
+  <div class="titles dir-hero" style="--dc: {{ direction_color(slug) }}">
+    <h1 class="page-title">{{ direction.name }}</h1>
+    <p class="page-desc">{{ direction.description or direction.name_en or '' }}</p>
+    <div class="page-meta"><span>{{ counts.artifacts }} 个产出</span><span>{{ counts.projects }} 个课题</span><span>{{ counts.papers }} 篇文献</span></div>
+  </div>
+  <div class="page-actions">
+    <a class="btn secondary" href="/artifacts/directions#dir-{{ slug }}">{{ ui.icon('pencil') }}Edit direction</a>
+    <a class="btn" href="/artifacts/new?direction={{ slug }}{% if kind %}&kind={{ kind }}{% endif %}">{{ ui.icon('plus') }}New output</a>
+  </div>
+</header>
+{% if request.query_params.get('deleted') %}<div class="flash">{{ ui.icon('check', 'sm') }}已把「{{ request.query_params.get('deleted') }}」移到回收站（app/data/trash）。</div>{% endif %}
+{% if request.query_params.get('saved') == 'title' %}<div class="flash">{{ ui.icon('check', 'sm') }}已改名。</div>{% elif request.query_params.get('saved') == 'project' %}<div class="flash">{{ ui.icon('check', 'sm') }}已移到课题。</div>{% endif %}
+
+<div class="split">
+  <div>
+    {% set rows = shelf.rows %}
+    <nav class="tabs" aria-label="产出类别">
+      <a href="?{% if pfilter %}project={{ pfilter }}{% endif %}"{% if not kind %} class="on"{% endif %}>全部 <span class="count">{{ rows | length }}</span></a>
+      {% for k in ['question', 'literature', 'data', 'conclusion'] %}<a href="?kind={{ k }}{% if pfilter %}&project={{ pfilter }}{% endif %}"{% if kind == k %} class="on"{% endif %}>{{ L.kind[k] }} <span class="count">{{ shelf.kinds[k] }}</span></a>{% endfor %}
+    </nav>
+    {% set shown = [] %}
+    {% for a in rows %}{% if (not kind or L.type_kind[a.type] == kind) and (not pfilter or a.project == pfilter) %}{% set _ = shown.append(a) %}{% endif %}{% endfor %}
+    {% if pfilter %}<div class="toolbar"><span class="badge info">课题：{{ (projects.get(pfilter) or {}).get('name', pfilter) }}</span><a class="small" href="?{% if kind %}kind={{ kind }}{% endif %}">清除</a></div>{% endif %}
+    {% if shown %}
+    <div class="card flush output-list"><ul class="list">{% for a in shown %}{{ ui.output_row(a) }}{% endfor %}</ul></div>
+    {% else %}
+      {% set hint = {'question': '把一个值得解释的现象或一个研究问题写下来。', 'literature': '整理某个领域里二十来篇文献的关系。', 'data': '把一次分析、一组证据或一个案例时间线写成产出。', 'conclusion': '写一段机制、一个反驳或一段可以直接进论文的文字。'} %}
+      {{ ui.empty('folder-open', ('还没有' ~ L.kind[kind]) if kind else '这个方向还是空的', hint.get(kind, '从一个研究问题开始。'), '/artifacts/new?direction=' ~ slug ~ ('&kind=' ~ kind if kind else ''), 'New output') }}
+    {% endif %}
+
+    {% if (kind == 'data' or not kind) and runs %}
+    <div class="section-head"><h2>数据分析记录</h2><div class="aside"><a href="/data">{{ ui.icon('database', 'sm') }}数据</a></div></div>
+    <div class="card flush"><ul class="list">{% for r in runs %}
+      <li class="list-item"><div class="body"><a class="title" href="/data/runs/{{ r.id }}">{{ r.method }}</a><div class="sub"><span>{{ (r.created_at or '')[:10] }}</span><span>{{ '已完成' if r.status == 'done' else ('出错' if r.status == 'error' else r.status) }}</span></div></div></li>
+    {% endfor %}</ul></div>
+    {% endif %}
+
+    {% set own_claims = claims | rejectattr('kind', 'equalto', 'explanation') | list %}
+    {% if (kind == 'conclusion' or not kind) and own_claims %}
+    <div class="section-head"><h2>你确认过的主张</h2></div>
+    <div class="card flush"><ul class="list">{% for c in own_claims %}
+      <li class="list-item"><div class="body"><span class="title serif">{{ c.statement }}</span><div class="sub"><span>{{ L.claim_kind[c.kind] }}</span><span>{{ (projects.get(c.project_slug) or {}).get('name', c.project_slug) }}</span></div></div></li>
+    {% endfor %}</ul></div>
+    {% endif %}
+  </div>
+
+  <aside class="stack">
+    <div class="card side-card">
+      <h3>课题</h3>
+      {% if dir_projects %}
+      <ul class="list">{% for p in dir_projects %}
+        <li class="list-item"><div class="body">
+          <a class="title" href="?project={{ p.slug }}{% if kind %}&kind={{ kind }}{% endif %}">{{ p.name }}</a>
+          <div class="sub"><span>{{ L.stage[p.stage] }}</span><span>{{ p.artifact_count }} 个产出</span><a href="/projects/{{ p.slug }}">打开</a></div>
+        </div></li>
+      {% endfor %}</ul>
+      {% else %}<p class="muted small">还没有课题归入这个方向。</p>{% endif %}
+      <a class="btn secondary small" href="/projects/new" style="margin-top: 12px">{{ ui.icon('plus', 'sm') }}New project</a>
+    </div>
+    {% if direction.keywords %}
+    <div class="card side-card">
+      <h3>关键词</h3>
+      <div class="row">{% for k in direction.keywords %}<span class="badge">{{ k }}</span>{% endfor %}</div>
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

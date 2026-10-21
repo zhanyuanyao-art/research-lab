@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('agent.css') }}">{% endblock %}
+{% block crumbs %}<a href="/settings">设置</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">任务队列</span>{% endblock %}
+{% block content %}
+{% set route_why = {'agent mode': '队列模式', 'no DEEPSEEK_API_KEY': '没有 DEEPSEEK_API_KEY'}.get(ai.route_why, (ai.route_why or '') | replace('daily cap ', '已达每日上限 ') | replace(' reached', '')) %}
+<header class="page-header"><div class="titles"><h1 class="page-title">任务队列</h1><p class="page-desc">助手要做的事：文献摘要、翻译、联想、复现方案。没有配置 DeepSeek 时，由 Claude Code 会话来处理。</p></div></header>
+
+<div class="ai-strip">
+  <span>模式 <strong>{{ L.ai_mode[ai.mode_setting] }}</strong>{% if ai.mode_setting == 'auto' %} → {{ L.ai_mode[ai.mode] }}{% endif %}</span>
+  <span>新任务 → <strong>{{ 'DeepSeek' if ai.route == 'deepseek' else '助手队列' }}</strong>{% if route_why %}（{{ route_why }}）{% endif %}</span>
+  <span>模型 <strong>{{ ai.model }}</strong></span>
+  <span>今日 <strong>${{ '%.4f' | format(ai.spent) }}</strong>
+    <span class="meter{% if ai.spent >= ai.cap %} over{% endif %}"><span style="width: {{ [100, (ai.spent / ai.cap * 100) if ai.cap else 100] | min | round(1) }}%"></span></span>
+    上限 ${{ '%.2f' | format(ai.cap) }}</span>
+  <span>DeepSeek 密钥 <strong>{{ '已配置' if ai.has_key else '缺失' }}</strong> · <a href="/settings">设置</a></span>
+</div>
+
+{% if note %}{% set outcome, nid = (note.split(':', 1) + [''])[:2] %}
+<div class="card" role="status">
+  {% if outcome == 'ran' %}<span class="mono">{{ nid }}</span> 已在 DeepSeek 上开始运行，运行期间本页会自动刷新。
+  {% elif outcome == 'queued' %}<span class="mono">{{ nid }}</span> 仍在排队（{{ route_why or '队列模式' }}）。
+  {% elif outcome == 'skipped' %}<span class="mono">{{ nid }}</span> 不在排队状态，所以没有运行。
+  {% elif outcome == 'failed' %}<span class="mono">{{ nid }}</span> 无法启动，请查看服务器日志。
+  {% else %}{{ note }}{% endif %}
+</div>
+{% endif %}
+
+{% if counts.queued and ai.route != 'deepseek' %}
+<div class="card">
+  <strong>有 {{ counts.queued }} 个任务在等待 Claude Code。</strong>
+  在本仓库的 Claude Code 会话里让它 “run the research-lab AI queue”，或者手动逐个处理：
+  <div class="cmd"><code>uv run rl agent claim --next</code><button type="button" class="copy" data-copy="uv run rl agent claim --next">Copy</button></div>
+</div>
+{% endif %}
+
+<nav class="filters" aria-label="按状态筛选">
+  <a href="/agent"{% if not status %} class="active"{% endif %}>全部</a>
+  {% for s in ['queued', 'claimed', 'failed', 'done', 'cancelled'] %}
+  <a href="/agent?status={{ s }}"{% if status == s %} class="active"{% endif %}>{{ L.job_status[s] }} {{ counts.get(s, 0) }}</a>
+  {% endfor %}
+</nav>
+
+<div id="jobs"{% if polling %} hx-get="/agent{% if status %}?status={{ status }}{% endif %}" hx-trigger="every 4s" hx-select="#jobs" hx-swap="outerHTML"{% endif %}>
+{% if jobs %}
+<table class="data jobs">
+  <thead><tr><th>任务</th><th>类型</th><th>对象</th><th>状态</th><th>时间</th><th>费用</th><th></th></tr></thead>
+  <tbody>
+  {% for j in jobs %}
+  <tr>
+    <td><a class="mono" href="/agent/{{ j.id }}">{{ j.id }}</a></td>
+    <td>{{ L.job_kind[j.kind] }} <span class="mono muted">{{ j.kind }}</span></td>
+    <td>{% if j.url %}<a href="{{ j.url }}">{{ j.target_id }}</a>{% else %}{{ j.target_id or '' }}{% endif %}
+      {% if j.status == 'queued' %}<div class="cmd"><code>uv run rl agent claim {{ j.id }}</code><button type="button" class="copy" data-copy="uv run rl agent claim {{ j.id }}">Copy</button></div>{% endif %}
+      {% if j.status in ('failed', 'queued') and j.error %}<div class="muted mono" title="{{ j.error }}">{{ j.error[:90] }}{% if j.error|length > 90 %}…{% endif %}</div>{% endif %}
+    </td>
+    <td><span class="status {{ j.status }}">{{ L.job_status[j.status] }}</span></td>
+    <td class="muted mono" title="{{ j.created_at }}">{{ j.age }}</td>
+    <td class="mono">{% if j.cost %}${{ '%.4f' | format(j.cost) }}{% elif j.cost == 0 %}$0{% else %}—{% endif %}</td>
+    <td class="actions">
+      {% if can_run and j.status in ('queued', 'failed') %}<button class="btn small" hx-post="/agent/{{ j.id }}/run">Run now</button>{% endif %}
+      {% if j.status in ('failed', 'claimed', 'cancelled') %}<button class="btn small secondary" hx-post="/agent/{{ j.id }}/requeue">Requeue</button>{% endif %}
+      {% if j.status in ('queued', 'claimed') %}<button class="btn small secondary" hx-post="/agent/{{ j.id }}/cancel" hx-confirm="取消 {{ j.id }}？">Cancel</button>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">没有{{ L.job_status[status] if status }}任务。论文摘要、划线关联、产出 草拟、收获复盘或推导检验被请求时，AI 任务会出现在这里。</p>
+{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.copy');
+  if (!b || !navigator.clipboard) return;
+  navigator.clipboard.writeText(b.dataset.copy).then(function () { b.textContent = '已复制'; setTimeout(function () { b.textContent = '复制'; }, 1200); });
+});
+</script>
+{% endblock %}

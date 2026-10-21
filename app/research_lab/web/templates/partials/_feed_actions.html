@@ -1,0 +1,15 @@
+{% import "partials/ui.html" as ui with context %}
+{#- 收藏 and 忽略 (card 0106): they appear on hover or keyboard focus, a saved item keeps its check-mark bookmark,
+    touch screens always show them (app.css .hover-acts). Reading a paper is its title's job, not a button. -#}
+{% macro actions(it, row_id, vals) -%}
+{% set base = '/feed/' ~ it.stream ~ '/' ~ it.id %}
+<div class="hover-acts">
+  {% if it.status == 'dismissed' %}
+  <button class="btn ghost quiet small" hx-post="{{ base }}/restore" hx-vals='{{ vals | tojson }}' hx-target="#{{ row_id }}" hx-swap="outerHTML" aria-pressed="true">Undo</button>
+  {% else %}
+  {% set saved = it.status == 'saved' %}
+  <button class="btn ghost quiet icon small" hx-post="{{ base }}/save" hx-vals='{{ vals | tojson }}' hx-target="#{{ row_id }}" hx-swap="outerHTML" aria-pressed="{{ 'true' if saved else 'false' }}" aria-label="{{ '已收藏，取消收藏' if saved else '收藏' }}" title="{{ '取消收藏' if saved else '收藏' }}">{{ ui.icon('bookmark-check' if saved else 'bookmark', 'sm') }}</button>
+  <button class="btn ghost quiet icon small" hx-post="{{ base }}/dismiss" hx-vals='{{ vals | tojson }}' hx-target="#{{ row_id }}" hx-swap="outerHTML" aria-label="忽略" title="忽略">{{ ui.icon('x', 'sm') }}</button>
+  {% endif %}
+</div>
+{%- endmacro %}

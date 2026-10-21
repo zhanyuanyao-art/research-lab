@@ -1,0 +1,179 @@
+/* Issue editor (static/issue-editor.js) and Markdown display (files/markdown.py), card 0096.
+   Colours, radii, type and motion come from app.css tokens, so light and dark follow the app theme.
+   `.rl-md` styles both the editor surface and server-rendered Markdown, so the page and the editor
+   look the same. Restraint (Leo 10-10): quotes are a thin rule and grey text, code blocks a tint
+   without a border, inline code a tint in a smaller monospace; the toolbar is icons only, no colour. */
+
+/* ---- content ------------------------------------------------------------------------------- */
+.rl-md { font-size: 15px; line-height: 1.75; color: var(--fg); overflow-wrap: anywhere; }
+.rl-md > :first-child { margin-top: 0; }
+.rl-md > :last-child { margin-bottom: 0; }
+.rl-md p { margin: 0 0 8px; }
+.rl-md h1, .rl-md h2, .rl-md h3, .rl-md h4, .rl-md h5, .rl-md h6 { margin: 18px 0 6px; font-family: var(--sans); line-height: 1.4; letter-spacing: -0.01em; }
+.rl-md h1 { font-size: 20px; font-weight: 600; }
+.rl-md h2 { font-size: 17px; font-weight: 600; }
+.rl-md h3, .rl-md h4, .rl-md h5, .rl-md h6 { font-size: 15px; font-weight: 600; }
+.rl-md ul, .rl-md ol { margin: 0 0 8px; padding-left: 1.4em; }
+.rl-md li { margin: 0; }
+.rl-md li + li { margin-top: 2px; }
+.rl-md li > p { margin: 0; }
+.rl-md li > ul, .rl-md li > ol { margin: 2px 0 0; }
+.rl-md blockquote { margin: 0 0 8px; padding: 0 0 0 12px; border-left: 2px solid var(--border-2); color: var(--muted); font-family: inherit; }
+.rl-md blockquote p { margin: 0; }
+.rl-md blockquote p + p { margin-top: 4px; }
+.rl-md code { font-family: var(--mono); font-size: .86em; padding: 1px 4px; border-radius: 4px; background: color-mix(in srgb, var(--fg) 7%, transparent); }
+.rl-md pre { margin: 0 0 8px; padding: 10px 12px; border: 0; border-radius: var(--r); background: color-mix(in srgb, var(--fg) 5%, transparent); font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rl-md pre code { padding: 0; border-radius: 0; background: none; font-size: inherit; }
+.rl-md a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.rl-md u { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.rl-md s { text-decoration-thickness: 1px; }
+.rl-md hr { margin: 16px 0; border: 0; border-top: 1px solid var(--border); }
+.rl-md table { margin: 0 0 8px; font-size: 13px; }
+
+/* Task lists: the strike on a done item is the checked state, not the strikethrough format. */
+.rl-md ul[data-type="taskList"] { list-style: none; padding-left: 2px; }
+.rl-md ul[data-type="taskList"] > li { display: flex; gap: 9px; align-items: flex-start; }
+.rl-md ul[data-type="taskList"] > li > label { flex: none; display: inline-flex; align-items: center; height: 1.75em; user-select: none; }
+.rl-md ul[data-type="taskList"] > li > div { flex: 1; min-width: 0; }
+.rl-md ul[data-type="taskList"] > li > div > p { margin: 0; }
+.rl-md ul[data-type="taskList"] > li[data-checked="true"] > div { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.rl-md ul[data-type="taskList"] > li input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; flex: none; width: 14px; height: 14px; margin: 0;
+  border: 1.5px solid var(--border-2); border-radius: 4px; background: var(--surface) no-repeat center / 10px 10px;
+  transition: background-color var(--t-fast) ease, border-color var(--t-fast) ease;
+}
+.rl-md ul[data-type="taskList"] > li input[type="checkbox"]:checked {
+  border-color: var(--accent); background-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.rl-editor ul[data-type="taskList"] > li input[type="checkbox"] { cursor: pointer; }
+
+/* Collapse: native <details> when displayed, TipTap's node view (div.rl-details) in the editor. */
+.rl-md details, .rl-md .rl-details { margin: 0 0 8px; }
+.rl-md details > summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; font-weight: 500; }
+.rl-md details > summary::-webkit-details-marker { display: none; }
+.rl-md details > summary::before, .rl-md .rl-details > button::before {
+  content: ""; flex: none; width: 6px; height: 6px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-1px) rotate(-45deg); transition: transform var(--t-fast) var(--ease);
+}
+.rl-md details[open] > summary::before, .rl-md .rl-details.is-open > button::before { transform: translateY(-3px) rotate(45deg); }
+.rl-md details > [data-type="detailsContent"], .rl-md .rl-details [data-type="detailsContent"] { padding-left: 14px; color: var(--fg-2); }
+.rl-md .rl-details { position: relative; }
+.rl-md .rl-details > button {
+  position: absolute; left: -4px; top: 0; display: grid; place-items: center; width: 14px; height: 1.75em;
+  padding: 0; border: 0; background: none; cursor: pointer;
+}
+.rl-md .rl-details > div { padding-left: 14px; }
+.rl-md .rl-details > div > summary { display: block; list-style: none; font-weight: 500; }
+.rl-md .rl-details > div > summary::-webkit-details-marker { display: none; }
+.rl-md .rl-details > div > [data-type="detailsContent"] { padding-left: 0; }
+.rl-md .rl-details > div > [data-type="detailsContent"][hidden] { display: none; }
+
+/* A block kept as Markdown source (tables, images) inside the editor. */
+.rl-md .rl-raw { margin: 0 0 8px; padding: 8px 10px; border-radius: var(--r); background: color-mix(in srgb, var(--fg) 4%, transparent); color: var(--muted); cursor: default; }
+.rl-md .rl-raw pre { margin: 0; padding: 0; background: none; font-size: 12px; }
+.rl-md .rl-raw.ProseMirror-selectednode { outline: 2px solid var(--accent-ring); }
+
+/* ---- editing surface: no frame, nothing moves on focus ------------------------------------- */
+.rl-editor { position: relative; }
+.rl-editor .ProseMirror { min-height: 1.75em; padding: 0; border: 0; outline: none; caret-color: var(--accent); white-space: pre-wrap; word-wrap: break-word; }
+.rl-editor .ProseMirror:focus, .rl-editor .ProseMirror:focus-visible { outline: none; box-shadow: none; }
+.rl-editor .ProseMirror ::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+/* Placeholder: floated with no height, so showing or hiding it never shifts the text. */
+.rl-editor [data-placeholder]:not([data-placeholder=""]).is-empty::before {
+  content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--faint); font-weight: 400;
+}
+.rl-editor .ProseMirror-gapcursor::after { border-top-color: var(--fg); }
+
+/* ---- floating toolbar ------------------------------------------------------------------------ */
+.rl-fmt {
+  position: fixed; z-index: 45; display: flex; align-items: center; padding: 4px; white-space: nowrap;
+  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-2, var(--shadow-md));
+  color: var(--fg-2); font: var(--text-ui)/1 var(--sans); animation: rl-fmt-in var(--t-fast) var(--ease) both;
+}
+.rl-fmt[hidden] { display: none; }
+@keyframes rl-fmt-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.rl-fmt-row, .rl-fmt-link { display: flex; align-items: center; gap: 1px; }
+.rl-fmt-row[hidden], .rl-fmt-link[hidden] { display: none; }
+.rl-fmt-btn {
+  position: relative; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0;
+  border: 0; border-radius: var(--r); background: transparent; color: var(--fg-2); cursor: pointer;
+  transition: background-color var(--t-fast) ease, color var(--t-fast) ease;
+}
+.rl-fmt-btn:hover, .rl-fmt-btn.is-on, .rl-fmt-btn[aria-expanded="true"] { background: var(--hover); color: var(--fg); }
+.rl-fmt-btn[aria-disabled="true"] { cursor: default; background: transparent; color: var(--fg-2); }
+.rl-fmt-btn[aria-disabled="true"] > svg { opacity: .32; }   /* the icon only, so the tooltip stays legible */
+.rl-fmt-btn svg, .rl-fmt-item svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.rl-fmt-wide { width: auto; padding: 0 4px 0 6px; display: inline-flex; gap: 2px; }
+.rl-fmt-wide > svg { width: 12px; height: 12px; color: var(--muted); }
+.rl-fmt-current { display: inline-grid; place-items: center; }
+.rl-fmt-sep { flex: none; width: 1px; height: 18px; margin: 0 4px; background: var(--border); }
+/* Tooltip with the shortcut (and why a button is greyed out). */
+.rl-fmt-btn[data-tip]::after {
+  content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  padding: 4px 7px; border-radius: var(--r); background: var(--primary); color: var(--primary-ink);
+  font: 11px/1.3 var(--sans); white-space: pre; pointer-events: none; opacity: 0; visibility: hidden;
+  transition: opacity var(--t-fast) ease; transition-delay: 0s;
+}
+.rl-fmt-btn[data-tip]:hover::after { opacity: 1; visibility: visible; transition-delay: .35s; }
+.rl-fmt-btn[aria-expanded="true"]::after { display: none; }
+.rl-fmt-link input { width: 260px; height: 28px; padding: 0 8px; border: 0; background: transparent; color: var(--fg); font: var(--text-ui) var(--sans); outline: none; }
+.rl-fmt-link input::placeholder { color: var(--faint); }
+.rl-fmt-link input[aria-invalid="true"] { color: var(--danger); }
+
+.rl-fmt-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; min-width: 210px; padding: 4px;
+  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-2, var(--shadow-md));
+}
+.rl-fmt-menu[hidden] { display: none; }
+.rl-fmt-menu-sep { height: 1px; margin: 4px 6px; background: var(--border); }
+.rl-fmt-item {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: var(--menu-row-h); padding: 0 8px;
+  border: 0; border-radius: var(--r); background: transparent; color: var(--fg); font: var(--text-ui)/1.3 var(--sans);
+  text-align: left; cursor: pointer;
+}
+.rl-fmt-item svg { color: var(--muted); }
+.rl-fmt-item:hover, .rl-fmt-item.is-active { background: var(--hover); }
+.rl-fmt-item[aria-checked="true"] { font-weight: 600; }
+.rl-fmt-item[aria-checked="true"] svg { color: var(--fg); }
+.rl-fmt-key { margin-left: auto; padding-left: 18px; color: var(--faint); font-size: 11px; }
+.rl-fmt-why:empty { display: none; }
+.rl-fmt-why { display: none; }
+.rl-fmt-item[aria-disabled="true"] { cursor: default; background: transparent; color: var(--faint); }
+.rl-fmt-item[aria-disabled="true"] svg { color: var(--faint); opacity: .6; }
+.rl-fmt-item[aria-disabled="true"] .rl-fmt-key { display: none; }
+.rl-fmt-item[aria-disabled="true"] .rl-fmt-why { display: inline; margin-left: auto; padding-left: 18px; font-size: 11px; color: var(--faint); }
+
+/* Slash menu (card 0118): blocks to insert, under the caret; greyed items say why. */
+.rl-slash {
+  position: fixed; z-index: 46; width: 232px; max-height: 340px; overflow-y: auto; padding: 4px;
+  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-2, var(--shadow-md));
+  font: var(--text-ui)/1.3 var(--sans); color: var(--fg); animation: rl-fmt-in var(--t-fast) var(--ease) both;
+}
+.rl-slash[hidden] { display: none; }
+.rl-slash-item {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: var(--menu-row-h); padding: 0 8px;
+  border: 0; border-radius: var(--r); background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer;
+}
+.rl-slash-item svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; color: var(--muted); }
+.rl-slash-item:hover, .rl-slash-item.is-active { background: var(--hover); }
+.rl-slash-item[aria-disabled="true"] { color: var(--faint); cursor: default; background: transparent; }
+.rl-slash-item[aria-disabled="true"] svg { color: var(--faint); opacity: .6; }
+.rl-slash-why { margin-left: auto; padding-left: 12px; font-size: 11px; color: var(--faint); white-space: nowrap; }
+
+/* Phones: the toolbar docks above the bottom edge, the menu opens upwards. */
+@media (max-width: 640px) {
+  .rl-fmt { left: 12px !important; right: 12px; top: auto !important; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  /* Scroll the row, not the toolbar: an overflow box would clip the menu. */
+  .rl-fmt-row { width: 100%; justify-content: space-between; overflow-x: auto; }
+  .rl-fmt-menu { position: fixed; top: auto; right: 12px; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); }
+  .rl-fmt-btn[data-tip]::after { display: none; }
+  .rl-fmt-link { width: 100%; }
+  .rl-fmt-link input { flex: 1; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rl-fmt, .rl-slash { animation: none; }
+  .rl-fmt-btn, .rl-fmt-btn[data-tip]::after, .rl-md details > summary::before, .rl-md .rl-details > button::before,
+  .rl-md ul[data-type="taskList"] > li input[type="checkbox"] { transition: none; }
+}

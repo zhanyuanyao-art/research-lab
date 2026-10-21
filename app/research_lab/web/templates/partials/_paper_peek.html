@@ -1,0 +1,27 @@
+{#- The library's preview column (card 0128, docs/design/LIBRARY-UI.md §3.1、§四): what the selected paper asks and
+    argues, so a paper can be picked without opening it. 方向 · 类型 · 页数, the full title, every author with year and
+    venue, then 研究问题 and 核心论点 with their pages, the 课题, Read and Open PDF. The other summary fields belong to
+    the reader. Served by GET /papers/{id}/peek into aside#lib-peek; the 议题 row comes with card F (0131). -#}
+{%- macro i(name) %}<svg class="i sm" aria-hidden="true"><use href="{{ asset('icons.svg') }}#{{ name }}"></use></svg>{% endmacro -%}
+{%- set d = direction_map.get(paper.direction) -%}
+<div class="peek-kicker">{% if d %}<span class="dir-tag" style="--dc: {{ direction_color(paper.direction) }}">{{ d.name }}</span>{% endif %}{% if kind_names.get(paper.kind) %}<span>{{ kind_names[paper.kind] }}</span>{% endif %}{% if pages %}<span>{{ pages }} 页</span>{% endif %}</div>
+<h2{% if paper.language %} lang="{{ paper.language }}"{% endif %}>{{ paper.title }}</h2>
+<p class="peek-by">{{ paper.authors | join('、') or '作者不详' }} · {{ paper.year or '年份不详' }}{% if paper.venue %} · {{ paper.venue }}{% endif %}</p>
+{% if summary %}
+<dl class="peek-sum">
+  {%- for key, label in peek_rows %}{% set v = summary.get(key) %}{% if v is mapping and v.text %}
+  <dt>{{ label }}<span class="refs">{% for pg in (v.pages or [])[:3] %}<a href="/papers/{{ paper.id }}/read?page={{ pg | urlencode }}">p. {{ pg }}</a>{% endfor %}</span></dt>
+  <dd>{{ v.text }}</dd>
+  {%- endif %}{% endfor %}
+</dl>
+{% if summary_mode == 'light' %}<p class="peek-note">轻读概要：只读了标题、摘要和正文首页。</p>{% endif %}
+{% else %}<p class="peek-note">还没有中文概要。</p>{% endif %}
+<dl class="prop-list">
+  <dt>课题</dt>
+  <dd>{% for slug, name in projects %}<a class="prop-val" href="/projects/{{ slug }}">{{ i('folder') }}{{ name }}</a>{% else %}<span class="prop-val unset">—</span>{% endfor %}</dd>
+</dl>
+<div class="peek-acts">
+  <a class="btn small" href="/papers/{{ paper.id }}">{{ i('book-open') }}Read</a>
+  {% if has_pdf %}<a class="btn secondary small" href="/papers/{{ paper.id }}/pdf" target="_blank" rel="noopener">Open PDF</a>{% endif %}
+  <span class="hint"><kbd>↵</kbd> 阅读 · <kbd>J</kbd> <kbd>K</kbd> 上下</span>
+</div>

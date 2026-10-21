@@ -1,0 +1,20 @@
+{# The message list, oldest first. Context: messages_html (rendered _message.html fragments), thread, commands;
+   older + older_href when only the newest messages were rendered (the floating assistant). #}
+<div class="chat-stream" id="chat-stream" data-thread="{{ thread.id if thread else '' }}" aria-live="polite">
+  {% if older and older_href %}<a class="chat-older" href="{{ older_href }}">更早的 {{ older }} 条消息在完整视图里</a>{% endif %}
+  {% if messages_html %}{{ messages_html }}{% else %}
+  <div class="chat-welcome">
+    <p class="meta">向助手提问</p>
+    <h2>{{ (data.now or {}).question or '你现在在研究什么？' }}</h2>
+    <p class="muted">可查找文献、整理案例时间轴，也能使用你的划线、产出和课题。研究产出经你审阅采纳后进入研究档案。拖入 PDF 即可导入文献。</p>
+    <div class="chat-suggest">
+      <button type="button" class="chip chat-cmd" data-chat-command="请围绕这个议题建立文献地图：">Literature map</button>
+      <button type="button" class="chip chat-cmd" data-chat-command="请整理这个案例的时间轴，区分事件与报道日期：">Case timeline</button>
+      {% for cmd, label in [('/week', '这周进展如何'), ('/hunt', '下一步该找什么证据'), ('/milestones', '课题走到哪一步了'), ('/papers', '最近导入的文献')] %}
+      <button type="button" class="chip chat-cmd" data-chat-command="{{ cmd }}" data-send>{{ label }}</button>
+      {% endfor %}
+      <button type="button" class="chip chat-cmd" data-chat-command="/search ">Search my notes</button>
+    </div>
+  </div>
+  {% endif %}
+</div>

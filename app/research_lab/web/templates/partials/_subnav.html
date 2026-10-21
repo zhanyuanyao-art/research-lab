@@ -1,0 +1,19 @@
+{#- Sub-tabs under a section heading.
+  Contract:
+    - Input `subnav`: a list of {"label": str, "href": str, "active": bool (optional)}.
+      Presets live in base_context as `subnavs.artifacts` (书架 / 本周 / 收获 / Now),
+      `subnavs.settings` (设置 / 队列), `subnavs.papers` (文献库 / 划线 / 雷达) and
+      `subnavs.projects` (项目与里程碑 / 研究管线).
+    - Usage: {% with subnav = subnavs.papers %}{% include "partials/_subnav.html" %}{% endwith %}
+      (or `{% set subnav = … %}` in the block before the include).
+    - When an item has no `active`, it is active if the request path equals its href or starts
+      with href + "/" (so /artifacts/d/… keeps 书架 lit, /excerpts/EXC-… keeps 划线 lit).
+    - base.html never renders it on its own; each page includes it once, right after its <h1>
+      or at the top of the content block. -#}
+{%- set _path = request.url.path -%}
+<nav class="subnav" aria-label="子页面">
+  {%- for it in subnav or [] %}
+  {%- set _on = it.active if it.active is defined else (_path == it.href or _path.startswith(it.href ~ '/')) %}
+  <a href="{{ it.href }}"{% if _on %} class="active" aria-current="page"{% endif %}>{{ it.label }}</a>
+  {%- endfor %}
+</nav>

@@ -1,0 +1,40 @@
+<div class="cell-form" id="cell-form-{{ c.id }}">
+  {% if saved %}<div hidden hx-get="/projects/{{ slug }}/cells/{{ c.id }}/glyph" hx-target="#cell-{{ c.id }}" hx-swap="outerHTML" hx-trigger="load"></div>{% endif %}
+  <p class="kicker">{{ c.code }} × {{ c.case_label }}{% if c.date_start %} · {{ c.date_start }}{% endif %}</p>
+  <p class="muted">{{ c.statement }}</p>
+  {% if error %}<p class="banner warning" role="alert"><span class="text">{{ error }}</span></p>{% endif %}
+  {% if saved %}<p class="kicker">已保存</p>{% endif %}
+  <form class="stack" hx-post="/projects/{{ slug }}/cells/{{ c.id }}" hx-target="#cell-panel">
+    <div><label>推论（在查看证据之前写下）{% if c.implication_origin == 'placeholder' %} · 占位{% endif %}</label>
+      <textarea name="implication">{{ c.implication or '' }}</textarea></div>
+    <div class="row">
+      <div><label>检验类型</label><select name="test_type"><option value="">无</option>
+        {% for t in test_types %}<option value="{{ t }}"{% if c.test_type == t %} selected{% endif %}>{{ L.test_type[t] }}</option>{% endfor %}</select></div>
+      <div><label>区分度 0–2</label><input type="number" min="0" max="2" name="discriminating" value="{{ c.discriminating if c.discriminating is not none else '' }}"></div>
+      <div><label>可行性 0–2</label><input type="number" min="0" max="2" name="feasibility" value="{{ c.feasibility if c.feasibility is not none else '' }}"></div>
+    </div>
+    <div><label>去哪里找</label><input type="text" name="hint" value="{{ c.hint or '' }}"></div>
+    <div><label>状态</label>
+      <div class="pill-group">{% for s in statuses %}<label><input type="radio" name="status" value="{{ s }}"{% if c.status == s %} checked{% endif %}><span>{{ glyphs[s][0] }} {{ L.cell_status[s] }}</span></label>{% endfor %}</div>
+      <p class="kicker">非「缺失」状态需要关联划线 · 「强」需要一手来源或两篇文献 · 「已查无果」需要检索记录。</p></div>
+    <div><button class="btn" type="submit">Save</button></div>
+  </form>
+  <h4>划线</h4>
+  {% if c.excerpts %}<ul class="excerpt-list">{% for e in c.excerpts %}
+    <li><a href="/excerpts/{{ e.id }}">{{ e.id }} · {{ e.locator }} · {{ e.source_type }}</a>
+      <button class="btn small secondary" hx-post="/projects/{{ slug }}/cells/{{ c.id }}/excerpts/{{ e.id }}/detach" hx-target="#cell-panel">Unlink</button>
+      <p class="q">{{ e.quote[:200] }}</p></li>{% endfor %}</ul>
+  {% else %}<p class="muted">还没有关联划线。</p>{% endif %}
+  <form class="row" hx-post="/projects/{{ slug }}/cells/{{ c.id }}/excerpts" hx-target="#cell-panel">
+    <input type="text" name="excerpt_id" placeholder="EXC-2026-0001" class="mono" required aria-label="划线编号"><button class="btn small" type="submit">Link</button>
+  </form>
+  <h4>检索记录</h4>
+  {% if c.searches %}<ul class="search-log">{% for s in c.searches %}<li class="mono">{{ s.searched_on }} · {{ s.where_searched }}{% if s.terms %} · “{{ s.terms }}”{% endif %}{% if s.result_note %} — {{ s.result_note }}{% endif %}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">还没有检索记录。</p>{% endif %}
+  <form class="stack" hx-post="/projects/{{ slug }}/cells/{{ c.id }}/search" hx-target="#cell-panel">
+    <input type="text" name="where" placeholder="在哪里检索（档案馆、数据库、文献类别）" required>
+    <input type="text" name="terms" placeholder="检索词">
+    <input type="text" name="result_note" placeholder="找到了什么，或写「无」">
+    <div><button class="btn small" type="submit">Log search</button></div>
+  </form>
+</div>

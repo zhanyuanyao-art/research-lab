@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('method.css') }}">{% endblock %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">研究管线</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>研究管线</h1>
+  <a class="btn small" href="/projects/new">New project</a>
+</div>
+{% for r in rows %}
+<div class="project-row">
+  <div class="project-head"><span class="name"><a href="/projects/{{ r.slug }}">{{ r.name }}</a>
+      {% if r.direction and direction_map.get(r.direction) %}<a class="chip dir-chip" href="/artifacts/d/{{ r.direction }}">{{ direction_map[r.direction].name }}</a>{% endif %}
+      <a class="kicker" href="/projects/{{ r.slug }}/edit">编辑</a></span><span class="count">始于 {{ r.since }}</span></div>
+  <div class="q">{{ r.question }}</div>
+  <div class="stages">
+    {% for s in stages %}<span class="stage {% if loop.index0 < r.stage_index %}done{% elif loop.index0 == r.stage_index %}current{% endif %}">{{ L.stage[s.key] }}</span>{% endfor %}
+  </div>
+  <div class="note">{% if r.suggestion %}可以进入「{{ L.stage[r.suggestion] }}」阶段 — <a href="/projects/{{ r.slug }}">去确认</a> · {% endif %}
+    {% if r.next %}下一步 · {{ r.next.milestone }} {{ L.milestone[r.next.milestone] }} — {{ r.next.failing }}{% elif r.note %}{{ r.note }}{% endif %}</div>
+</div>
+{% endfor %}
+
+<h2>阶段推进规则</h2>
+<table class="data"><thead><tr><th>推进</th><th>规则</th></tr></thead><tbody>
+{% for m in rules %}<tr><td class="mono">{{ L.stage[m.from] }} → {{ L.stage[m.to] }}</td><td>{{ m.rule }}</td></tr>{% endfor %}
+</tbody></table>
+
+{% set archive_status = {"paused": "暂停", "parked": "搁置", "rejected": "放弃"} %}
+<h2>归档</h2>
+<p class="kicker">此处只读 · 请编辑 _data/archive.yml</p>
+{% if archive %}<table class="data"><thead><tr><th>主题</th><th>状态</th><th>时间</th><th>原因</th><th>何时重启</th></tr></thead><tbody>
+{% for a in archive %}<tr><td>{{ a.topic }}</td><td><span class="chip">{{ archive_status.get(a.status, a.status) }}</span></td><td class="mono">{{ a.when }}</td><td>{{ a.why }}</td><td>{{ a.revisit_if }}</td></tr>{% endfor %}
+</tbody></table>{% else %}<p class="muted">还没有归档的项目。</p>{% endif %}
+{% endblock %}

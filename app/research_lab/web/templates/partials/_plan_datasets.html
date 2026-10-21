@@ -1,0 +1,20 @@
+{#- The plan's attached datasets. Drawn inside data_plan.html, and sent again out of band after an Import (card 0165). -#}
+<div id="plan-datasets"{% if oob %} hx-swap-oob="true"{% endif %}>
+{% if attached %}
+<ul class="ds-list">
+  {% for d in attached %}
+  <li><a class="ds-title" href="/data/datasets/{{ d.id }}">{{ d.name }}</a>
+    <div class="ds-meta"><code>{{ d.id }}</code> · {{ d.rows }} 行 × {{ d.cols }} 列 ·
+      <a href="/data/runs/new?dataset={{ d.id }}&plan={{ p.id }}">用它运行分析</a></div>
+    <form class="ds-inline" method="post" action="/data/plans/{{ p.id }}/datasets/{{ d.id }}/detach"><button class="btn small secondary" type="submit">Unlink</button></form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}<p class="muted">还没有关联数据集。可以在上面的复现数据链接旁点 List files 勾选导入，或者在 <a href="/data">数据复现</a> 导入后在这里关联。</p>{% endif %}
+{% if all_datasets %}
+<form class="row" method="post" action="/data/plans/{{ p.id }}/datasets">
+  <select name="dataset_id" aria-label="选择数据集">{% for d in all_datasets if d.id not in p.plan.datasets %}<option value="{{ d.id }}">{{ d.id }} · {{ d.name }}</option>{% endfor %}</select>
+  <button class="btn small secondary" type="submit">Link dataset</button>
+</form>
+{% endif %}
+</div>

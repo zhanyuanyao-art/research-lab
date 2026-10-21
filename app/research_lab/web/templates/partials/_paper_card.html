@@ -1,0 +1,24 @@
+{#- 引用信息 in the reader's 信息 tab (card 0129, docs/design/LIBRARY-UI.md §3.2; card 0200): property rows, the DOI
+    opening in the default browser, the full reference with Copy, then the original abstract folded. No 核验 row
+    and no edit form (Leo, card 0200); a lookup that found several records still offers them. Swapped by htmx as
+    #paper-card (lookup, metadata, direction). -#}
+{% import "partials/ui.html" as ui with context %}
+<section id="paper-card" class="side-section paper-card" hx-get="/papers/{{ paper.id }}/card" hx-trigger="paper-direction-changed from:body" hx-swap="outerHTML">
+  <h3>引用信息</h3>
+  {% if direction_saved %}<div class="flash">{{ ui.icon('check', 'sm') }}方向已保存。</div>{% endif %}
+  {% if lookup_msg %}<div class="flash">{{ lookup_msg }}</div>{% endif %}
+  {% if lookup_errors %}<p class="warn small">{{ lookup_errors | join(' · ') }}</p>{% endif %}
+  {% if meta_error %}<p class="crit small">{{ meta_error }}</p>{% endif %}
+  {% if meta_saved %}<div class="flash">{{ ui.icon('check', 'sm') }}已保存。</div>{% endif %}
+  <dl class="prop-list">
+    <dt>作者</dt><dd>{{ paper.authors | join('、') or '作者不详' }}</dd>
+    <dt>年份</dt><dd>{{ paper.year or '—' }}</dd>
+    <dt>期刊</dt><dd>{{ paper.venue or '—' }}</dd>
+    <dt>类型</dt><dd>{{ kind_names.get(paper.kind, paper.kind) if paper.kind else '—' }}</dd>
+    <dt>DOI</dt><dd>{% if paper.doi %}<a class="ext" href="{{ source_url }}" target="_blank" rel="noopener noreferrer" title="在浏览器打开">{{ paper.doi }}{{ ui.icon('external-link', 'sm') }}</a>{% elif source_url %}<a class="ext" href="{{ source_url }}" target="_blank" rel="noopener noreferrer">原文页面{{ ui.icon('external-link', 'sm') }}</a>{% else %}—{% endif %}</dd>
+    {% if paper.isbn %}<dt>ISBN</dt><dd>{{ paper.isbn }}</dd>{% endif %}
+    <dt>引用</dt><dd><span class="serif paper-cite" id="paper-cite">{{ citation }}</span><button class="btn ghost small" type="button" data-copy-cite="paper-cite">Copy</button></dd>
+  </dl>
+  {% if lookup and lookup.candidates %}{% include "partials/_metadata_candidates.html" %}{% endif %}
+  {% if paper.abstract %}<details class="side-fold"><summary>原文摘要</summary><p class="serif abstract">{{ paper.abstract }}</p></details>{% endif %}
+</section>

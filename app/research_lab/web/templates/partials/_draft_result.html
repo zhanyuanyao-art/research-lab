@@ -1,0 +1,61 @@
+{% if error %}
+<p class="warn">{{ error }}</p>
+{% elif draft %}
+{% set job = draft.job %}{% set res = draft.result %}
+{% set poll = '/week/draft/' ~ job.id if job.kind == 'artifact.draft' else '/harvest/review/' ~ job.id %}
+<div class="ai-result" id="ai-{{ job.id }}"{% if draft.pending %} hx-get="{{ poll }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <p class="kicker">{{ L.job_kind[job.kind] }} <span class="mono">{{ job.kind }}</span> · {{ job.id }} · {{ L.job_status[job.status] }}</p>
+  {% if draft.pending %}
+    {% if draft.mode == 'agent' %}
+    <p class="muted">已排队等待 Claude Code。运行 <code>uv run rl agent claim --next</code>；结果提交后这里会自动更新。</p>
+    {% else %}
+    <p class="muted">处理中（DeepSeek）。你可以继续编辑，这里会自动更新。</p>
+    {% endif %}
+  {% elif job.status == 'failed' %}
+    <p class="crit">任务失败：{{ job.error }}</p>
+    <p class="muted">可以用 <code>uv run rl agent requeue {{ job.id }}</code> 重新排队交给 Claude Code。</p>
+  {% elif job.status == 'done' and res and job.kind == 'artifact.draft' %}
+    <h3>Evidence 要点</h3>
+    {% if draft.bullets %}
+    <form hx-post="/week/insert" hx-target="#insert-msg-{{ job.id }}" hx-swap="innerHTML">
+      <input type="hidden" name="job_id" value="{{ job.id }}">
+      <input type="hidden" name="sha" value="{{ sha }}">
+      <ul class="bullet-list">
+        {% for b in draft.bullets %}
+        <li><label><input type="checkbox" name="bullets" value="{{ b.index }}" checked> {{ b.text }} <span class="mono muted">[{{ b.excerpt_id }}]</span></label></li>
+        {% endfor %}
+      </ul>
+      <button class="btn" type="submit">Insert into Evidence</button>
+      <span id="insert-msg-{{ job.id }}"></span>
+    </form>
+    {% else %}
+    <p class="muted">没有要点通过“只引用所选划线”的检查。</p>
+    {% endif %}
+    {% if res.outline %}<h3>提纲</h3><ol>{% for o in res.outline %}<li>{{ o }}</li>{% endfor %}</ol>{% endif %}
+    {% if res.questions %}<h3>问题</h3><ul>{% for q in res.questions %}<li>{{ q }}</li>{% endfor %}</ul>{% endif %}
+    {% if res.what_i_figured_out_candidates %}
+    <h3>可参考的「想清楚了什么」句子</h3>
+    <ul class="candidates">{% for c in res.what_i_figured_out_candidates %}<li>{{ c }} <button type="button" class="btn small secondary" data-copy="{{ c }}">Copy</button></li>{% endfor %}</ul>
+    {% endif %}
+    {% if res.related_artifacts %}
+    <h3>可能相关</h3>
+    <p>{% for r in res.related_artifacts %}<a class="chip" href="/artifacts/{{ r }}">{{ r }}</a> {% endfor %}</p>
+    <p class="muted small">已存为建议的关联；到 artifact 页面把它们加入 related。</p>
+    {% endif %}
+    <p class="note">Claim 始终由你来写。提纲和问题已写入 <code>## AI notes</code>（成熟度检查会忽略这一节）；在你点击插入之前，没有任何内容进入 Evidence。</p>
+  {% elif job.status == 'done' and res and job.kind == 'harvest.review' %}
+    <h3>联系</h3>
+    {% if res.connections %}
+    <ol>{% for c in res.connections %}<li><a href="/artifacts/{{ c.a }}" class="mono">{{ c.a }}</a> × <a href="/artifacts/{{ c.b }}" class="mono">{{ c.b }}</a>: {{ c.why }}</li>{% endfor %}</ol>
+    <p class="muted small">已作为建议的关联存在每对中的第一个 artifact 上，请到那里确认。</p>
+    {% else %}<p class="muted">目前材料还不足以支持任何联系。</p>{% endif %}
+    {% if res.pipeline %}
+    <h3>管线检查</h3>
+    <ul class="checklist">{% for p in res.pipeline %}<li><span class="glyph {{ 'ok' if p.met else 'warn' }}">{{ '●' if p.met else '▲' }}</span> <a href="/projects/{{ p.project }}">{{ p.project }}</a> · {{ p.rule }}{% if not p.met and p.missing %}。缺少：{{ p.missing }}{% endif %}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if res.suggested_next %}<h3>建议的下一步</h3><ol>{% for s in res.suggested_next %}<li>{{ s }}</li>{% endfor %}</ol>{% endif %}
+  {% else %}
+    <p class="muted">任务状态：{{ L.job_status[job.status] }}。</p>
+  {% endif %}
+</div>
+{% endif %}

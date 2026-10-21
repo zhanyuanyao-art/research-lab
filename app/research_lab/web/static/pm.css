@@ -1,0 +1,79 @@
+/* PM module: 待办 page layout. Components (buttons, chips, segmented, list rows) come from app.css. */
+.task-filter { margin: 0 0 18px; flex-wrap: wrap; }
+.task-form { max-width: 760px; margin-bottom: 20px; }
+.task-groups .section-head { margin-top: 22px; }
+.task-groups .section-head:first-child { margin-top: 0; }
+.task-groups .section-head h2 .count { margin-left: 8px; font-size: 0.8rem; font-weight: 500; color: var(--faint); }
+.task-row { align-items: center; }
+.task-row .task-check { flex: 0 0 auto; margin: 0; }
+.task-row .trail { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.task-row .trail form { margin: 0; }
+.task-row .sub .task-note { flex-basis: 100%; }
+.task-row[data-status="done"] .title { text-decoration: line-through; color: var(--muted); }
+@media (max-width: 760px) {
+  .task-row { flex-wrap: wrap; }
+  .task-row .trail { flex-basis: 100%; justify-content: flex-start; padding-left: 44px; }
+}
+
+/* ---- issue view (docs/design/TASKS.md §C–D): blocks per 课题, sub-tasks nested one level ---- */
+.task-toolbar { margin-bottom: 18px; }
+.task-tree .task-block + .task-block { margin-top: 28px; }
+.task-tree .section-head { margin: 0 0 10px; }
+.task-tree .section-head h2 a { color: var(--fg); }
+.task-tree .section-head h2 .count { margin-left: 8px; font-size: 0.8rem; font-weight: 500; color: var(--faint); }
+.task-list { list-style: none; margin: 0; padding: 0; }
+.task-row { align-items: center; gap: 10px; outline-offset: -2px; }
+.task-row:focus { background: var(--surface-2); }
+.task-row .body { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.task-row .body .sub { flex-basis: 100%; }
+.task-row .title { font-size: 1rem; }
+.task-handle { flex: none; width: 14px; color: var(--faint); cursor: grab; opacity: 0; transition: opacity var(--t-fast) ease; }
+.task-handle.is-off { cursor: default; }
+.task-row:hover .task-handle, .task-row:focus .task-handle, .task-row:focus-within .task-handle { opacity: 1; }
+.task-row.is-dragging { opacity: .5; }
+.task-row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.task-row.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.task-toggle { margin-left: -4px; }
+.task-toggle .i { transition: transform var(--t) var(--ease); }
+.task-toggle[aria-expanded="false"] .i { transform: rotate(-90deg); }
+.task-children { list-style: none; margin: 0; padding: 0; }
+.task-children[hidden] { display: none; }
+.task-subs { padding-left: 40px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.task-subs .task-row { padding-left: 0; border-color: var(--border); }
+.task-subs .task-row:last-of-type { border-bottom: 0; }
+.task-subs .task-row .title { font-size: 0.95rem; }
+.task-add { padding: 6px 20px 8px 0; }
+.task-add-form input[type=text] { height: 32px; font-size: 0.9rem; background: transparent; border-color: transparent; box-shadow: none; padding-left: 8px; }
+.task-add-form input[type=text]:hover { border-color: var(--border-2); }
+.task-add-form input[type=text]:focus { background: var(--surface); border-color: var(--accent); }
+.task-due { cursor: pointer; border-bottom: 1px dashed var(--border-2); }
+.task-due.is-empty { color: var(--faint); }
+.task-due-input { height: 26px; width: auto; font-size: 0.84rem; padding: 0 6px; }
+.task-progress { color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.task-closed { border-top: 1px solid var(--border); }
+.task-closed > summary { padding: 10px 20px; font-size: 0.86rem; color: var(--muted); }
+.task-closed > summary .count { margin-left: 6px; color: var(--faint); }
+.task-closed[open] > summary { margin-bottom: 0; }
+.task-closed .task-row .title { color: var(--muted); }
+.task-help { position: fixed; right: 24px; bottom: 24px; z-index: 30; width: 300px; }
+.task-help .kv { grid-template-columns: max-content 1fr; font-size: 0.88rem; }
+@media (max-width: 760px) { .task-subs { padding-left: 22px; } .task-help { right: 12px; left: 12px; width: auto; } }
+
+
+/* ---- 首页 · 待办 block (card 0024) ---- */
+.home-tasks { margin-bottom: 8px; }
+.home-tasks .home-tasks-note { padding: 10px 20px 0; margin: 0; }
+.home-tasks .home-plan { padding: 16px 20px 18px; max-width: none; }
+.home-tasks .home-plan .list-item { padding-left: 0; padding-right: 0; }
+.home-tasks > .list > .list-item { align-items: flex-start; }
+.home-tasks .home-parent .body { display: flex; flex-direction: column; gap: 4px; }
+.home-tasks .home-progress { font-variant-numeric: tabular-nums; color: var(--fg-2); }
+.home-tasks .home-sections { margin: 6px 0 0; padding-left: 0; border-top: 1px dashed var(--border); }
+.home-tasks .home-sections .list-item { padding: 8px 0; gap: 10px; }
+.home-tasks .home-sections .list-item:last-child { padding-bottom: 0; }
+.home-tasks .home-sections .title { font-size: 0.95rem; font-weight: 400; }
+.home-tasks .empty { border: 0; border-radius: 0; background: transparent; }
+.home-tasks-foot { display: flex; flex-wrap: wrap; gap: 6px 20px; padding: 10px 20px; border-top: 1px solid var(--border); font-size: 0.86rem; }
+.home-tasks-foot a { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.home-tasks-foot a.warn { color: var(--warning); }
+.home-tasks-foot a:hover { color: var(--fg); text-decoration: none; }

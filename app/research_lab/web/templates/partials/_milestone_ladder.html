@@ -1,0 +1,51 @@
+<div id="ladder" class="ladder">
+  {% if next %}<p class="meta">下一步：<strong>{{ L.milestone[next.milestone] }}</strong>{% if next.failing %} — {{ next.failing }}{% endif %}</p>
+  {% else %}<p class="meta">当前阶段的目标都已完成。</p>{% endif %}
+  {% if suggestion %}
+  <form class="card stage-move" method="post" action="/projects/{{ slug }}/stage" hx-post="/projects/{{ slug }}/stage">
+    <input type="hidden" name="stage" value="{{ suggestion }}">
+    <span>本阶段的把关里程碑已全部通过。要把项目推进到<strong>「{{ L.stage[suggestion] }}」</strong>阶段吗？</span>
+    <button class="btn" type="submit">Advance to {{ L.stage[suggestion] }}</button>
+  </form>
+  {% endif %}
+  <ol class="milestones">
+  {% for m in milestones %}
+    <li class="milestone {{ 'passed' if m.passed else ('behind' if m.behind else 'open') }}">
+      <details{% if next and next.milestone == m.id %} open{% endif %}>
+        <summary>
+          <span class="m-title">{{ L.milestone[m.id] }}</span>
+          <span class="chip {{ 'ok' if m.passed else '' }}">{{ '已完成' if m.passed else ('已过阶段' if m.behind else ('进行中' if (next and next.milestone == m.id) or (m.checks | selectattr('passed') | list) else '未开始')) }}</span>
+        </summary>
+        <ul class="m-checks">
+        {% for c in m.checks %}
+          <li class="{{ 'ok' if c.passed else 'no' }}">
+            {% if not c.auto %}
+            <label class="confirm">
+              <input type="checkbox" name="checked" value="1" {% if c.passed %}checked{% endif %}
+                     hx-post="/projects/{{ slug }}/confirm" hx-vals='{"milestone": "{{ m.id }}", "item": "{{ c.item }}"}'
+                     hx-target="#ladder" hx-swap="outerHTML">
+              {{ c.label }} <span class="chip">1 分钟</span>
+            </label>
+            {% else %}
+            <span class="chip {{ 'ok' if c.passed else '' }}">{{ '完成' if c.passed else '未完成' }}</span> {{ c.label }}
+            {% endif %}
+            <span class="muted small"> — {{ c.detail }}</span>
+            {% if c.auto and not c.passed %}
+            {#- One click makes the check a 待办 for this week: title = the check, note = the milestone name,
+                source = the milestone id (internal). HTMX swaps the chip the server returns in place of
+                the form; without scripts the plain post comes back to this page through `next`. -#}
+            <form class="inline add-task" method="post" action="/tasks" hx-post="/tasks" hx-target="this" hx-swap="outerHTML" id="add-task-{{ m.id }}-{{ loop.index }}">
+              <input type="hidden" name="title" value="{{ c.label }}"><input type="hidden" name="project" value="{{ slug }}">
+              <input type="hidden" name="source" value="{{ m.id }}"><input type="hidden" name="note" value="{{ L.milestone[m.id] }}">
+              <input type="hidden" name="next" value="/projects/{{ slug }}">
+              <button class="btn ghost small" type="submit">Add task</button>
+            </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+        </ul>
+      </details>
+    </li>
+  {% endfor %}
+  </ol>
+</div>

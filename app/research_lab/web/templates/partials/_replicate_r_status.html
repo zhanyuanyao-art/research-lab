@@ -1,0 +1,13 @@
+{#- The live block of the R card on /replicate/<plan> (card 0186): while an R step runs it polls itself every 3 s; when
+    the step has ended the status route answers HX-Refresh and the page reloads. Context: plan.id, r (rrun.overview). -#}
+{% set st = r.state %}
+<div id="replicate-r-status" aria-live="polite"{% if r.running %} hx-get="/replicate/{{ plan.id }}/r/status" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  {% if r.running %}
+  <div class="row"><p class="grow small"><strong>{{ '正在装包（联网）' if st.kind == 'install' else '正在运行作者的 R 代码' }}</strong>
+    <span class="muted">开始于 {{ st.started_at }}</span></p>
+    <form method="post" action="/replicate/{{ plan.id }}/r/stop"><button type="submit" class="btn secondary small" data-replicate-r-stop>Stop</button></form></div>
+  {% elif st.state %}
+  <p class="small muted" data-replicate-r-last>上一次{{ '装包' if st.kind == 'install' else '运行' }}：{{ {'done': '完成', 'error': '出错', 'stopped': '已停止'}.get(st.state, st.state) }}{% if st.finished_at %}（{{ st.finished_at }}）{% endif %}{% if st.note %} · {{ st.note }}{% endif %}</p>
+  {% endif %}
+  {% if r.log and (r.running or st.state) %}<details{% if r.running %} open{% endif %}><summary class="small">{{ '装包日志' if st.kind == 'install' else '运行日志' }}（最后一段）</summary><pre class="mono small">{{ r.log }}</pre></details>{% endif %}
+</div>

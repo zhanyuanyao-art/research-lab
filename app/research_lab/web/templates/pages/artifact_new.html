@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">新建产出</span>{% endblock %}
+{% block content %}
+{% set preset_kind = request.query_params.get('kind') or (L.type_kind[preset_type] if preset_type else 'question') %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title">新建产出</h1>
+    <p class="page-desc">选一个类别，写一个标题。文件建在{{ current_week | week_zh }}，创建后直接进入编辑。</p>
+  </div>
+</header>
+{% if error %}<div class="banner warning"><span class="text">{{ error }}</span></div>{% endif %}
+<form method="post" action="/artifacts" class="card stack" id="new-artifact" style="max-width: 720px">
+  <div class="field">
+    <label>类别</label>
+    <div class="kind-picker" id="kind-picker">
+      {% set blurbs = {'question': '一个值得解释的现象，或一个研究问题', 'literature': '一个领域里文献之间的关系与缺口', 'data': '一次分析、一组证据或一个案例时间线', 'conclusion': '机制、反驳，或可以直接进论文的段落'} %}
+      {% for k in ['question', 'literature', 'data', 'conclusion'] %}
+      <label class="kind-option"><input type="radio" name="group" value="{{ k }}"{% if k == preset_kind %} checked{% endif %}><span class="k-name">{{ L.kind[k] }}</span><span class="k-desc">{{ blurbs[k] }}</span></label>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="field">
+    <label for="n-type">具体形式</label>
+    <select id="n-type" name="type">
+      {% for key, t in types.items() %}<option value="{{ key }}" data-kind="{{ L.type_kind[key] }}"{% if key == (preset_type or form.type) %} selected{% endif %}>{{ L.type[key] }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field"><label for="n-title">标题</label><input type="text" id="n-title" name="title" value="{{ form.title or '' }}" required placeholder="一句话说清这份产出要回答什么" autofocus></div>
+  <div class="grid-2">
+    <div class="field"><label for="n-direction">方向</label>
+      <select id="n-direction" name="direction">{% for d in directions %}<option value="{{ d.slug }}"{% if d.slug == preset_direction %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="n-project">课题</label>
+      <select id="n-project" name="project">{% for slug, p in projects.items() %}<option value="{{ slug }}" data-direction="{{ p.direction or '' }}"{% if slug == (form.project or default_project) %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></div>
+  </div>
+  <input type="hidden" name="slug" id="n-slug" value="{{ form.slug or '' }}">
+  <input type="hidden" name="level" value="seed">
+  <div class="form-actions"><button class="btn" type="submit">Create and write</button><a class="btn ghost" href="/artifacts">Cancel</a></div>
+</form>
+<script>
+(function () {
+  var sel = document.getElementById('n-type'), picker = document.getElementById('kind-picker'), slug = document.getElementById('n-slug'), title = document.getElementById('n-title');
+  function apply() {
+    var k = (picker.querySelector('input:checked') || {}).value, first = null;
+    Array.prototype.forEach.call(sel.options, function (o) { var on = o.dataset.kind === k; o.hidden = !on; o.disabled = !on; if (on && !first) first = o; });
+    if (!sel.selectedOptions[0] || sel.selectedOptions[0].hidden) sel.value = first ? first.value : sel.value;
+  }
+  function makeSlug() {
+    var ascii = title.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48);
+    slug.value = ascii || (sel.value + '-' + Date.now().toString(36).slice(-5));
+  }
+  picker.addEventListener('change', apply); title.addEventListener('input', makeSlug); apply(); makeSlug();
+  // 课题 belongs to one 方向: keep the two selects consistent.
+  var dir = document.getElementById('n-direction'), proj = document.getElementById('n-project');
+  proj.addEventListener('change', function () { var d = proj.selectedOptions[0].dataset.direction; if (d) dir.value = d; });
+  dir.addEventListener('change', function () {
+    if (proj.selectedOptions[0].dataset.direction === dir.value) return;
+    var match = Array.prototype.find.call(proj.options, function (o) { return o.dataset.direction === dir.value; });
+    if (match) proj.value = match.value;
+  });
+})();
+</script>
+{% endblock %}

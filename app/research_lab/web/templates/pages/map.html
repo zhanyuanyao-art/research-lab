@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('method.css') }}">{% endblock %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">文献地图</span>{% endblock %}
+{% block content %}
+<header class="page-header"><div class="titles"><h1 class="page-title">文献地图</h1><p class="page-desc">{{ p.name }} · 文献按阵营排布，连线表示谁和谁争论。</p></div><div class="page-actions"><a class="btn secondary" href="/projects/{{ slug }}">Back to project</a></div></header>
+{% if error %}<div class="banner warning" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+<p class="kicker">已放置 {{ el.placed_count }} / {{ target }} 篇文献。
+  {% if el.placed_count < 8 %}不足 8 篇时按阵营分栏排列，避免稀疏的图看起来像结论。{% endif %}</p>
+<div class="map-layout">
+  <div>
+  <div id="cy" class="cy" data-slug="{{ slug }}" data-src="/api/projects/{{ slug }}/map.json" role="img" aria-label="文献地图关系图"></div>
+  </div>
+  <aside class="map-side">
+    <div class="card side-card" id="node-panel"><p class="muted small">点击图中的一个节点，这里显示它的摘要和划线。</p></div>
+    <div class="card side-card">
+    <h3>未放置的文献</h3>
+    {% if el.unplaced %}<ul class="tray">
+      {% for w in el.unplaced %}<li>
+        <span title="{{ w.title }}">{{ w.label }}</span>
+        {% for s in w.suggestions %}<div class="suggested-line">建议归入：{{ s.camp }}
+          <button class="btn small" hx-post="/projects/{{ slug }}/map/edges/{{ s.assoc_id }}/accept">Accept</button>
+          <button class="btn small secondary" hx-post="/projects/{{ slug }}/map/edges/{{ s.assoc_id }}/reject">Reject</button></div>{% endfor %}
+        <form class="row" hx-post="/projects/{{ slug }}/map/assign">
+          <input type="hidden" name="paper_id" value="{{ w.id }}">
+          <select name="camp_id" aria-label="阵营">{% for c in camps %}<option value="{{ c.id }}">{{ c.label }}</option>{% endfor %}</select>
+          <button class="btn small" type="submit">Assign camp</button>
+        </form></li>{% endfor %}
+    </ul>{% else %}<p class="muted small">所有文献都已归入阵营。</p>{% endif %}
+    </div>
+    <div class="card side-card">
+    <h3>添加争论连线</h3>
+    <form class="stack" hx-post="/projects/{{ slug }}/map/contests">
+      <select name="src" aria-label="起点">{% for o in options %}<option value="{{ o.value }}">{{ o.label }}</option>{% endfor %}</select>
+      <span class="kicker">与之争论</span>
+      <select name="dst" aria-label="终点">{% for o in options %}<option value="{{ o.value }}">{{ o.label }}</option>{% endfor %}</select>
+      <input type="text" name="note" placeholder="双方在什么问题上有分歧">
+      <div><button class="btn small" type="submit">Add edge</button></div>
+    </form>
+    </div>
+    <div class="card side-card">
+    <h3>够写文献综述了吗</h3>
+    <ul class="m-checks" style="padding-left: 0">
+      <li><span class="chip {{ 'ok' if checks.debate.passed else '' }}">{{ '已满足' if checks.debate.passed else '未满足' }}</span>各阵营之间都有争论连线 <span class="muted small">{{ checks.debate.detail }}</span></li>
+      <li><span class="chip {{ 'ok' if checks.gap.passed else '' }}">{{ '已满足' if checks.gap.passed else '未满足' }}</span>找到一个各家都解释不了的空白 <span class="muted small">{{ checks.gap.detail }}</span></li>
+    </ul>
+    <p class="muted small" style="margin-top: 10px">实线是已接受的关系，虚线是助手的建议，接受之前不计入。</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('vendor/cytoscape.min.js') }}"></script><script src="{{ asset('method.js') }}"></script>{% endblock %}

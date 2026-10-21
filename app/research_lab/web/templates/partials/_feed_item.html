@@ -1,0 +1,54 @@
+{#- One feed item (card 0106, docs/design/FEED-LAYOUT.md §五): a grid cell `article.story` in 今日精选 and 收藏, one line
+    `li.stream-row` in 全部条目 (layout = 'stream'). Title → original title (papers) → text → one grey source line whose
+    order is fixed: direction mark, access mark (papers), byline, hover actions. Radar badges, the 与研究的关系 line,
+    the separate author line and the read button are gone; the paper title itself opens the reader.
+    An item action re-renders this partial with the same layout (routes/feed.py _shape). A book review (card 0154)
+    is drawn by partials/_feed_review.html, so its actions answer with the same shape. -#}
+{% if it.review %}{% include "partials/_feed_review.html" %}{% else %}
+{% import "partials/ui.html" as ui with context %}
+{% from "partials/_feed_actions.html" import actions with context %}
+{% set papers = it.stream == 'papers' %}
+{% set row_id = ('fp-' if papers else 'fn-') ~ it.id %}
+{% set stream = (layout | default('story')) == 'stream' %}
+{% set vals = {'layout': 'stream' if stream else 'story'} %}
+{% set read_label = '继续阅读' if it.imported else ('阅读原文' if it.oa_pdf_url else '查看文献') %}
+{% macro title_link(cls) -%}
+{%- if papers and it.imported -%}<a class="{{ cls }}" href="/papers/{{ it.paper_id }}" title="{{ read_label }}">{{ it.display_title }}</a>
+{%- elif papers -%}
+{#- With scripts the title takes the paper into the library and opens the reader (the import keeps 0102's de-duplication);
+    without them it goes to the journal page. -#}
+<a class="{{ cls }}" href="{{ it.url or '#' }}" hx-post="/feed/papers/{{ it.id }}/read" hx-vals='{{ vals | tojson }}' hx-target="#{{ row_id }}" hx-swap="outerHTML" title="{{ read_label }}">{{ it.display_title }}</a>
+{%- elif it.url -%}<a class="{{ cls }}" href="{{ it.url }}" target="_blank" rel="noopener"{% if it.orig_title %} title="{{ it.orig_title }}"{% endif %}>{{ it.display_title }}</a>
+{%- else -%}<span class="{{ cls }}"{% if it.orig_title %} title="{{ it.orig_title }}"{% endif %}>{{ it.display_title }}</span>{%- endif -%}
+{%- endmacro %}
+{% set dot = ui.dir_dot(it.direction, it.angle if (not papers and it.lane != 'world') else '') %}
+{% if stream %}
+<li class="stream-row{% if it.status == 'dismissed' %} dismissed{% endif %}" id="{{ row_id }}">
+  {% if it.status == 'dismissed' %}
+  <span class="line muted">已忽略 · {{ it.display_title }}</span><span class="src-col"></span>{{ actions(it, row_id, vals) }}
+  {% else %}
+  <span class="line">{{ title_link('title') }}{% if it.orig_title %}<span class="orig" lang="en">{{ it.orig_title }}</span>{% endif %}</span>
+  <span class="src-col">{{ dot }}<span class="src">{{ it.origin_label }}</span></span>
+  {{ actions(it, row_id, vals) }}
+  {% endif %}
+  {% if note %}<span class="note small muted">{{ note }}</span>{% endif %}
+</li>
+{% else %}
+<article class="story{% if it.status == 'dismissed' %} dismissed{% endif %}" id="{{ row_id }}">
+  {% if it.status == 'dismissed' %}
+  <div class="foot"><span class="byline">已忽略<span class="sep"></span>{{ it.display_title }}</span>{{ actions(it, row_id, vals) }}</div>
+  {% else %}
+  {% if not papers and it.lane == 'world' and it.region %}<div class="kicker">{{ it.region }}</div>{% endif %}
+  {{ title_link('title') }}
+  {% if papers and it.orig_title %}<div class="orig" lang="en">{{ it.orig_title }}</div>{% endif %}
+  {% if it.zh_text %}<p class="text">{{ it.zh_text }}</p>{% elif papers %}<p class="text pending">摘要待翻译</p>{% endif %}
+  <div class="foot">
+    {{ dot }}{% if papers %}{{ ui.access_mark(it) }}{% endif %}
+    <span class="byline">{{ it.origin_label }}{% if it.date %}<span class="sep"></span>{{ it.date | date_zh }}{% endif %}{% if papers and it.author_names %}<span class="sep"></span>{{ it.author_names }}{% endif %}</span>
+    {{ actions(it, row_id, vals) }}
+  </div>
+  {% endif %}
+  {% if note %}<p class="note small muted">{{ note }}</p>{% endif %}
+</article>
+{% endif %}
+{% endif %}

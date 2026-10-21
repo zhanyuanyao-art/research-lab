@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('weekly.css') }}">
+{% if tab == 'edit' %}<link rel="stylesheet" href="{{ asset('vendor/toastui-editor.min.css') }}"><link rel="stylesheet" href="{{ asset('vendor/toastui-editor-dark.min.css') }}">{% endif %}{% endblock %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{% if direction and direction_map.get(direction) %}{{ ui.icon('chevron-right', 'sm') }}<a href="/artifacts/d/{{ direction }}">{{ direction_map[direction].name }}</a>{% endif %}{{ ui.icon('chevron-right', 'sm') }}<span class="current">{{ front.get('title') }}</span>{% endblock %}
+{% block content %}
+{% set t = front.get('type') %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title serif issue-title"{% if tab == 'read' %} tabindex="0" title="点击改名" data-rename{% endif %}>{{ front.get('title') }}</h1>
+    {% if tab == 'read' %}
+    <form class="issue-title-form" method="post" action="/artifacts/{{ a.ref }}/rename" hidden>
+      <input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="next" value="/artifacts/{{ a.ref }}">
+      <textarea name="title" rows="1" required maxlength="200" class="inline-edit" data-autogrow aria-label="标题" spellcheck="false">{{ front.get('title') or '' }}</textarea>
+    </form>
+    {% endif %}
+    <div class="page-meta">
+      <span>{{ L.kind[L.type_kind[t]] }} · {{ L.type[t] }}</span>
+      {{ ui.maturity(front.get('level')) }}
+      {% if direction %}{{ ui.dir_tag(direction) }}{% endif %}
+      <span>{{ front.get('week') | week_zh }}</span>
+      {% if not counts %}<span class="badge warning">结论待写</span>{% endif %}
+    </div>
+  </div>
+  <div class="page-actions">
+    {% if tab != 'read' and projects.get(front.get('project')) %}<a class="btn ghost" href="/projects/{{ front.get('project') }}?tab=tasks">{{ ui.icon('folder-open') }}Project tasks</a>{% endif %}
+    {% if tab != 'read' %}<a class="btn secondary" href="/artifacts/{{ a.ref }}">{{ ui.icon('eye') }}Back to output</a>{% endif %}
+  </div>
+</header>
+{% if error %}<div class="banner warning" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+{% if saved %}<div class="flash">{{ ui.icon('check', 'sm') }}{% if saved == 'nothing' %}没有改动。{% elif saved == 'title' %}已改名。{% elif saved == 'project' %}已移到课题。{% elif saved == 'task' %}已加为待办，挂在这份产出下面。{% elif saved == 'archived' %}已归档。{% elif saved == 'restored' %}已从归档恢复。{% else %}已保存。{% endif %}</div>{% endif %}
+
+{% if tab == 'read' %}
+{% set archived = front.get('status') in ('superseded', 'absorbed-into-paper') %}
+{% set ihx = 'hx-select="#issue-activity" hx-target="#issue-activity" hx-swap="outerHTML"' %}
+{% set back = '/artifacts/' ~ a.ref %}
+<div class="issue">
+  <div class="issue-main">
+    {% if archived %}<div class="banner"><span class="text">这份产出已归档（{{ L.status[front.get('status')] }}）。它不在研究档案列表里，链接和历史都还在。</span>
+      <form method="post" action="/artifacts/{{ a.ref }}/archive"><input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="action" value="restore"><button class="btn secondary small" type="submit">Restore</button></form></div>{% endif %}
+    {#- 描述 (Leo's 10-01 redesign): only what Leo wrote, a few lines first, edited in place. An output
+        whose only content so far is the assistant's notes shows those notes here instead, read-only;
+        once Leo has written his part they fold into their own panel below. -#}
+    <section class="card issue-desc" id="describe">
+      <div class="issue-block-head"><h3>描述</h3>
+        <button type="button" class="btn ghost small" data-edit-desc>{{ ui.icon('pencil', 'sm') }}{{ 'Edit' if desc_md else 'Start writing' }}</button></div>
+      <div class="issue-desc-view" data-desc-view>
+        {% if desc_md %}
+        <div class="prose artifact{% if desc_long %} clamp{% endif %}" data-desc-body>{{ desc_md | md | safe }}</div>
+        {% if desc_long %}<button type="button" class="link small" data-desc-more>Read more · {{ '{:,}'.format(desc_chars) }} 字</button>{% endif %}
+        {% elif ai_notes %}
+        <p class="muted small">你还没写自己的部分。下面是助手整理的内容，只读；点「开始写」写下你想清楚了什么和主张。</p>
+        <div class="prose artifact clamp" data-desc-body>{{ notes_md | md | safe }}</div>
+        <button type="button" class="link small" data-desc-more>Read more</button>
+        {% else %}
+        <p class="muted issue-empty">还没有内容。点「开始写」，写下这周想清楚了什么、你的主张和证据。</p>
+        {% endif %}
+      </div>
+      <form method="post" action="/artifacts/{{ a.ref }}/body" id="body-form" data-editor data-ref="{{ a.ref }}" class="issue-desc-editor" hidden
+            data-assets="{{ asset('vendor/toastui-editor.min.css') }} {{ asset('vendor/toastui-editor-dark.min.css') }} {{ asset('vendor/toastui-editor-all.min.js') }} {{ asset('vendor/toastui-editor-i18n-zh-cn.js') }} {{ asset('editor.js') }}">
+        <input type="hidden" name="sha" value="{{ a.sha }}">
+        <div class="editor-bar">
+          <span class="segmented small mode-switch"><button type="button" class="on" data-editor-mode="wysiwyg" hidden title="像文档一样编辑">Doc</button><button type="button" data-editor-mode="markdown" hidden title="查看或编辑 Markdown 源码">Source</button></span>
+          <span class="editor-count" id="editor-count"></span>
+          <span class="editor-status muted small" id="editor-status" aria-live="polite" title="⌘S 立即保存">自动保存</span>
+          <button class="btn small" type="button" data-desc-done>Done</button>
+        </div>
+        <div id="editor-conflict"></div>
+        <div id="tui-editor" class="tui-host"></div>
+        <textarea name="body" id="body-src" class="mono body-src" rows="20" spellcheck="false">{{ edit_body }}</textarea>
+      </form>
+    </section>
+    {% if ai_notes and desc_md %}
+    <details class="card issue-notes"><summary>助手笔记</summary><div class="prose">{{ notes_md | md | safe }}</div></details>
+    {% endif %}
+
+    <div id="issue-activity">
+      <section class="card flush issue-tasks" id="tasks" aria-label="子任务">
+        <div class="issue-block-head"><h3>子任务{% if issue_progress.total %} <span class="count">{{ issue_progress.done }}/{{ issue_progress.total }}</span>{% endif %}</h3>
+          <span class="issue-block-actions">{% if issue_tasks %}<a class="muted small" href="/tasks?view=all{% if front.get('project') %}&project={{ front.get('project') }}{% endif %}">在待办页看</a>{% endif %}
+          {% if front.get('project') %}<button type="button" class="btn ghost small" data-add-sub>{{ ui.icon('plus', 'sm') }}Add</button>{% endif %}</span></div>
+        {% if issue_tasks %}
+        <ul class="list">
+          {% for n in issue_tasks %}{% set t = n.task %}
+          <li class="list-item issue-task" data-status="{{ t.status }}">
+            <form method="post" action="/tasks/{{ t.id }}/status" hx-post="/tasks/{{ t.id }}/status" {{ ihx | safe }}>
+              <input type="hidden" name="next" value="{{ back }}">
+              <button class="btn ghost icon small" type="submit" name="status" value="{{ 'todo' if t.status == 'done' else 'done' }}" title="{{ '改回待办' if t.status == 'done' else '标记完成' }}" aria-label="{{ '改回待办' if t.status == 'done' else '标记完成' }}">{{ ui.icon('circle-check' if t.status == 'done' else 'circle-dot') }}</button>
+            </form>
+            <div class="body">
+              <span class="title">{{ t.title }}</span>
+              <div class="sub">
+                {% if n.flags.this_week %}<span>本周到期</span>{% endif %}
+                {% if t.due %}<span class="{{ 'crit' if n.flags.past_due else '' }}">{% if n.flags.due_days is not none and n.flags.due_days < 0 %}已过期 {{ -n.flags.due_days }} 天{% elif n.flags.due_days == 0 %}今天截止{% else %}截止 {{ i18n_due(t.due) }}{% endif %}</span>{% endif %}
+                {% if n.subs %}<span>{{ n.progress.done }}/{{ n.progress.total }} 项</span>{% endif %}
+                {% if t.status == 'doing' %}<span class="chip ok">进行中</span>{% elif t.status == 'parked' %}<span class="chip">搁置</span>{% endif %}
+                {% if t.postponed %}<span class="chip warn">截止推迟 {{ t.postponed }} 次</span>{% endif %}
+              </div>
+              {% if n.subs %}
+              <ul class="list issue-subs">
+                {% for c in n.subs %}{% set x = c.task %}
+                <li class="list-item issue-task" data-status="{{ x.status }}">
+                  <form method="post" action="/tasks/{{ x.id }}/status" hx-post="/tasks/{{ x.id }}/status" {{ ihx | safe }}>
+                    <input type="hidden" name="next" value="{{ back }}">
+                    <button class="btn ghost icon small" type="submit" name="status" value="{{ 'todo' if x.status == 'done' else 'done' }}" aria-label="{{ '改回待办' if x.status == 'done' else '标记完成' }}">{{ ui.icon('circle-check' if x.status == 'done' else 'circle-dot') }}</button>
+                  </form>
+                  <div class="body"><span class="title">{{ x.title }}</span>{% if x.due %}<div class="sub"><span class="{{ 'crit' if c.flags.past_due else '' }}">截止 {{ i18n_due(x.due) }}</span></div>{% endif %}</div>
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+            <a class="btn ghost icon small" href="/tasks/{{ t.id }}/edit" title="编辑" aria-label="编辑">{{ ui.icon('pencil', 'sm') }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% if front.get('project') %}
+        <form method="post" action="/tasks" hx-post="/tasks" {{ ihx | safe }} class="issue-add">
+          <input type="hidden" name="project" value="{{ front.get('project') }}"><input type="hidden" name="source" value="{{ a.ref }}"><input type="hidden" name="next" value="{{ back }}"><input type="hidden" name="reply" value="page">
+          <span aria-hidden="true">{{ ui.icon('plus', 'sm') }}</span><input type="text" class="inline-edit" name="title" maxlength="120" required autocomplete="off" placeholder="{{ '添加子任务…' if issue_tasks else '把这份产出要做的事拆在这里，比如：补一个反例' }}" aria-label="添加子任务">
+        </form>
+        {% else %}<p class="muted small issue-empty">先在右边给这份产出选一个课题，才能拆子任务。</p>{% endif %}
+      </section>
+
+      {% include "partials/_updates.html" %}
+    </div>
+  </div>
+
+  <aside class="issue-props" aria-label="属性">
+    <dl class="props">
+      <dt>成熟度</dt>
+      <dd>
+        <form method="post" action="/artifacts/{{ a.ref }}/front" data-promote-guard data-current-level="{{ front.get('level') }}">
+          <input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="confirm" value="">
+          <div class="segmented small">{% for key in ['seed', 'developed', 'paper-ready'] %}<label{% if key != 'seed' and not counts %} title="写好「想清楚了什么」和「主张」两节后可以提升"{% endif %}><input type="radio" name="level" value="{{ key }}"{% if key == front.get('level') %} checked{% endif %}{% if key != 'seed' and not counts %} disabled{% endif %} onchange="this.form.confirm.value='yes'; this.form.requestSubmit()">{{ L.level[key] }}</label>{% endfor %}</div>
+          <input type="hidden" name="status" value="{{ front.get('status') }}">
+        </form>
+        {% if not counts %}<p class="muted small prop-hint">结论待写：写好「想清楚了什么」和「主张」两节后可以提升。</p>{% endif %}
+      </dd>
+      {% if archived %}<dt>状态</dt><dd>已归档 · {{ L.status[front.get('status')] }}</dd>{% endif %}
+      <dt>类别</dt>
+      <dd><form method="post" action="/artifacts/{{ a.ref }}/meta"><input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="next" value="{{ back }}">
+        <select name="type" onchange="this.form.requestSubmit()" aria-label="类别">{% for k in ['question', 'literature', 'data', 'conclusion'] %}<optgroup label="{{ L.kind[k] }}">{% for key, tt in types.items() %}{% if L.type_kind[key] == k %}<option value="{{ key }}"{% if key == t %} selected{% endif %}>{{ L.type[key] }}</option>{% endif %}{% endfor %}</optgroup>{% endfor %}</select></form></dd>
+      <dt>课题</dt>
+      <dd><form method="post" action="/artifacts/{{ a.ref }}/project"><input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="next" value="{{ back }}">
+        <select name="project" onchange="this.form.requestSubmit()" aria-label="课题">{% if not front.get('project') %}<option value="" selected>选择课题…</option>{% endif %}{% for slug, p in projects.items() %}<option value="{{ slug }}"{% if slug == front.get('project') %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></form></dd>
+      <dt>方向</dt>
+      <dd><form method="post" action="/artifacts/{{ a.ref }}/direction"><input type="hidden" name="sha" value="{{ a.sha }}">
+        <select name="direction" onchange="this.form.requestSubmit()" aria-label="方向">
+          <option value=""{% if not direction_explicit %} selected{% endif %}>跟随课题{% if direction and not direction_explicit and direction_map.get(direction) %}（{{ direction_map[direction].name }}）{% endif %}</option>
+          {% for d in directions %}<option value="{{ d.slug }}"{% if direction_explicit and d.slug == front.get('direction') %} selected{% endif %}>{{ d.name }}</option>{% endfor %}
+        </select></form></dd>
+      <dt>截止</dt>
+      <dd title="取这份产出还没完成的子任务里最晚的截止">{% if issue_due %}{{ i18n_due(issue_due) }} <span class="muted small">来自子任务</span>{% else %}<span class="muted">跟随子任务</span>{% endif %}</dd>
+      <dt>周</dt><dd>{{ front.get('week') | week_zh }}</dd>
+      <dt>版本</dt>
+      <dd>{{ front.get('version') }}{% if next_minor %}
+        <form method="post" action="/artifacts/{{ a.ref }}/front" data-confirm="记一次想法变化：版本从 {{ front.get('version') }} 升到 {{ next_minor }}，旧文本由 git 保留。">
+          <input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="bump" value="minor"><input type="hidden" name="confirm" value="yes">
+          <button class="btn ghost small prop-action" type="submit">{{ ui.icon('refresh-cw', 'sm') }}New version ({{ front.get('version') }} → {{ next_minor }})</button>
+        </form>{% endif %}
+        {% if can_promote %}
+        <form method="post" action="/artifacts/{{ a.ref }}/front" data-confirm="提升为可入文？它应当可以原样放进论文。" hidden>
+          <input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="level" value="paper-ready"><input type="hidden" name="confirm" value="yes"><input type="hidden" name="version" value="v1.0">
+          <button type="submit">Mark paper-ready</button>
+        </form>
+        {% endif %}</dd>
+      <dt>关联</dt>
+      <dd>
+        {% if related.forward or related.back %}
+        {% set fwd_refs = related.forward | map(attribute='ref') | list %}{% set back_refs = related.back | map(attribute='ref') | list %}
+        <ul class="list prop-links">
+          {% for r in related.forward %}<li data-related="{{ r.ref }}">{% if r.title %}<a href="/artifacts/{{ r.ref }}">{{ r.title | truncate(28) }}</a>{% else %}<span class="muted">尚未写出</span>{% endif %}{% if r.ref in back_refs %} <span class="muted small">互相引用</span>{% endif %}</li>{% endfor %}
+          {% for r in related.back if r.ref not in fwd_refs %}<li data-related="{{ r.ref }}"><a href="/artifacts/{{ r.ref }}">{{ r.title | truncate(28) }}</a> <span class="muted small">引用了本篇</span></li>{% endfor %}
+        </ul>
+        {% endif %}
+        <form method="post" action="/artifacts/{{ a.ref }}/front"><input type="hidden" name="sha" value="{{ a.sha }}">
+          <select name="related_add" onchange="if (this.value) this.form.requestSubmit()" aria-label="关联产出"><option value="">＋ 关联一份产出</option>{% for r in all_refs %}<option value="{{ r.ref }}">{{ r.title | truncate(30) }}</option>{% endfor %}</select></form>
+        {% if related.proposed %}
+        <p class="muted small" style="margin: 8px 0 4px">助手建议关联：</p>
+        {% for r in related.proposed %}<form method="post" action="/artifacts/{{ a.ref }}/front" class="row prop-suggest"><input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="related_add" value="{{ r.ref }}"><span class="small grow" title="{{ r.reason or '' }}">{{ r.title or '（尚未写出）' }}</span><button class="btn secondary small" type="submit">Link</button></form>{% endfor %}
+        {% endif %}
+      </dd>
+    </dl>
+    <div class="props-foot">
+      <details class="menu">
+        <summary class="btn ghost small">{{ ui.icon('ellipsis', 'sm') }}More</summary>
+        <div class="menu-panel">
+          {% if projects.get(front.get('project')) %}<a href="/projects/{{ front.get('project') }}?tab=tasks">{{ ui.icon('folder-open') }}Project tasks</a>{% endif %}
+          <button type="button" data-rename-open>{{ ui.icon('pencil') }}Rename</button>
+          <a href="/artifacts/{{ a.ref }}?tab=edit">{{ ui.icon('file-text') }}Edit full page</a>
+          {% if archived %}
+          <form method="post" action="/artifacts/{{ a.ref }}/archive"><input type="hidden" name="sha" value="{{ a.sha }}"><input type="hidden" name="action" value="restore"><button type="submit">{{ ui.icon('refresh-cw') }}Unarchive</button></form>
+          {% else %}
+          <form method="post" action="/artifacts/{{ a.ref }}/archive" data-confirm="归档「{{ front.get('title') }}」？它会从研究档案列表里隐藏，文件、链接和历史都保留，随时可以恢复。"><input type="hidden" name="sha" value="{{ a.sha }}"><button type="submit">{{ ui.icon('folder') }}Archive</button></form>
+          {% endif %}
+          <hr>
+          <form method="post" action="/artifacts/{{ a.ref }}/delete" data-confirm="把「{{ front.get('title') }}」移到回收站？{% if related.back %}有 {{ related.back | length }} 份产出引用了它（{{ related.back | map(attribute='title') | join('、') | truncate(60) }}），它们的关联会断。{% endif %}文件会保留在 app/data/trash，可以找回。">
+            <input type="hidden" name="sha" value="{{ a.sha }}"><button type="submit" class="danger-text">{{ ui.icon('trash-2') }}Move to trash</button></form>
+        </div>
+      </details>
+    </div>
+    <details class="props-info">
+      <summary>信息</summary>
+      <dl class="props"><dt>编号</dt><dd><input type="text" class="mono small" readonly value="{{ a.ref }}" aria-label="编号" onfocus="this.select()"></dd></dl>
+    </details>
+    {% include "partials/_versions.html" %}
+  </aside>
+</div>
+
+{% else %}
+<div class="stack">
+  <details class="card"{% if saved and saved != 'body' %} open{% endif %}>
+    <summary>属性：标题、类别、课题、方向</summary>
+    <form method="post" action="/artifacts/{{ a.ref }}/meta" class="stack meta-form" id="meta-form">
+      <input type="hidden" name="sha" value="{{ a.sha }}">
+      <div class="field"><label for="m-title">标题</label><input type="text" id="m-title" name="title" value="{{ front.get('title') or '' }}" required></div>
+      <div class="grid-2">
+        <div class="field"><label for="m-type">类别</label><select id="m-type" name="type">{% for k in ['question', 'literature', 'data', 'conclusion'] %}<optgroup label="{{ L.kind[k] }}">{% for key, tt in types.items() %}{% if L.type_kind[key] == k %}<option value="{{ key }}"{% if key == t %} selected{% endif %}>{{ L.type[key] }}</option>{% endif %}{% endfor %}</optgroup>{% endfor %}</select></div>
+        <div class="field"><label for="m-level">成熟度</label><select id="m-level" name="level">{% for key in ['seed', 'developed', 'paper-ready'] %}<option value="{{ key }}"{% if key == front.get('level') %} selected{% endif %}>{{ L.level[key] }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="m-project">课题</label><select id="m-project" name="project">{% for slug, p in projects.items() %}<option value="{{ slug }}"{% if slug == front.get('project') %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="m-direction">方向</label><select id="m-direction" name="direction"><option value=""{% if not direction_explicit %} selected{% endif %}>跟随课题</option>{% for d in directions %}<option value="{{ d.slug }}"{% if direction_explicit and d.slug == front.get('direction') %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+      </div>
+      <input type="hidden" name="status" value="{{ front.get('status') or 'draft' }}">
+      <input type="hidden" name="version" value="{{ front.get('version') or 'v0.1' }}">
+      <input type="hidden" name="related" value="{{ related_text }}">
+      <div class="form-actions"><button class="btn secondary" type="submit">Save</button></div>
+    </form>
+  </details>
+
+  <form method="post" action="/artifacts/{{ a.ref }}/body" id="body-form" data-editor data-ref="{{ a.ref }}" class="card flush editor-card">
+    <input type="hidden" name="sha" value="{{ a.sha }}">
+    <div class="editor-bar">
+      <span class="segmented small mode-switch"><button type="button" class="on" data-editor-mode="wysiwyg" hidden title="像文档一样编辑">Doc</button><button type="button" data-editor-mode="markdown" hidden title="查看或编辑 Markdown 源码">Source</button></span>
+      <span class="editor-count" id="editor-count"></span>
+      <span class="editor-status muted small" id="editor-status" aria-live="polite">{% if saved == 'body' %}<span class="ok">已保存</span>{% else %}自动保存 · <kbd>⌘</kbd> <kbd>S</kbd> 立即保存{% endif %}</span>
+      <button class="btn small" type="submit" id="editor-save">Save</button>
+    </div>
+    <div id="editor-conflict"></div>
+    <div id="tui-editor" class="tui-host"></div>
+    <textarea name="body" id="body-src" class="mono body-src" rows="28" spellcheck="false">{{ edit_body }}</textarea>
+  </form>
+  {% if ai_notes %}
+  <details class="card">
+    <summary>助手笔记（只读，保存时原样保留）</summary>
+    <div class="prose">{{ ai_notes | md | safe }}</div>
+  </details>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('weekly.js') }}" defer></script>
+{% if tab == 'read' %}<script src="{{ asset('archive.js') }}" defer></script>{% endif %}
+{% if tab == 'edit' %}<script src="{{ asset('vendor/toastui-editor-all.min.js') }}" defer></script>
+<script src="{{ asset('vendor/toastui-editor-i18n-zh-cn.js') }}" defer></script>
+<script src="{{ asset('editor.js') }}" defer></script>{% endif %}{% endblock %}

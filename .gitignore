@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+app/.env
+app/data/
+/private/
+/_data/
+/_artifacts/
+/_harvests/
+/projects/
+.rl-content-root
+node_modules/
+.DS_Store
+packaging/macos/build*/
+packaging/macos/dist*/

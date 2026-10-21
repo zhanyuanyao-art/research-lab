@@ -1,0 +1,18 @@
+{# `e` is an excerpt view (routes/excerpts.py:view). `with_panel` appends the association panel. #}
+{% set _use_label = {'definition': '定义', 'evidence': '证据', 'counter': '反证', 'mechanism': '机制', 'method': '方法',
+                     'framing': '框定', 'quotable': '可引用'} %}
+<article class="card excerpt-row" id="row-{{ e.id }}">
+  <header class="excerpt-meta">
+    <a class="cite" href="/papers/{{ e.paper_id }}">{{ e.cite }}</a><span class="faint">·</span><span>{{ e.loc }}</span>
+    <span class="chip">{{ L.excerpt_kind[e.kind] }}</span>
+    {% if e.kind in ('quote', 'data') and not e.quote_verified %}<span class="chip status-draft"
+      title="页面文本中找不到这段原文：可能是照纸本录入，或文字识别有出入">原文未核对上</span>{% endif %}
+    {% if e.status == 'used' %}<span class="chip status-active">已用于产出</span>{% endif %}
+    {% for u in e.uses %}<span class="chip use">{{ _use_label.get(u, u) }}</span>{% endfor %}
+    {% if e.private %}<span class="chip">私密</span>{% endif %}
+    <a class="open-link" href="/excerpts/{{ e.id }}">详情</a>
+  </header>
+  <blockquote class="excerpt-quote">{{ e.quote if full else e.quote_short }}</blockquote>
+  <p class="excerpt-note">{{ e.my_note }}</p>
+</article>
+{% if with_panel %}{% include "partials/_association_panel.html" %}{% endif %}

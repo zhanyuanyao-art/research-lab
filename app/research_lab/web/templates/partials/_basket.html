@@ -1,0 +1,35 @@
+<section class="basket" id="basket">
+  <h2>篮子 <span class="muted count">{{ basket_count }}</span></h2>
+  <p class="kicker">本周划线或文件里已标记的划线，按引用它们的已接受主张分组。</p>
+  {% if not groups %}
+  <p class="muted">本周还没有划线。在论文页面保存的划线会出现在这里。</p>
+  {% else %}
+  <form hx-post="/week/draft" hx-target="#draft-panel" hx-swap="innerHTML" id="basket-form">
+    <input type="hidden" name="ref" value="{{ row.ref if row else '' }}">
+    {% for g in groups %}
+    <fieldset class="basket-group">
+      <legend>{% if g.claim %}<span class="chip status-active">主张{% if g.claim.code %} {{ g.claim.code }}{% endif %}</span> {{ g.claim.statement }}{% else %}<span class="chip">未归组</span>{% endif %}</legend>
+      <label class="basket-toggle"><input type="checkbox" data-toggle-group> 全选本组</label>
+      <ul class="basket-list">
+        {% for e in g.excerpts %}
+        <li>
+          <label>
+            <input type="checkbox" name="excerpt_ids" value="{{ e.id }}"{% if not e.in_file %} checked{% endif %}>
+            <span class="basket-head"><a href="/excerpts/{{ e.id }}" class="mono">{{ e.id }}</a> · {{ e.citation }} · <span class="chip">{{ L.excerpt_kind[e.kind] }}</span>{% if e.in_file %} <span class="chip status-active">已在文件中</span>{% endif %}{% if e.private %} <span class="chip status-draft">私密</span>{% endif %}</span>
+            <span class="basket-quote">{{ e.quote | truncate(260) }}</span>
+            {% if e.my_note %}<span class="basket-note">{{ e.my_note | truncate(200) }}</span>{% endif %}
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </fieldset>
+    {% endfor %}
+    {% if row %}
+    <button class="btn" type="submit">Draft from selection<span class="spinner"></span></button>
+    <p class="muted small">返回 Evidence 要点、提纲和问题；永远不会替你写「想清楚了什么」或「主张」。</p>
+    {% else %}
+    <p class="muted small">先创建本周的种子，然后“用所选划线起草”会为它生成 Evidence 建议。</p>
+    {% endif %}
+  </form>
+  {% endif %}
+</section>

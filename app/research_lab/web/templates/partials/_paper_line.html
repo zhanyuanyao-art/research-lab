@@ -1,0 +1,36 @@
+{#- One paper in the library list (card 0128, docs/design/LIBRARY-UI.md §四、§五): fixed tracks, 40px. State circle,
+    the title on one line, four mark slots (方向 · 概要 · 课题 · 议题; an empty slot keeps its width), 作者 · 年份,
+    the import date, ⋯ on hover. The marks say their text on hover (.tip). Expects `paper` from routes/papers.py
+    _line(); `show_dir` adds the 方向 mark where the list is neither grouped nor inside one direction. The 议题 mark
+    (card 0131) lists the issues that use the paper, 「NTSP-0002 · 标题」, read through the paper_issues global of
+    routes/issues.py, whose index is rebuilt only when the files behind it change. The ⋯ menu is filled by papers.js from
+    #paper-line-menu, so fifty rows do not carry fifty copies of it. The title carries the list's query as `from`
+    (empty for 全部), so the reader's 上一篇 / 下一篇 walk this list. -#}
+{%- macro i(name) %}<svg class="i sm" aria-hidden="true"><use href="{{ asset('icons.svg') }}#{{ name }}"></use></svg>{% endmacro -%}
+{%- set st = paper.status -%}
+{%- set st_tip = status_labels[st] ~ (' · ' ~ paper.opened_day ~ '打开' if paper.opened_day and st != 'unread' else '') -%}
+{%- set dname = direction_names.get(paper.direction) -%}
+<li class="paper-line" data-paper-id="{{ paper.id }}" data-state="{{ st }}"{% if not paper.n_files %} data-file="0"{% endif %} draggable="true"
+    data-filter="{{ (paper.title ~ ' ' ~ (paper.authors | join(' ')) ~ ' ' ~ (paper.doi or '')) | lower }}">
+  <span class="issue-state{% if st == 'reading' %} doing{% elif st == 'done' %} done{% endif %} tip" tabindex="0" data-tip="{{ st_tip }}" aria-label="{{ st_tip }}">{% if st == 'done' %}{{ i('check') }}{% endif %}</span>
+  <a class="pl-title" href="/papers/{{ paper.id }}{% if from_q is defined %}?from={{ from_q | urlencode }}{% endif %}" title="{{ paper.title }}"{% if paper.language %} lang="{{ paper.language }}"{% endif %}>{{ paper.title }}</a>
+  <span class="pl-tail">
+    <span class="pl-marks">
+      {%- if show_dir and dname %}<span class="dir-dot tip" tabindex="0" style="--dc: {{ direction_color(paper.direction) }}" data-tip="{{ dname }}" aria-label="{{ dname }}"></span>
+      {%- elif show_dir %}<span class="dir-dot tip" tabindex="0" data-tip="未分类" aria-label="未分类"></span>
+      {%- else %}<span class="dir-dot none" aria-hidden="true"></span>{% endif -%}
+      {%- if not paper.n_files %}<span class="sig on tip" tabindex="0" data-tip="待补原文" aria-label="待补原文">{{ i('file-x') }}</span>
+      {%- elif paper.summary_mode %}<span class="sig {{ 'on' if paper.summary_mode == 'full' else 'light' }} tip" tabindex="0" data-tip="{{ summary_mode_names[paper.summary_mode] }}" aria-label="{{ summary_mode_names[paper.summary_mode] }}">{{ i('sparkles') }}</span>
+      {%- else %}<span class="sig" aria-hidden="true"></span>{% endif -%}
+      {%- if paper.project_names %}{% set ptip = '课题\n' ~ (paper.project_names | join('\n')) %}<span class="sig on tip" tabindex="0" data-tip="{{ ptip }}" aria-label="{{ ptip }}">{{ i('folder') }}</span>
+      {%- else %}<span class="sig" aria-hidden="true"></span>{% endif -%}
+      {%- set pissues = paper_issues(paper.id) if paper_issues is defined else [] -%}
+      {%- if pissues %}{% set itip = '议题\n' ~ (pissues | map(attribute='label') | join('\n')) %}<span class="sig on tip" tabindex="0" data-tip="{{ itip }}" aria-label="{{ itip }}">{{ i('list-checks') }}</span>
+      {%- else %}<span class="sig" aria-hidden="true"></span>{% endif %}
+    </span>
+    <span class="pl-by">{{ paper.byline }}</span>
+    {%- set dtip = '导入于 ' ~ paper.created_day ~ ('\n上次打开 ' ~ paper.opened_day if paper.opened_day else '') %}
+    <span class="pl-date tip end" tabindex="0" data-tip="{{ dtip }}">{{ paper.created_day }}</span>
+  </span>
+  <span class="hover-acts"><details class="menu line-menu"><summary class="btn ghost quiet icon small" aria-label="More: {{ paper.title }}" title="More">{{ i('ellipsis') }}</summary><div class="menu-panel"></div></details></span>
+</li>

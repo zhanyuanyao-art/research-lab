@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('excerpts.css') }}">{% endblock %}
+{% block crumbs %}<a href="/papers">文献</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">划线</span>{% endblock %}
+{% block content %}
+{% set filter_label = {'suggestions': '待审建议', 'all': '全部'} %}
+{% set use_label = {'definition': '定义', 'evidence': '证据', 'counter': '反证', 'mechanism': '机制', 'method': '方法',
+                    'framing': '框定', 'quotable': '可引用'} %}
+<div class="excerpts-head page-header">
+  <div class="titles"><h1 class="page-title">划线</h1><p class="page-desc">读文献时标出的段落和你的批注。助手会为每条划线找相关材料，建议它可以放进哪份产出。</p></div>
+  {% include "partials/_excerpt_form.html" %}
+</div>
+{% if form_error %}<p class="form-error" role="alert">{{ form_error }}</p>{% endif %}
+
+<nav class="filter-bar" aria-label="筛选划线">
+  {% for f in filters %}
+  <a class="chip{% if f == filter %} status-active{% endif %}" href="/excerpts?filter={{ f }}">{{ filter_label.get(f) or L.excerpt_status[f] }}{% if counts.get(f) %} · {{ counts.get(f) }}{% endif %}</a>
+  {% endfor %}
+  <form class="filter-form" method="get" action="/excerpts">
+    <input type="hidden" name="filter" value="{{ filter }}">
+    <select name="paper" aria-label="文献"><option value="">全部文献</option>
+      {% for p in papers %}<option value="{{ p.id }}"{% if p.id == paper_filter %} selected{% endif %}>{{ p.title | truncate(40, true, '…') if p.title else '未命名文献' }}{% if p.year %}（{{ p.year }}）{% endif %}</option>{% endfor %}</select>
+    <select name="project" aria-label="课题"><option value="">全部课题</option>
+      {% for slug, pr in projects.items() %}<option value="{{ slug }}"{% if slug == project_filter %} selected{% endif %}>{{ pr.name }}</option>{% endfor %}</select>
+    <select name="use" aria-label="用途"><option value="">全部用途</option>
+      {% for u in uses_vocab %}<option value="{{ u }}"{% if u == use_filter %} selected{% endif %}>{{ use_label.get(u, u) }}</option>{% endfor %}</select>
+    <button class="btn small secondary" type="submit">Filter</button>
+  </form>
+</nav>
+
+{% if review %}
+<section class="review">
+  <h2>审阅建议 <span class="muted">（{{ review | length }} 条划线）</span></h2>
+  {% for g in review %}{% set e = g.e %}{% set p = g.p %}
+  <div class="review-group">
+    {% include "partials/_excerpt_row.html" %}
+    {% include "partials/_association_panel.html" %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if filter != 'suggestions' %}
+<section>
+  <h2>{{ filter_label.get(filter) or L.excerpt_status[filter] }}</h2>
+  {% for e in rows %}{% include "partials/_excerpt_row.html" %}
+  {% else %}<p class="muted">这里还没有划线。打开一篇文献，选中文字后按 <kbd>e</kbd>；或在本页按 <kbd>e</kbd> 粘贴一段。</p>{% endfor %}
+</section>
+{% elif not review %}
+<p class="muted">暂无待审建议。</p>
+{% endif %}
+{% endblock %}

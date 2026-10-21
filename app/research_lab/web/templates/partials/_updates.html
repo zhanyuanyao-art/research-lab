@@ -1,0 +1,17 @@
+{#- 评论 under one output: the same thread and composer as an issue page (card 0097): comments in Markdown with
+    the rich editor, Leo's own editable and deletable, the app's lines (成熟度、归档、版本、完成待办) and property
+    changes as grey events. Expects a, issue_updates (files/issues.comments), issue_updates_more. -#}
+{% set hx = 'hx-select="#issue-activity" hx-target="#issue-activity" hx-swap="outerHTML"' %}
+<link rel="stylesheet" href="{{ asset('vendor/issue-editor.css') }}">
+<section class="issue-updates" id="updates" aria-label="评论">
+  <div class="issue-block-head"><h3>评论</h3>{% if issue_updates_more %}<span class="muted small">更早的 {{ issue_updates_more }} 条没有显示</span>{% endif %}</div>
+  {% if issue_updates %}
+  {% with items = issue_updates, update_comments = '/artifacts/' ~ a.ref ~ '/updates', issue_comments = none %}{% include "partials/_activity.html" %}{% endwith %}
+  {% else %}<p class="muted small issue-empty">还没有评论。写下今天做到哪了、导师说了什么；改成熟度、归档、完成子任务会自动记一笔。</p>{% endif %}
+  <form method="post" action="/artifacts/{{ a.ref }}/updates" hx-post="/artifacts/{{ a.ref }}/updates" {{ hx | safe }} class="tl-compose issue-comment-form">
+    {#- issues.js loads the editor on demand from these two files (this page does not include them itself). -#}
+    <textarea class="inline-edit" name="text" rows="2" data-autogrow data-rich maxlength="4000" placeholder="写评论…" aria-label="写评论"
+      data-editor-assets="{{ asset('vendor/tiptap-editor.min.js') }} {{ asset('issue-editor.js') }}"></textarea>
+    <div class="tl-compose-bar"><span class="muted small"><kbd>⌘</kbd> <kbd>↩</kbd> 发出</span><button class="btn small" type="submit">Comment</button></div>
+  </form>
+</section>

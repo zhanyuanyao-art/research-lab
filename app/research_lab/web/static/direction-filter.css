@@ -1,0 +1,8 @@
+/* The 研究方向 bar (partials/_direction_filter.html): the .tabs rail of the 推送 page's .feed-bar, one step
+   smaller, each direction marked by its .dir-dot. Loaded by base.html on the pages that show the bar. */
+.dir-filter { gap: 18px; margin: 0 0 16px; }
+.dir-filter a { gap: 4px; padding: 7px 0 9px; font-size: var(--text-ui); }
+.dir-filter a.on { font-weight: 500; }
+.dir-filter .dir-dot { width: 12px; margin-left: -2px; }
+.dir-filter .count { font-size: var(--text-meta); color: var(--faint); font-weight: 400; font-variant-numeric: tabular-nums; }
+.feed-bar + .dir-filter { margin-top: -12px; }

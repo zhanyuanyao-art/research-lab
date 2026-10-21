@@ -1,0 +1,24 @@
+{# Polls itself while the job is open (slower when a Claude Code session works the queue out of band);
+   the server answers with the full panel once it is done. #}
+{% set open = job.status in ('queued', 'claimed') %}
+<div class="assoc-panel job-status" id="{{ 'assoc-panel-' ~ excerpt_id if excerpt_id else 'job-' ~ job.id }}"
+     {% if open %}hx-get="/_p/job/{{ job.id }}/status" hx-trigger="every {{ '8s' if ai_mode == 'agent' and job.status == 'queued' else '2s' }}" hx-swap="outerHTML"{% endif %}>
+  {% if job.status == 'queued' and ai_mode == 'agent' %}
+    <p class="job-line"><span class="pulse" aria-hidden="true"></span>已交给助手，关联建议稍后出现在这里 <span class="muted">· 可以继续阅读</span></p>
+  {% elif job.status == 'queued' %}
+    <p class="job-line"><span class="pulse" aria-hidden="true"></span>排队中 <span class="muted">· 约 10 秒</span></p>
+  {% elif job.status == 'claimed' %}
+    <p class="job-line"><span class="pulse" aria-hidden="true"></span>正在关联… <span class="muted">· 可以继续阅读</span></p>
+  {% elif job.status == 'failed' %}
+    <p class="job-line crit">关联失败</p>
+    {% if job.error %}<details class="small-text"><summary>错误信息</summary><p class="muted mono">{{ job.error[:300] }}</p></details>{% endif %}
+    {% if excerpt_id %}<button class="btn small secondary" hx-post="/excerpts/{{ excerpt_id }}/reassociate"
+        hx-target="closest .assoc-panel" hx-swap="outerHTML">Retry</button>{% endif %}
+  {% elif job.status == 'cancelled' %}
+    <p class="job-line muted">关联已取消</p>
+    {% if excerpt_id %}<button class="btn small secondary" hx-post="/excerpts/{{ excerpt_id }}/reassociate"
+        hx-target="closest .assoc-panel" hx-swap="outerHTML">Rerun links</button>{% endif %}
+  {% else %}
+    <p class="job-line">{{ L.job_status[job.status] }}</p>
+  {% endif %}
+</div>

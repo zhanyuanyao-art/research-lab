@@ -1,0 +1,40 @@
+{#- The summary in the reader's 概要 tab (card 0129, docs/design/LIBRARY-UI.md §3.2): no card frame, 研究问题 and 核心论点
+    with their pages, then for a light summary (card 0122) what it read and Full summary; a full one keeps 展开更多
+    and 优先阅读. Regenerate lives in the header's ⋯ menu; Generate summary shows here while there is none.
+    Swapped by htmx as #summary-card (polling, adopt, summarize). -#}
+{% macro pages_links(pages) %}{% for pg in pages or [] %}<a class="page-ref small" data-page-label="{{ pg }}" href="/papers/{{ paper.id }}/read?page={{ pg | urlencode }}">p. {{ pg }}</a>{% endfor %}{% endmacro %}
+{% macro entry(key, label) %}{% set v = summary.get(key) or {} %}{% if v.text %}<dt>{{ label }}<span class="refs">{{ pages_links((v.pages or [])[:3]) }}</span></dt><dd>{{ v.text }}</dd>{% endif %}{% endmacro %}
+{% set fnames = field_names or {} %}{% set dnames = direction_names or {} %}
+<section id="summary-card" class="summary-card"{% if polling %} hx-get="/papers/{{ paper.id }}/summary" hx-trigger="every {{ poll_every or '3s' }}" hx-swap="outerHTML"{% endif %}>
+  {% set light = summary and summary.mode == 'light' %}
+  {% if polling %}<p class="muted small sum-state" role="status">{{ '正在生成概要…' if job.status == 'claimed' else '概要已排队。' }}</p>
+  {% elif job and job.status == 'failed' and not summary %}<p class="crit small sum-state" role="alert">概要生成失败，请重试。</p>
+  {% elif not summary %}<p class="muted small sum-state">{{ '还没有概要。' if has_pdf else '补上 PDF 后生成概要。' }}</p>{% endif %}
+  {% if not summary and has_pdf and not polling %}<button class="btn secondary small" hx-post="/papers/{{ paper.id }}/summarize" hx-target="#summary-card" hx-swap="outerHTML">Generate summary</button>{% endif %}
+  {% if summary %}
+  <dl class="sum">{{ entry('research_question', '研究问题') }}{{ entry('argument', '核心论点') }}</dl>
+  {% if light %}
+  <div class="sum-light" data-summary-light><span>只读了标题、摘要和正文首页。机制、方法和优先阅读的页码要读完全文才有。</span>
+    {% if has_pdf and not polling %}<button class="btn secondary small" hx-post="/papers/{{ paper.id }}/summarize" hx-vals='{"mode": "full"}' hx-target="#summary-card" hx-swap="outerHTML" title="读全文，生成完整概要" data-summary-full>Full summary</button>{% endif %}
+  </div>
+  {% else %}
+  <details class="side-fold" data-summary-section="more"><summary>展开更多</summary>
+    <dl class="sum">{% for key, label in summary_rows if key not in ('research_question', 'argument') %}{{ entry(key, label) }}{% endfor %}
+      {% if summary.contests %}<dt>反驳对象</dt><dd>{{ summary.contests | join(' · ') }}</dd>{% endif %}
+      {% if summary.cases %}<dt>案例 · 待核实</dt><dd>{{ summary.cases | join(' · ') }}</dd>{% endif %}
+      {% if summary.key_terms %}<dt>关键术语</dt><dd>{{ summary.key_terms | join(' · ') }}</dd>{% endif %}
+    </dl>
+  </details>{% endif %}
+  {% if summary.read_first %}<details class="side-fold" data-summary-section="pages"><summary>优先阅读<span class="count">{{ summary.read_first | length }}</span></summary><ul class="read-first">{% for r in summary.read_first %}<li>{{ pages_links([r.page]) }} {{ r.why }}</li>{% endfor %}</ul></details>{% endif %}
+  <details class="side-fold summary-review" data-summary-section="review"{% if adopted or fields_error %} open{% endif %}><summary>核对与整理</summary>
+    <p class="muted small">核对原文后，采纳到文献地图。</p>
+    {% for key, label in summary_rows if key in adopt_from %}{% set v = summary.get(key) or {} %}{% if v.text %}<div class="row"><span class="small">{{ label }}</span><button class="btn secondary small" hx-post="/papers/{{ paper.id }}/adopt/{{ adopt_from[key] }}" hx-target="#summary-card" hx-swap="outerHTML">Adopt</button></div>{% endif %}{% endfor %}
+    {% set cg = summary.camp_guess or {} %}{% if cg.camp %}<p class="small">阵营建议：{{ cg.camp }} · {{ cg.why or '' }} {{ pages_links(cg.pages) }}</p><button class="btn secondary small" hx-post="/papers/{{ paper.id }}/adopt/camp" hx-target="#summary-card" hx-swap="outerHTML">Adopt camp</button>{% endif %}
+    {% set dg = summary.direction or {} %}{% if dg.slug %}<p class="small">方向建议：{{ dnames.get(dg.slug, dg.slug) }} · {{ dg.why or '' }}</p>{% if paper.direction == dg.slug %}<span class="muted small">已采纳</span>{% else %}<button class="btn secondary small" hx-post="/papers/{{ paper.id }}/adopt/direction" hx-target="#summary-card" hx-swap="outerHTML">Adopt direction</button>{% endif %}{% endif %}
+    <div class="stack">{% for slug in paper_projects %}<a href="/projects/{{ slug }}/map">{{ (projects or {}).get(slug, {}).get('name', slug) }} · 文献地图</a>{% else %}<button class="btn ghost small" type="button" data-add-project-open>Add to project</button>{% endfor %}</div>
+    {% if adopted %}<p class="flash">{% if adopted == 'direction' %}已设为这篇论文的方向。{% else %}已复制到“{{ fnames.get(adopted, adopted) }}”。{% endif %}</p>{% endif %}
+  </details>
+  {% endif %}
+  {% if fields_error %}<p class="crit" role="alert">{{ fields_error }}</p>{% endif %}
+  {% if fields_saved %}<p class="muted small" role="status">已保存。</p>{% endif %}
+</section>

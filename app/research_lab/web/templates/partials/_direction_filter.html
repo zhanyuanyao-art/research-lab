@@ -1,0 +1,9 @@
+{#- The one 研究方向 bar of 文献 · 数据 · 产出 · 推送 (card 0066). A pick is remembered across these four pages
+    until 全部 (web/context.py chosen_direction). Needs dir_filter, the slug the page shows; dir_counts (slug → n)
+    and dir_total are optional. -#}
+<nav class="tabs dir-filter" aria-label="研究方向">
+  <a href="{{ direction_url(request, '') }}"{% if not dir_filter %} class="on" aria-current="true"{% endif %}>全部{% if dir_total is defined %}<span class="count">{{ dir_total }}</span>{% endif %}</a>
+  {%- for d in directions %}
+  <a href="{{ direction_url(request, d.slug) }}" style="--dc: {{ d.color }}"{% if d.slug == dir_filter %} class="on" aria-current="true"{% endif %}><span class="dir-dot" aria-hidden="true"></span>{{ d.name }}{% if dir_counts is defined %}<span class="count">{{ dir_counts.get(d.slug, 0) }}</span>{% endif %}</a>
+  {%- endfor %}
+</nav>

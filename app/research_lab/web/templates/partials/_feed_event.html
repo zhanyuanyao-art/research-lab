@@ -1,0 +1,30 @@
+{#- One event of the day's brief as a grid cell (card 0106): region above the title, what happened and why, one grey
+    line with at most two outlets (「等 N 家」 opens the full list, so a paywalled report can be swapped for another),
+    the event's world-lane report carrying the actions. The first event is the lead: same cell, larger type. -#}
+{% import "partials/ui.html" as ui with context %}
+{% from "partials/_feed_actions.html" import actions with context %}
+{% set ev, it = event.event, event.item %}
+{% set row_id = 'fe-' ~ event_day ~ '-' ~ event.index %}
+{% set vals = {'event_day': event_day, 'event_index': event.index | string} %}
+{% set link = it.url if it else (ev.sources[0].url if ev.sources else none) %}
+<article class="story feed-event{% if event.index == 0 %} lead{% endif %}{% if it and it.status == 'dismissed' %} dismissed{% endif %}" id="{{ row_id }}">
+  {% if it and it.status == 'dismissed' %}
+  <div class="foot"><span class="byline">已忽略<span class="sep"></span>{{ ev.title }}</span>{{ actions(it, row_id, vals) }}</div>
+  {% else %}
+  {% if ev.region %}<div class="kicker">{{ ev.region }}</div>{% endif %}
+  {% if link %}<a class="title" href="{{ link }}" target="_blank" rel="noopener">{{ ev.title }}</a>{% else %}<span class="title">{{ ev.title }}</span>{% endif %}
+  <p class="text">{{ ev.what }}{% if ev.why %} <span class="why">{{ ev.why }}</span>{% endif %}</p>
+  {% set ns = namespace(names=[], sources=[]) %}
+  {% for src in ev.sources %}{% set name = short_source(src.source) %}{% if name and name not in ns.names %}{% set ns.names = ns.names + [name] %}{% set ns.sources = ns.sources + [{'name': name, 'url': src.url}] %}{% endif %}{% endfor %}
+  <div class="foot">
+    {{ ui.dir_dot(ev.direction) }}
+    <span class="byline">{% for src in ns.sources[:2] %}{% if not loop.first %}、{% endif %}{{ src.name }}{% endfor %}</span>
+    {% if ns.sources | length > 2 %}
+    <details class="menu feed-outlets"><summary class="tip" data-tip="{{ ns.names | join('、') }}" aria-label="全部 {{ ns.sources | length }} 家报道">等 {{ ns.sources | length }} 家</summary>
+      <div class="menu-panel">{% for src in ns.sources %}{% if src.url %}<a href="{{ src.url }}" target="_blank" rel="noopener">{{ src.name }}</a>{% else %}<span class="muted">{{ src.name }}</span>{% endif %}{% endfor %}</div>
+    </details>
+    {% endif %}
+    {% if it %}{{ actions(it, row_id, vals) }}{% else %}<div class="hover-acts"></div>{% endif %}
+  </div>
+  {% endif %}
+</article>

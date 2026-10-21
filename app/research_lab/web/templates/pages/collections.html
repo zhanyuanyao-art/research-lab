@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('papers.css') }}">{% endblock %}
+{% block crumbs %}<a href="/papers">文献</a>{{ ui.icon('chevron-right','sm') }}<span class="current">集合</span>{% endblock %}
+{% block content %}
+{#- 集合 (card 0132, docs/design/LIBRARY-UI.md §3.4): reading lists across directions, in the library rows' columns:
+    name, the directions its papers come from, papers and unread, last change, ⋯ (Rename, Move up / down, Delete);
+    New collection last, aligned like 研究档案's add row. papers.js does the writes: the forms are data-library-form,
+    rows drag to reorder (data-folder-id), and a row's first form is its rename form. -#}
+<div class="lib-page">
+<header class="page-header">
+  <div class="titles"><h1 class="page-title">集合</h1><p class="page-desc muted">跨方向的书单。一篇文献可以同时在几个集合里，移出集合不会删除文献。</p></div>
+  <div class="page-actions"><button type="button" class="btn" data-new-folder>{{ ui.icon('plus') }}New collection</button></div>
+</header>
+<div class="library" id="library">
+  {% if note %}<div class="flash">{{ ui.icon('check' if request.query_params.get('folder') == 'deleted' else 'info', 'sm') }}{{ note }}</div>{% endif %}
+  <ul class="coll-lines" aria-label="集合" data-folder-order="{{ collection_order }}">
+    {% for c in collections %}
+    <li class="coll-line" draggable="true" data-folder-id="{{ c.id }}">
+      {{ ui.icon('layers') }}
+      <a class="name" href="/papers?collection={{ c.id }}" data-drop-collection="{{ c.id }}" data-folder-name>{{ c.name }}</a>
+      <span class="dots"{% if c.directions %} title="来自：{% for d in c.directions %}{{ direction_names.get(d, d) }}{% if not loop.last %}、{% endif %}{% endfor %}"{% endif %}>
+        {%- for d in c.directions[:4] %}<span class="dir-dot" style="--dc: {{ direction_color(d) }}" aria-hidden="true"></span>{% endfor -%}
+        {%- for _ in range(4 - (c.directions[:4] | length)) %}<span class="dir-dot none" aria-hidden="true"></span>{% endfor -%}
+      </span>
+      <span class="n">{{ c.total }} 篇{% if c.unread %} · {{ c.unread }} 篇未读{% endif %}</span>
+      <span class="when">{{ c.when }}</span>
+      <span class="hover-acts"><details class="menu"><summary class="btn ghost quiet icon small" aria-label="More: {{ c.name }}">{{ ui.icon('ellipsis','sm') }}</summary><div class="menu-panel">
+        <button type="button" data-rename-collection="{{ c.id }}">{{ ui.icon('pencil','sm') }}Rename</button>
+        <button type="button" data-folder-step="-1"{% if loop.first %} disabled{% endif %}>{{ ui.icon('chevron-up','sm') }}Move up</button>
+        <button type="button" data-folder-step="1"{% if loop.last %} disabled{% endif %}>{{ ui.icon('chevron-down','sm') }}Move down</button>
+        <hr><button type="submit" form="delete-{{ c.id }}" class="danger-text">{{ ui.icon('trash-2','sm') }}Delete</button>
+      </div></details></span>
+      <form action="/paper-collections/{{ c.id }}/rename" method="post" data-library-form class="folder-name-form" hidden><input type="hidden" name="version" value="{{ c.version }}"><input class="inline-edit" name="name" value="{{ c.name }}" aria-label="集合名称：{{ c.name }}" required maxlength="60"><button class="btn secondary small" type="submit">Save</button><button type="button" class="btn ghost small" data-cancel-folder>Cancel</button></form>
+      <form action="/paper-collections/{{ c.id }}/delete" method="post" id="delete-{{ c.id }}" data-confirm="删除集合「{{ c.name }}」？集合里的文献不会删除，方向和课题也不变。" hidden><input type="hidden" name="version" value="{{ c.version }}"></form>
+    </li>
+    {% endfor %}
+    <li class="coll-line add">{{ ui.icon('plus') }}<button type="button" class="name" data-new-folder>New collection</button></li>
+  </ul>
+  <form action="/paper-collections" method="post" data-library-form data-new-folder-form class="folder-name-form coll-create" hidden><input class="inline-edit" name="name" aria-label="新集合名称" placeholder="集合名称，比如：开题必读" required maxlength="60"><button class="btn secondary small" type="submit">Create</button><button type="button" class="btn ghost small" data-cancel-folder>Cancel</button></form>
+  {% if not collections %}<p class="coll-note">还没有集合。集合是跨方向的书单，比如开题必读、第二章材料、待引用；在文献列表里点一行的 ⋯，选 Add to collection 放进来。</p>{% endif %}
+</div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('papers.js') }}" defer></script>{% endblock %}

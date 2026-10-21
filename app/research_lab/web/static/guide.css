@@ -1,0 +1,23 @@
+/* Layout only: Coach inherits the shared cards, controls, type and theme. */
+.coach { max-width: 880px; margin: 20px auto 60px; }
+.coach .page-header { align-items: flex-start; }
+.coach-path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 0; margin: 28px 0; list-style: none; }
+.coach-path li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.coach-path a { display: inline-flex; align-items: center; gap: 6px; }
+.coach-body { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 28px; align-items: start; }
+.coach-main { min-width: 0; }
+.coach-main .card-head { margin-bottom: 8px; }
+.coach-main > .muted { margin: 0 0 24px; }
+.coach-main .form-actions { margin-top: 24px; flex-wrap: wrap; }
+.coach-note { padding-top: 12px; }
+.coach-note p { margin: 8px 0 22px; }
+.coach .dropzone { margin-top: 20px; min-height: 120px; justify-content: center; }
+.coach .form-actions > form { margin: 0; }
+.coach .progress { margin-top: 16px; }
+.coach footer { margin-top: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; }
+@media (max-width: 720px) {
+  .coach { margin-top: 0; }
+  .coach-body { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .coach-path { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .coach-note { padding: 0; }
+}

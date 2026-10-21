@@ -1,0 +1,67 @@
+{# Macros: import with `{% import "partials/_artifact_meta.html" as am with context %}`. #}
+{% macro meta(m, direction=None) %}
+{% set t = types.get(m.get('type')) %}{% set p = projects.get(m.get('project')) %}{% set d = direction_map.get(direction or m.get('direction')) %}
+<div class="artifact-meta">
+  <span class="chip mono">{{ m.get('ref') }}</span>
+  <span class="chip">{{ m.get('week') | week_zh }}</span>
+  <span class="chip">{{ L.type[m.get('type')] }}</span>
+  <span class="chip level-{{ m.get('level') }}">{{ L.level[m.get('level')] }}</span>
+  {% if d %}<a class="chip dir-chip" href="/artifacts/d/{{ d.slug }}" title="研究方向">{{ d.name }}</a>{% else %}<span class="chip dir-chip none">未分类</span>{% endif %}
+  <span class="chip">{% if p %}<a href="/projects/{{ p.slug }}">{{ p.name }}</a>{% else %}{{ m.get('project') }}{% endif %}</span>
+  <span class="chip status-{{ m.get('status') }}">{{ L.status[m.get('status')] }} · {{ m.get('version') }}</span>
+</div>
+{% endmacro %}
+
+{% macro dir_chip(slug) %}{% set d = direction_map.get(slug) %}{% if d %}<a class="chip dir-chip" href="/artifacts/d/{{ d.slug }}">{{ d.name }}</a>{% endif %}{% endmacro %}
+
+{% macro strip(cells, label='') %}
+<div class="cadence mini" title="每格一个 ISO 周{% if label %} · {{ label }}{% endif %}">
+  {% for c in cells %}<a class="cell{% if c.level %} lvl-{{ c.level }}{% endif %}{% if c.current %} current{% endif %}"
+     {% if c.ref %}href="/artifacts/{{ c.ref }}"{% endif %} title="{{ c.week | week_zh }}{% if c.title %} · {{ c.title }} · {{ L.level[c.level] }}{% endif %}"></a>{% endfor %}
+</div>
+{% endmacro %}
+
+{% macro type_groups(groups) %}
+<div class="type-groups">
+  {% for g in groups %}{% set t = types.get(g.type) %}
+  <div class="type-group">
+    <div class="type-head">{{ L.type[g.type] }} <span class="muted">{{ g['items'] | length }}</span></div>
+    <ul>
+      {% for a in g['items'] %}<li><a href="/artifacts/{{ a.ref }}">{{ a.title }}</a>
+        <span class="chip level-{{ a.level }} tiny">{{ L.level[a.level] }}</span>
+        <span class="mono muted tiny-text">{{ a.week | short_week }}</span>{% if not a.counts %} <span class="chip status-draft tiny">结论待写</span>{% endif %}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro new_artifact_form(next='', preset_type='', default_project='', submit='Create', week_label='', preset_direction='', form=None) %}
+<form method="post" action="/artifacts" class="stack new-artifact" id="seed">
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  <div class="row">
+    <div class="grow"><label for="na-type">类型</label>
+      <select id="na-type" name="type" required>
+        {% for key, t in types.items() %}<option value="{{ key }}"{% if key == preset_type %} selected{% endif %}>{{ L.type[key] }}</option>{% endfor %}
+      </select></div>
+    <div class="grow"><label for="na-level">成熟度</label>
+      <select id="na-level" name="level">
+        {% for key, l in levels.items() %}<option value="{{ key }}"{% if key == ((form or {}).get('level') or 'seed') %} selected{% endif %}>{{ L.level[key] }}</option>{% endfor %}
+      </select></div>
+  </div>
+  <div class="row">
+    <div class="grow"><label for="na-project">项目</label>
+      <select id="na-project" name="project">
+        {% for slug, p in projects.items() %}<option value="{{ slug }}" data-direction="{{ p.direction or '' }}"{% if slug == default_project %} selected{% endif %}>{{ p.name }}</option>{% endfor %}
+      </select></div>
+    <div class="grow"><label for="na-direction">研究方向</label>
+      <select id="na-direction" name="direction">
+        <option value="">跟随项目的方向</option>
+        {% for d in directions %}<option value="{{ d.slug }}"{% if d.slug == preset_direction %} selected{% endif %}>{{ d.name }}</option>{% endfor %}
+      </select></div>
+  </div>
+  <div><label for="na-title">标题</label><input type="text" id="na-title" name="title" required value="{{ (form or {}).get('title', '') }}" placeholder="例如：Puzzle: the chair rule survives falling attendance" data-slug-source="na-slug"></div>
+  <div><label for="na-slug">Slug（文件名 {{ week_label or current_week }}-<em>slug</em>.md，只用小写字母、数字和连字符）</label><input type="text" id="na-slug" name="slug" class="mono" value="{{ (form or {}).get('slug', '') }}" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="chair-rule-puzzle"></div>
+  <div><button class="btn" type="submit">{{ submit }}</button></div>
+</form>
+{% endmacro %}

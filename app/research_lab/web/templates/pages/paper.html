@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}
+<link rel="stylesheet" href="{{ asset('pdfjs/web/pdf_viewer.css') }}">
+<link rel="stylesheet" href="{{ asset('paper-reader.css') }}">
+{% endblock %}
+{% block crumbs %}{% set d = direction_map.get(paper.direction) %}<a href="/papers">文献</a>{{ ui.icon('chevron-right', 'sm') }}{% if d %}<a href="/papers?direction={{ paper.direction }}" title="{{ d.name }}">{{ d.name }}</a>{{ ui.icon('chevron-right', 'sm') }}{% endif %}<span class="current" title="{{ byline }} · {{ paper.title }}">{{ byline }}</span>{% endblock %}
+{% block content %}
+{#- The reader (card 0129, docs/design/LIBRARY-UI.md §3.2): one header row, then the PDF and the side panel side by
+    side, each scrolling on its own, so the page itself never scrolls on a desktop. The side panel has 信息 (citation, files,
+    translation, tools, old excerpts; open by default, card 0200) and 概要 (four properties, then the summary). Keys: [ and ] for the
+    previous and next paper in the list it was opened from, \ for the side panel (paper-reader.js). -#}
+{%- set fq = ('?from=' ~ (from_q | urlencode)) if from_q is not none else '' -%}
+<div class="read-page tab-info" id="read-page">
+{% if note in ('attached', 'pdf-added') %}<div class="flash">已补上 PDF。</div>{% elif note == 'pdf-replaced' %}<div class="flash">已换成新的 PDF，概要会重新生成。</div>{% elif note == 'pdf-removed' %}<div class="flash">已移除这份 PDF。</div>{% elif note == 'duplicate' %}<div class="flash">这份文献已在库中。</div>{% endif %}
+{% if pdf_error %}<div class="banner warning" role="alert">没有补上 PDF：{{ pdf_error }}</div>{% endif %}
+{% if file_error %}<div class="banner warning" role="alert">文件没有改动：{{ file_error }}</div>{% endif %}
+<header class="read-head">
+  <h1 title="{{ paper.title }}"{% if paper.language %} lang="{{ paper.language }}"{% endif %}>{{ paper.title }}</h1>
+  {%- set by_tip = (paper.authors | join('、') or '作者不详') ~ ('\n' ~ paper.venue if paper.venue else '') ~ ('\ndoi:' ~ paper.doi if paper.doi else '') ~ ('\n来自推送 · ' ~ from_feed if from_feed else '') %}
+  <span class="read-by tip" tabindex="0" data-tip="{{ by_tip }}">{{ byline }}{% if paper.venue %} · {{ paper.venue }}{% endif %}{% if from_feed %} · 来自推送{% endif %}</span>
+  <span class="spacer"></span>
+  {% if position %}<span class="read-pos" title="在来源列表里的位置">{{ position[0] }} / {{ position[1] }}</span>{% endif %}
+  {% if prev_paper %}<a class="btn ghost icon small nav-btn tip end" href="/papers/{{ prev_paper.id }}{{ fq }}" rel="prev" data-tip="上一篇  [&#10;{{ prev_paper.title }}" aria-label="上一篇：{{ prev_paper.title }}">{{ ui.icon('chevron-up', 'sm') }}</a>{% else %}<button class="btn ghost icon small nav-btn" type="button" disabled aria-label="上一篇">{{ ui.icon('chevron-up', 'sm') }}</button>{% endif %}
+  {% if next_paper %}<a class="btn ghost icon small nav-btn tip end" href="/papers/{{ next_paper.id }}{{ fq }}" rel="next" data-tip="下一篇  ]&#10;{{ next_paper.title }}" aria-label="下一篇：{{ next_paper.title }}">{{ ui.icon('chevron-down', 'sm') }}</a>{% else %}<button class="btn ghost icon small nav-btn" type="button" disabled aria-label="下一篇">{{ ui.icon('chevron-down', 'sm') }}</button>{% endif %}
+  <span class="sep"></span>
+  <details class="menu more">
+    <summary class="btn ghost icon small" aria-label="More" title="More">{{ ui.icon('ellipsis', 'sm') }}</summary>
+    <div class="menu-panel">
+      {% if file %}<a href="/papers/{{ paper.id }}/pdf" target="_blank" rel="noopener">{{ ui.icon('file-text', 'sm') }}Open PDF</a>{% endif %}
+      {% if has_pdf and summary and not polling %}<button type="button" hx-post="/papers/{{ paper.id }}/summarize" hx-target="#summary-card" hx-swap="outerHTML" data-regenerate>{{ ui.icon('refresh-cw', 'sm') }}Regenerate</button>{% endif %}
+      <a href="/data/plans/new?paper={{ paper.id }}">{{ ui.icon('flask-conical', 'sm') }}Plan replication</a>
+    </div>
+  </details>
+  <button class="btn ghost icon small side-toggle tip end" type="button" id="side-toggle" data-tip="收起右栏  \" aria-label="收起右栏" aria-controls="read-side" aria-pressed="true">{{ ui.icon('panel-right', 'sm') }}</button>
+</header>
+<nav class="segmented read-mtabs" aria-label="视图"><button type="button" data-mtab="doc">原文</button><button type="button" data-mtab="info" class="on">信息</button><button type="button" data-mtab="sum">概要</button></nav>
+{% if view_note %}<p class="muted small">{{ view_note }}</p>{% endif %}
+<div class="read-body">
+  <section id="reader" class="read-doc" data-paper-id="{{ paper.id }}" data-view="{{ view }}" data-initial-page="{{ initial_page if initial_page is not none else 0 }}"{% if file %} data-pdf-url="/papers/{{ paper.id }}/pdf"{% endif %}>
+    {% if file %}
+    <div class="read-tools" role="toolbar" aria-label="PDF 阅读工具">
+      {% if view != 'trans' %}
+      <button class="btn ghost icon small tip" id="pdf-outline-toggle" data-tip="目录" aria-label="目录" aria-controls="pdf-outline" aria-expanded="false" disabled>{{ ui.icon('list', 'sm') }}</button>
+      <span class="sep"></span>
+      <button class="btn ghost icon small" id="pdf-prev" aria-label="上一页" disabled>{{ ui.icon('chevron-left', 'sm') }}</button>
+      <span class="page-no"><input id="pdf-page" type="number" min="1" value="1" aria-label="页码" disabled><span id="pdf-total">/ {{ file.page_count }}</span></span>
+      <button class="btn ghost icon small" id="pdf-next" aria-label="下一页" disabled>{{ ui.icon('chevron-right', 'sm') }}</button>
+      <span class="sep"></span>
+      <select id="pdf-zoom" class="zoom" aria-label="缩放" disabled><option value="auto">自动缩放</option><option value="page-width">适合宽度</option><option value="page-fit">整页</option><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select>
+      <button class="btn ghost icon small tip" id="pdf-find-toggle" data-tip="查找原文  ⌘F" aria-label="查找原文" aria-controls="pdf-findbar" aria-expanded="false" disabled>{{ ui.icon('search', 'sm') }}</button>
+      {% endif %}
+      <span class="spacer"></span>
+      {% if trans_langs %}<nav class="segmented small" aria-label="阅读视图">{% for key, label in views.items() %}<a href="/papers/{{ paper.id }}?view={{ key }}&amp;lang={{ trans_lang }}{{ fq | replace('?', '&') }}"{% if key == view %} class="on"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+      {% else %}<button class="btn ghost small" type="button" data-reader-info="translation-card">Translate</button>{% endif %}
+    </div>
+    {% if view != 'trans' %}
+    <form class="read-find" id="pdf-findbar" hidden role="search"><input type="search" id="paper-find" placeholder="查找原文" aria-label="在本文中查找"><button class="btn ghost small" type="button" id="pdf-find-prev" aria-label="上一个匹配">Previous</button><button class="btn ghost small" type="submit">Next</button><span class="muted small" id="pdf-find-count" role="status"></span></form>
+    {% endif %}
+    <div class="reading-stage view-{{ view }}">
+      {% if view != 'trans' %}
+      <nav id="pdf-outline" class="card" aria-label="PDF 目录" hidden></nav>
+      <div class="pdf-surface">
+        <div id="pdf-container" tabindex="0" aria-label="PDF 原文"><div id="pdf-viewer" class="pdfViewer"></div></div>
+        <div id="pdf-loading" class="card reading-message" role="status">正在打开 PDF…</div>
+        <div id="pdf-error" class="card reading-message" role="alert" hidden><p id="pdf-error-text">无法打开 PDF。</p><a class="btn secondary small" href="/papers/{{ paper.id }}/pdf" target="_blank" rel="noopener">Open PDF</a></div>
+      </div>
+      {% endif %}
+      {% if view != 'orig' %}<div class="reading-translation" aria-label="{{ lang_names.get(trans_lang, trans_lang) }}译文" lang="{{ trans_lang }}">
+        {% for p in pages %}<section class="reading-page" id="p-{{ p.index }}" data-page-index="{{ p.index }}"><h3 class="muted small"><a href="#p-{{ p.index }}" data-jump="{{ p.index }}">第 {{ p.label }} 页</a></h3><div class="prose">{% for para in trans_paras.get(p.index, []) %}<p>{{ para }}</p>{% else %}<p class="muted">本页暂无译文。</p>{% endfor %}</div></section>{% endfor %}
+      </div>{% endif %}
+    </div>
+    {% if not file.has_text_layer %}<p class="muted small">扫描件可直接阅读；文字选择与查找需要文本层。</p>{% endif %}
+    {% else %}
+    <section class="reading-biblio"><h2>待补原文</h2><form class="row" method="post" action="/papers/{{ paper.id }}/files" enctype="multipart/form-data"><label class="btn" for="biblio-pdf">{{ ui.icon('file-up') }}添加 PDF</label><input type="file" name="files" accept="application/pdf" id="biblio-pdf" hidden onchange="document.body.classList.add('importing'); this.form.submit()">{% if source_url %}<a class="btn secondary" href="{{ source_url }}" target="_blank" rel="noopener noreferrer" title="在浏览器打开出版社页面，下载后点添加 PDF">{{ ui.icon('external-link') }}Get PDF</a>{% endif %}</form>{% if paper.abstract %}<h3>原文摘要</h3><p class="prose">{{ paper.abstract }}</p>{% endif %}</section>
+    {% endif %}
+  </section>
+  <aside class="read-side" id="read-side" aria-label="右栏">
+    <div class="side-head"><nav class="segmented small" id="side-tabs" aria-label="右栏"><a href="#info" data-side-tab="info" class="on">信息</a><a href="#summary" data-side-tab="summary">概要</a></nav></div>
+    <div class="side-scroll">
+      <div id="side-summary" class="side-panel" aria-label="中文概要" hidden>
+        {% include "partials/_paper_props.html" %}
+        {% include "partials/_summary_card.html" %}
+      </div>
+      <div id="side-info" class="side-panel" aria-label="信息">
+        {% include "partials/_paper_card.html" %}
+        <section class="side-section" id="paper-files">
+          <h3>文件</h3>
+          <dl class="prop-list">
+            {% set add_file %}<form method="post" action="/papers/{{ paper.id }}/files" enctype="multipart/form-data"><label class="btn ghost small" for="add-file">Add file</label><input type="file" name="files" accept="application/pdf" id="add-file" hidden onchange="document.body.classList.add('importing'); this.form.submit()"></form>{% endset %}
+            {% for x in files %}
+            <dt>{{ '原文' if x.is_primary else '附件' }}</dt>
+            <dd>{{ x.original_name or 'PDF' }} · {{ x.page_count }} 页{% if loop.first %}{% if file %}<a class="btn ghost small" href="/papers/{{ paper.id }}/pdf" target="_blank" rel="noopener">Open PDF</a>{% endif %}{{ add_file }}{% endif %}{% if x.is_primary %}<form method="post" action="/papers/{{ paper.id }}/files/replace" enctype="multipart/form-data"><label class="btn ghost small" for="replace-file">替换 PDF</label><input type="file" name="files" accept="application/pdf" id="replace-file" hidden onchange="document.body.classList.add('importing'); this.form.submit()"></form>{% endif %}<form method="post" action="/papers/{{ paper.id }}/files/{{ x.id }}/remove" onsubmit="return confirm('移除这份 PDF？它的页面文本、译文和由它生成的概要会一起删除。')"><button class="btn ghost small" type="submit">移除</button></form></dd>
+            {% else %}
+            <dt>原文</dt><dd><span class="muted">还没有 PDF</span>{{ add_file }}</dd>
+            {% endfor %}
+          </dl>
+        </section>
+        {% include "partials/_translation.html" %}
+        <section class="side-section">
+          <h3>整理</h3>
+          <dl class="prop-list">
+            <dt>地图</dt><dd>{% for slug, name in linked_projects %}<a class="prop-val" href="/projects/{{ slug }}/map">{{ name }} · 文献地图</a>{% else %}<span class="prop-val unset">加入课题后可以放进文献地图</span>{% endfor %}</dd>
+            <dt>复现</dt><dd><a class="btn ghost small" href="/data/plans/new?paper={{ paper.id }}">Plan replication</a></dd>
+          </dl>
+        </section>
+        {% if excerpts %}<section class="side-section" id="side-marks">
+          <h3>历史划线 · {{ excerpts | length }}</h3>
+          <div class="excerpt-groups" id="paper-excerpts">{% for g in excerpt_groups %}<section>
+            <h4>{% if g.page_index is not none %}<a href="#p-{{ g.page_index }}" data-jump="{{ g.page_index }}">第 {{ g.label }} 页</a>{% else %}未标页码{% endif %}</h4>
+            {% for e in g['items'] %}<blockquote id="ex-{{ e.id }}" data-excerpt="{{ e.id }}"><p>{{ e.quote }}</p>{% if e.my_note %}<p>{{ e.my_note }}</p>{% endif %}<a class="small" href="/excerpts/{{ e.id }}">查看记录</a></blockquote>{% endfor %}
+          </section>{% endfor %}</div>
+        </section>{% endif %}
+      </div>
+    </div>
+  </aside>
+</div>
+</div>
+<script id="reading-page-labels" type="application/json">{{ page_labels | tojson }}</script>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ asset('paper-reader.js') }}"></script>{% endblock %}

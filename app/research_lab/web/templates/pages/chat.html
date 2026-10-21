@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{#- The composer takes PDFs and Word files itself, so the library-wide PDF drop stays off here. -#}
+{% set no_global_drop = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('chat.css') }}">{% endblock %}
+{% block crumbs %}<span class="current">{{ assistant_name }}</span>{% endblock %}
+{% block content %}
+<div class="chat-layout">
+  <aside class="chat-side">{% include "partials/_thread_list.html" %}</aside>
+  <section class="chat-main">
+    <header class="chat-pane-head chat-head">
+      <h1 class="chat-title">{{ thread.title if thread else '新对话' }}</h1>
+      {% if thread %}
+      <form method="post" action="/chat/{{ thread.id }}/archive" hx-post="/chat/{{ thread.id }}/archive" class="chat-head-actions">
+        <button class="btn small ghost" type="submit">{{ ui.icon('folder', 'sm') }}Archive</button>
+      </form>
+      {% endif %}
+    </header>
+    <div class="chat-scroll" id="chat-scroll">
+      <div class="chat-col">{% include "partials/_chat_stream.html" %}</div>
+    </div>
+    <div class="chat-dock">
+      <div class="chat-col">{% with composer_here = true %}{% include "partials/_composer.html" %}{% endwith %}</div>
+    </div>
+  </section>
+</div>
+{#- Before first paint, so a thread opens at its newest message instead of flashing its oldest. -#}
+<script>(function (s) { if (s) s.scrollTop = s.scrollHeight; })(document.getElementById('chat-scroll'));</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% set no_global_drop = true %}
+{% from "partials/_data_macros.html" import fmt, flash, dtype_label %}
+{% block head %}<link rel="stylesheet" href="{{ asset('data.css') }}">{% endblock %}
+{% block crumbs %}<a href="/data">数据</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">{{ title }}</span>{% endblock %}
+{% block content %}
+{% set prof = ds.profile %}
+<div class="ds-head">
+  <h1 class="page-title">{{ ds.name }}</h1>
+  <div class="row" style="margin-top: 10px">
+    <span class="chip">{{ ds.source_kind|upper }}</span>
+    <span class="chip">{{ ds.rows }} 行 × {{ ds.cols }} 列</span>
+    <span class="chip">完整行 {{ prof.complete_rows if prof.complete_rows is defined else '—' }}</span>
+    {% if ds.schema.encoding %}<span class="chip">编码 {{ ds.schema.encoding }}</span>{% endif %}
+    {% if ds.schema.sheet %}<span class="chip">工作表 {{ ds.schema.sheet }}</span>{% endif %}
+    <a class="chip" href="/data/datasets/{{ ds.id }}/original">原始文件 {{ ds.original_name }}</a>
+    {% if paper %}<a class="chip" href="/papers/{{ paper.id }}">论文 {{ paper.title|truncate(40) }}</a>{% endif %}
+    {% if ds.direction %}{{ ui.dir_tag(ds.direction, link=false) }}{% endif %}
+  </div>
+</div>
+{{ flash(msg, err) }}
+{% if ds.preview_error %}<p class="ds-flash err">数据表读取失败：{{ ds.preview_error }}</p>{% endif %}
+
+<nav class="ds-methods" aria-label="用此数据集分析">
+  <span class="field-label">分析</span>
+  {% for key, m in methods.items() %}<a class="chip" href="/data/runs/new?method={{ key }}&dataset={{ ds.id }}">{{ m.label }}</a>{% endfor %}
+</nav>
+
+{#- What hangs on this dataset comes first (docs/design/DATA-v2.md): its replication plans and analyses. -#}
+<section class="ds-work">
+  <h2>复现方案 <span class="count">{{ plans|length }}</span> <a class="btn ghost small" href="/data/plans/new">{{ ui.icon('plus', 'sm') }}Plan from papers</a></h2>
+  {% if plans %}<ul class="ds-list">{% for p in plans %}<li><a href="/data/plans/{{ p.id }}">{{ p.paper_title or '未关联文献的方案' }}</a> <span class="ds-meta">{{ status_labels.get(p.status, p.status) if status_labels is defined else '' }}</span></li>{% endfor %}</ul>
+  {% else %}<p class="muted small">还没有挂在这个数据集上的复现方案。</p>{% endif %}
+  <h2>分析 <span class="count">{{ runs|length }}</span></h2>
+  {% if runs %}<ul class="ds-list">{% for r in runs %}<li><a class="ds-title" href="/data/runs/{{ r.id }}">{{ r.method_label }}</a>
+    <span class="ds-meta">{{ (r.created_at or '')[:10] }}{% if r.result and r.result.params_label %} · {{ r.result.params_label }}{% endif %}</span></li>{% endfor %}</ul>
+  {% else %}<p class="muted small">还没有分析，从上面选一种方法开始。</p>{% endif %}
+</section>
+
+<h2>列：概况、重命名与类型</h2>
+<form method="post" action="/data/datasets/{{ ds.id }}/columns">
+<div class="ds-scroll">
+<table class="data ds-num ds-profile">
+  <thead><tr><th>列名（可改）</th><th>类型</th><th>缺失</th><th>唯一值</th><th>最小</th><th>最大</th><th>均值</th><th>常见取值</th></tr></thead>
+  <tbody>
+  {% for c in prof.columns %}
+  <tr>
+    <td class="lead"><input type="text" name="name_{{ loop.index0 }}" value="{{ c.name }}" aria-label="列名 {{ c.name }}">
+      {% if c.label %}<div class="muted ds-caption">{{ c.label }}</div>{% endif %}</td>
+    <td><select name="type_{{ loop.index0 }}" aria-label="{{ c.name }} 的类型">
+      {% for key, t in cast_types.items() %}<option value="{{ key }}"{% if key == c.dtype %} selected{% endif %}>{{ t[0] }}</option>{% endfor %}
+    </select></td>
+    <td class="{{ 'warn' if c.missing_pct >= 20 }}">{{ c.missing }} <span class="muted">({{ c.missing_pct }}%)</span></td>
+    <td>{{ c.unique }}</td>
+    <td>{{ fmt(c.min) if c.min is defined else '' }}</td>
+    <td>{{ fmt(c.max) if c.max is defined else '' }}</td>
+    <td>{{ fmt(c.mean) if c.mean is defined else '' }}</td>
+    <td class="ds-top">{% for v, n in c.top or [] %}<span class="chip">{{ v|truncate(18) }} · {{ n }}</span> {% endfor %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted ds-caption">共 {{ prof.n }} 行。改类型时，无法转换的值会变成缺失，保存后会告诉你有多少；原始文件不受影响。</p>
+<button class="btn" type="submit">Save columns</button>
+</form>
+
+{% if ds.schema.sheets and ds.schema.sheets|length > 1 %}
+<h2>工作表</h2>
+<form class="row" method="post" action="/data/datasets/{{ ds.id }}/sheet">
+  <select name="sheet" aria-label="工作表">{% for s in ds.schema.sheets %}<option{% if s == ds.schema.sheet %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <button class="btn secondary small" type="submit">Reimport this sheet</button>
+</form>
+{% endif %}
+
+<h2>预览（前 {{ preview_rows|length }} 行）</h2>
+<div class="ds-scroll ds-preview">
+<table class="data ds-num">
+  <thead><tr><th>#</th>{% for c in preview_cols %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for row in preview_rows %}<tr><td class="muted">{{ loop.index }}</td>{% for v in row %}<td>{{ fmt(v) }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table>
+</div>
+
+<h2>信息</h2>
+<form class="stack" method="post" action="/data/datasets/{{ ds.id }}/meta">
+  <div><label for="m-name">名称</label><input id="m-name" type="text" name="name" value="{{ ds.name }}"></div>
+  <div><label for="m-paper">关联论文</label>
+    <select id="m-paper" name="paper_id"><option value="">不关联</option>
+      {% for pp in papers %}<option value="{{ pp.id }}"{% if pp.id == ds.paper_id %} selected{% endif %}>{{ pp.title|truncate(60) }}{% if pp.year %} · {{ pp.year }}{% endif %}</option>{% endfor %}
+    </select></div>
+  <div><label for="m-dir">方向</label>
+    <select id="m-dir" name="direction"><option value="">（未设置）</option>
+      {% for d in directions %}<option value="{{ d.slug }}"{% if d.slug == ds.direction %} selected{% endif %}>{{ d.name }}</option>{% endfor %}
+    </select></div>
+  <div><label for="m-note">备注</label><textarea id="m-note" name="note" placeholder="来源、版本、下载日期、编码说明">{{ ds.note or '' }}</textarea></div>
+  <button class="btn secondary" type="submit">Save</button>
+</form>
+
+<h2>删除</h2>
+<form method="post" action="/data/datasets/{{ ds.id }}/delete" data-confirm="删除数据集 {{ ds.id }}？DuckDB 表、Parquet 副本和原始文件都会删除；已有运行保留结果但不能再重新运行。">
+  <button class="btn secondary ds-danger" type="submit">Delete dataset</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('data.js') }}" defer></script>{% endblock %}

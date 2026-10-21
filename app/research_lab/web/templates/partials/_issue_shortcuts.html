@@ -1,0 +1,23 @@
+{% import "partials/ui.html" as ui with context %}
+{#- 快捷键速查 (card 0114, ISSUES-LINEAR.md §2.7). ? opens it in the issue workspace (issues.js). The keys are the
+    ones issues.js and issue-editor.js bind: a key changed there changes here too (test_issue_shortcuts.py
+    holds the property shortcuts to issues.js). Outside #issue-workspace, so a workspace refresh leaves it alone. -#}
+{% set groups = [
+  ('议题页', [('状态', ['S']), ('优先级', ['P']), ('分配人', ['A']), ('标签', ['L']), ('截止日期', ['⇧', 'D']), ('新建子议题', ['⌘', '⇧', 'O'])]),
+  ('研究档案里', [('新建议题', ['C']), ('快捷键速查', ['?'])]),
+  ('菜单里', [('上下选择', ['↑', '↓']), ('确定', ['↩']), ('关闭', ['Esc'])]),
+  ('描述和评论里', [('粗体', ['⌘', 'B']), ('斜体', ['⌘', 'I']), ('下划线', ['⌘', 'U']), ('删除线', ['⌘', '⇧', 'S']), ('行内代码', ['⌘', 'E']), ('链接', ['⌘', 'K']), ('保存或发送', ['⌘', '↩'])]),
+] %}
+<dialog class="issue-shortcuts" data-issue-shortcuts aria-labelledby="issue-shortcuts-title">
+  {#- The sheet takes focus itself (not the close button, which would wear a focus ring on every open). -#}
+  <div class="issue-shortcuts-body" tabindex="-1" autofocus>
+    <header><h2 id="issue-shortcuts-title">快捷键</h2><button type="button" class="btn ghost icon small" data-shortcuts-close aria-label="关闭快捷键速查">{{ ui.icon('x','sm') }}</button></header>
+    <div class="issue-shortcuts-groups">
+      {% for title, keys in groups %}
+      <section aria-label="{{ title }}"><h3>{{ title }}</h3>
+        <dl>{% for label, combo in keys %}<div><dt>{{ label }}</dt><dd data-combo="{{ combo | join('') }}">{% for k in combo %}<kbd>{{ k }}</kbd>{% endfor %}</dd></div>{% endfor %}</dl>
+      </section>
+      {% endfor %}
+    </div>
+  </div>
+</dialog>

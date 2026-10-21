@@ -1,0 +1,26 @@
+{# Shared formatting for the 数据复现 pages. #}
+{% macro fmt(v) -%}
+{%- if v is none -%}<span class="muted">—</span>
+{%- elif v is boolean -%}{{ '是' if v else '否' }}
+{%- elif v is integer -%}{{ v }}
+{%- elif v is float -%}{% if v != 0 and (v|abs < 0.001 or v|abs >= 100000) %}{{ '%.3g'|format(v) }}{% else %}{{ '%.3f'|format(v) }}{% endif %}
+{%- else -%}{{ v }}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro plan_status(s, labels) -%}
+<span class="chip ds-status-{{ s }}">{{ labels.get(s, s) }}</span>
+{%- endmacro %}
+
+{% macro origin_chip(origin) -%}
+{% if origin == 'ai-suggested' %}<span class="chip ds-ai">AI 建议 · 待审阅</span>{% else %}<span class="chip ds-user">已审阅</span>{% endif %}
+{%- endmacro %}
+
+{% macro flash(msg, err) -%}
+{% if msg %}<p class="ds-flash" role="status">{{ msg }}</p>{% endif %}
+{% if err %}<p class="ds-flash err" role="alert">{{ err }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro dtype_label(t) -%}
+{{ {'integer': '整数', 'number': '数值', 'text': '文本', 'date': '日期', 'bool': '布尔'}.get(t, t) }}
+{%- endmacro %}

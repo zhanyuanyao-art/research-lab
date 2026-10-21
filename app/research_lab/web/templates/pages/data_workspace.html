@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% set no_global_drop = true %}
+{% from "partials/_data_macros.html" import fmt, flash %}
+{% block head %}<link rel="stylesheet" href="{{ asset('data.css') }}">{% endblock %}
+{% block crumbs %}<a href="/data">数据</a>{{ ui.icon('chevron-right', 'sm') }}<a href="/data/plans/{{ plan.id }}">复现方案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">复现工作区</span>{% endblock %}
+{% block content %}
+{#- 复现工作区 (card 0158, docs/design/REPLICATION-v2.md 第三步): the plan, its datasets and a token estimate; Start
+    (refused until the targets are reviewed), Stop and Re-run; the live block; the runs with their tables (the shared
+    results.json format), figures, code and log. Numbers on this page come only from the runs' executed code. -#}
+{% set p = plan.plan %}
+<header class="page-header"><div class="titles"><h1 class="page-title">复现工作区</h1>
+  <p class="page-desc">{{ plan.paper_title or '（未关联论文）' }}{% if plan.paper_year %} · {{ plan.paper_year }}{% endif %} · {% if author.translate %}AI 把作者的主分析脚本逐段翻译成 Python{% else %}AI 按方案写 Python 代码{% endif %}，在沙箱里运行和修正：只读数据副本、只写工作区、不联网、有时限。{% if r.r.found %}作者写的是 R 时，也可以用下面的「R 运行环境」直接跑作者原来的脚本。{% endif %}</p></div></header>
+{{ flash(msg, err) }}
+
+<div class="ds-cols">
+  <section class="card">
+    <p class="kicker">方案</p>
+    <dl class="small">
+      <dt class="muted">模型</dt><dd>{{ (p.model or {}).family or '未写' }}{% if (p.model or {}).specification %}：{{ p.model.specification }}{% endif %}</dd>
+      <dt class="muted">分析单位 · 时段</dt><dd>{{ p.unit_of_analysis or '未写' }} · {{ p.period or '未写' }}</dd>
+      <dt class="muted">复现目标</dt><dd>{% if targets %}{{ targets | length }} 条{% else %}<span class="muted">没有</span>{% endif %} · {% if reviewed %}<span class="chip ok">已审阅</span>{% else %}<span class="chip warn">未审阅</span>{% endif %}</dd>
+    </dl>
+    {% if not reviewed %}<p class="warn small" data-replicate-unreviewed>复现目标还没审阅，不能开始。先到<a href="/data/plans/{{ plan.id }}/detail">方案页</a>核对论文报告值并标为已审阅。</p>{% endif %}
+  </section>
+  <section class="card">
+    <p class="kicker">数据（只读副本）</p>
+    {% if datasets %}<ul class="list small">{% for d in datasets %}<li><a href="/data/datasets/{{ d.id }}">{{ d.name }}</a> <span class="muted">{{ d.rows }} 行 · {{ d.cols }} 列</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted small">方案还没有挂数据集，先在<a href="/data/plans/{{ plan.id }}/detail">方案详情</a>挂上。</p>{% endif %}
+  </section>
+  <section class="card" data-replicate-author>
+    <p class="kicker">作者代码（只读文本，不运行）</p>
+    {% if author.translate %}
+    <p class="small">这 {{ author.main | length }} 个主分析脚本会被逐段翻译成 Python 再运行，只翻译产出复现目标的部分：</p>
+    <ul class="list small">{% for x in author.main %}<li><code>{{ x.path }}</code> <span class="muted">{{ x.size | filesizeformat }}{% if x.data %} · 读 {% for n, w in x.data %}{{ n }}{% if not loop.last %}、{% endif %}{% endfor %}{% endif %}{% if x.models %} · 模型 {% for k, v in x.models.items() %}{{ k }}{% if v > 1 %} ×{{ v }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</span>{% if x.missing %} <span class="chip warn" title="{{ x.missing | join('、') }}">有读不到的数据</span>{% endif %}</li>{% endfor %}</ul>
+    {% if author.helpers %}<p class="muted small">被它们调用：{% for x in author.helpers %}<code>{{ x.path }}</code>{% if not loop.last %}、{% endif %}{% endfor %}</p>{% endif %}
+    {% if author.others %}<p class="muted small">不列入翻译（目标恰好在里面时 AI 才去读）：{% for p, why in author.others.items() %}<code>{{ p }}</code>（{{ why }}）{% if not loop.last %}；{% endif %}{% endfor %}</p>{% endif %}
+    {% else %}
+    <p class="muted small">工作区里没有作者脚本，AI 会按方案自己设计分析。到<a href="/data/plans/{{ plan.id }}/detail">方案页</a>取复现包时选上作者的脚本，就会改成翻译它们。</p>
+    {% endif %}
+    {% if author.docs %}<p class="muted small">说明书：{% for p, n in author.docs %}<code>{{ p }}</code> {{ n | filesizeformat }}{% if not loop.last %}、{% endif %}{% endfor %}（AI 要查变量时才读）</p>{% endif %}
+  </section>
+  <section class="card">
+    <p class="kicker">花费</p>
+    <p class="small" data-replicate-estimate>估计约 {{ (estimate[0] / 10000) | round(1) }} 万到 {{ (estimate[1] / 10000) | round(1) }} 万 token{% if author.translate %}，按这些脚本的大小（含被调用的脚本，每个最多算 {{ script_cap_kb }} KB，AI 只读相关的行段）和 {{ targets | length }} 条复现目标算{% endif %}，取决于要改几轮；最多 {{ max_turns }} 轮，可以随时 Stop。{% if r.r.found %}这是 AI 翻译 Python 的路线；直接跑作者 R 脚本的路线见下面，没有报错时不花 token。{% else %}R 没有安装，需要 R 的部分会写明。{% endif %}</p>
+    <form method="post" action="/replicate/{{ plan.id }}/start"><button type="submit" class="btn" data-replicate-start{% if not reviewed or not datasets or job %} disabled{% endif %}>Start</button></form>
+  </section>
+</div>
+
+{% include "partials/_replicate_status.html" %}
+
+{#- 「R 运行环境」 (card 0186, REPLICATION-v4-DCL.md 3A): Install R packages is the only step that touches the network; Run
+    author code (R) runs the authors' scripts as they are, in sandbox_r.sb. Neither starts without the click. -#}
+<section class="card" id="replicate-r" data-replicate-r>
+  <p class="kicker">R 运行环境：直接跑作者的 R 代码</p>
+  {% if r.r.found %}
+  <p class="small" data-replicate-r-found><span class="chip ok">R {{ r.r.version }}</span> <span class="muted">{{ r.r.path }}</span></p>
+  {% else %}
+  <p class="warn small" data-replicate-r-missing>这台电脑没有找到 R（Rscript），没法直接跑作者的 R 代码。上面 AI 翻译成 Python 的路线照常能用。</p>
+  {% endif %}
+  {% if r.scripts %}
+  <p class="small">要跑的脚本（作者的主分析脚本，原样运行）：</p>
+  <ul class="list small">{% for x in r.scripts %}<li><code>{{ x.path }}</code>{% if x.missing %} <span class="chip warn" data-replicate-r-missing-helper title="作者的包里这些被 source() 的文件没有保存">缺 {{ x.missing | join('、') }}</span>{% endif %}</li>{% endfor %}</ul>
+  {% if r.scripts_more %}<p class="muted small">另有 {{ r.scripts_more }} 个脚本没有列出。</p>{% endif %}
+  {% if r.scripts | selectattr('missing') | list %}<p class="muted small">缺的辅助脚本在装包这一步从方案的数据来源里取回（只存成文本，不运行）；来源里也没有的，会在运行记录里写明，报错时由 AI 按脚本的用法补一份最小的并记进改动说明。</p>{% endif %}
+  {% elif r.error %}<p class="muted small">{{ r.error }}</p>{% endif %}
+  {% if r.to_install %}
+  <p class="small">R 包（{{ r.to_install | length }} 个，已装 {{ r.to_install | selectattr('have') | list | length }} 个）：{% for pk in r.to_install[:14] %}<span class="chip {{ 'ok' if pk.have else 'warn' }}" title="{{ pk.where | join('；') }}">{{ pk.name }}{% if pk.have %} {{ pk.have }}{% endif %}{% if pk.patched %} · 补丁{% endif %}</span> {% endfor %}{% if r.to_install | length > 14 %}<details class="inline"><summary class="muted small">其余 {{ r.to_install | length - 14 }} 个</summary>{% for pk in r.to_install[14:] %}<span class="chip {{ 'ok' if pk.have else 'warn' }}" title="{{ pk.where | join('；') }}">{{ pk.name }}{% if pk.have %} {{ pk.have }}{% endif %}</span> {% endfor %}</details>{% endif %}</p>
+  {% for n in r.notes %}<p class="muted small">注意：{{ n }}</p>{% endfor %}
+  {% endif %}
+  {% if r.last_install %}<p class="small" data-replicate-r-install-result>上次装包 {{ r.last_install.at }}：{% if r.last_install.ok %}全部装上了{% else %}{{ r.last_install.failed | length }} 个没装上{% endif %}{% for name, why in (r.last_install.failed or {}).items() %}<br><span class="warn">{{ name }}</span> <span class="muted">{{ why }}</span>{% endfor %}</p>{% endif %}
+  <div class="row">
+    <form method="post" action="/replicate/{{ plan.id }}/r/install" class="grow"><button type="submit" class="btn secondary" data-replicate-r-install{% if not r.r.found or r.running or job %} disabled{% endif %} title="联网：从 CRAN 下载并编译到这份方案自己的 R 库，不碰电脑上的 R 库，不运行作者代码">Install R packages</button>
+      <span class="muted small">联网，只从 CRAN 装到这份方案自己的库；同时取回缺的辅助脚本。</span></form>
+    <form method="post" action="/replicate/{{ plan.id }}/r/run" class="grow"><button type="submit" class="btn" data-replicate-r-run{% if not r.r.found or r.running or job or not r.scripts %} disabled{% endif %} title="在沙箱里原样运行作者的 R 脚本：不联网、只写工作区；报错时才请 AI 改副本">Run author code (R)</button>
+      <span class="muted small">不联网；{% if r.can_repair %}报错时 AI 最多修补 {{ max_rounds }} 轮，改动记在 outputs/changes.md{% else %}没有 Claude Code，报错时不会自动修补{% endif %}。</span></form>
+  </div>
+  {% include "partials/_replicate_r_status.html" %}
+</section>
+
+{#- 数据文件夹 (card 0191, REPLICATION-v4-DCL.md 3E): the ticked 复现清单 items as a folder, one directory per group with code / data /
+    output and a README; zipped into the paper's 课题 drafts/ and attached to the issue that names the paper. Only the click does it. -#}
+<section class="card" id="replicate-export" data-replicate-export>
+  <p class="kicker">数据文件夹：把复现结果整理成可以交出去的包</p>
+  {% if export_folder.ticked %}
+  <p class="small">清单里勾选了 {{ export_folder.ticked }} 项（{% for name, n in export_folder.groups %}{{ name }} {{ n }}{% if not loop.last %}、{% endif %}{% endfor %}）。每一组一个目录：<code>code/</code> 作者的原脚本（改过的副本和改动说明另放）、<code>data/</code> 脚本用到的数据、<code>output/</code> 复现出的表和图；最外面一份 README，写清每张表图用哪个脚本、判定、R 版本和包、怎么重跑，以及还没复现和等数据的项目。</p>
+  {% else %}
+  <p class="warn small" data-replicate-export-empty>清单里还没有勾选的表或图。先到<a href="/data/plans/{{ plan.id }}/detail#coverage">方案页</a>扫描清单并勾选，再导出。</p>
+  {% endif %}
+  {% if export_folder.project %}
+  <p class="muted small">压缩后放进课题「{{ export_folder.project }}」的草稿文件夹{% if export_folder.issue_key %}，并挂到议题 {{ export_folder.issue_key }}{% elif export_folder.note %}；不会挂到议题：{{ export_folder.note }}{% endif %}。不跑代码，不联网，不调用 AI。</p>
+  {% elif export_folder.note %}
+  <p class="warn small">{{ export_folder.note }}</p>
+  {% endif %}
+  <form method="post" action="/replicate/{{ plan.id }}/export-folder"><button type="submit" class="btn secondary" data-replicate-export-button{% if not export_folder.ok or job or r.running %} disabled{% endif %} title="只在你点的时候才写文件">Export folder</button></form>
+</section>
+
+<h2 class="section-title">运行记录</h2>
+{% for r in runs %}{% set w = r.workspace %}{% set res = (r.result or {}).results %}
+<section class="card" id="{{ r.id }}">
+  <div class="row"><h3 class="grow">{{ r.id }} · {{ 'R 运行作者代码' if w.mode == 'rrun' else (('AI 翻译作者代码' if w.approach == 'translate' else 'AI 运行') if w.mode == 'ai' else '重跑') }} · {{ {'done': '完成', 'error': '出错', 'stopped': '已停止'}.get(w.state, w.state) }}</h3>
+    {% if r.id == latest_valid and can_compare %}<form method="post" action="/replicate/{{ plan.id }}/runs/{{ r.id }}/compare"><button type="submit" class="btn small" title="和复现目标逐项对照，不花 token" data-replicate-compare>Compare</button></form>{% endif %}
+    {% if r.id == latest_valid %}<form method="post" action="/replicate/{{ plan.id }}/runs/{{ r.id }}/report"><button type="submit" class="btn secondary small" title="用这次运行和它的对照生成复现报告草稿，放进研究档案" data-replicate-report{% if w.report %} disabled{% endif %}>Report</button></form>{% endif %}
+    {% if w.code and w.mode != 'rrun' %}<form method="post" action="/replicate/{{ plan.id }}/runs/{{ r.id }}/rerun"><button type="submit" class="btn secondary small" title="不调用 AI，重新运行这次保存的代码"{% if job %} disabled{% endif %}>Re-run</button></form>{% endif %}</div>
+  <p class="muted small">{{ r.created_at[:16] | replace('T', ' ') }} · {{ r.tokens or 0 }} token{% if w.turns %} · {{ w.turns }} 轮{% endif %}{% if w.source_run %} · 重跑自 {{ w.source_run }}{% endif %}{% if w.note %} · {{ w.note[:200] }}{% endif %}</p>
+  {% for n in w.needs_r %}<p class="warn small">需要 R：{{ n }}</p>{% endfor %}
+  {% if w.mode == 'rrun' %}
+  <div class="small" data-replicate-rrun-info>
+    {% set ai_rounds = (w.rounds or []) | selectattr('kind', 'equalto', 'ai') | list %}{% set rule_rounds = (w.rounds or []) | selectattr('kind', 'equalto', 'rule') | list %}
+    <p class="muted">R {{ w.r_version }} · {{ ai_rounds | length }} 轮 AI 修补{% if rule_rounds %} · 按规则修补 {{ rule_rounds | length }} 次（没装上的包不再加载，没花 token）{% endif %}{% if not w.rounds %}（没有报错，没有调用 AI）{% endif %}</p>
+    {% for s, why in (w.failed or {}).items() %}<p class="warn"><code>{{ s }}</code> 没跑完：<span class="mono">{{ why[:300] }}</span></p>{% endfor %}
+    {% for t in (w.skipped or []) %}<p class="muted">{{ t }}</p>{% endfor %}
+    {% if w.absent %}<p class="warn">没装上的包：{{ w.absent | join('、') }}（到上面点 Install R packages 再试，或看装包日志里的原因）</p>{% endif %}
+    {% for s, m in (w.missing or {}).items() %}<p class="warn"><code>{{ s }}</code> 要用的这些文件没有保存：{{ m | join('、') }}</p>{% endfor %}
+    <p>{% for f in (w.outputs or []) %}<a class="chip" href="/replicate/{{ plan.id }}/runs/{{ r.id }}/files/outputs/{{ f }}">{{ f }}</a> {% endfor %}
+      <a class="chip" href="/replicate/{{ plan.id }}/runs/{{ r.id }}/files/outputs/changes.md" data-replicate-changes>changes.md</a></p>
+  </div>
+  {% endif %}
+  {% if w.report %}<p class="small">复现报告草稿：<a href="/artifacts/{{ w.report }}">{{ w.report }}</a></p>{% endif %}
+  {% if not_comparable[r.id] and r.id != latest_valid %}<p class="muted small" data-replicate-not-comparable>{{ not_comparable[r.id] }}</p>{% endif %}
+  {% set cmp = w.comparison %}
+  {% if cmp and cmp.run_id == r.id %}
+  {#- Step 4 (card 0166): calm, one line per target; the paper's numbers are 论文报告值, ours come from this run. -#}
+  <section class="replicate-compare" data-replicate-comparison>
+    <p class="small"><strong>对照</strong> <span class="muted">{{ (cmp.at or '')[:16] | replace('T', ' ') }}</span>
+      {% for v in verdicts %}{% if cmp.summary.counts[v] %} <span class="chip {{ {'exact': 'ok', 'within': 'ok', 'direction': 'warn', 'mismatch': 'crit'}.get(v, '') }}">{{ verdict_labels[v] }} {{ cmp.summary.counts[v] }}</span>{% endif %}{% endfor %}</p>
+    <p class="small">{{ cmp.summary.text }}</p>
+    <div class="ds-scroll"><table class="data ds-num"><thead><tr><th>目标</th><th>表 · 模型 · 项</th><th>论文报告值</th><th>复现值</th><th>标准误（论文 / 复现）</th><th>判定</th><th>原因</th></tr></thead><tbody>
+      {% for i in cmp["items"] %}{% set pr = printed.get(i.id, {}) %}
+      <tr data-verdict="{{ i.verdict }}"><td>{{ i.id }}</td><td class="lead">{{ [i.table, i.model, i.term] | select | join(' · ') }}{% if i.page %} <span class="muted">p. {{ i.page }}</span>{% endif %}</td>
+        <td>{% if pr.value %}{{ pr.value }}{% else %}{{ fmt(i.paper.value) }}{% endif %}</td>
+        <td>{{ fmt(i.ours.estimate) if i.ours else fmt(none) }}</td>
+        <td>{% if pr.se %}{{ pr.se }}{% else %}{{ fmt(i.paper.se) }}{% endif %} / {{ fmt(i.ours.se) if i.ours else fmt(none) }}</td>
+        <td><span class="chip {{ {'exact': 'ok', 'within': 'ok', 'direction': 'warn', 'mismatch': 'crit'}.get(i.verdict, '') }}">{{ verdict_labels.get(i.verdict, i.verdict) }}</span></td>
+        <td class="small">{{ i.reasons | join('；') }}</td></tr>
+      {% endfor %}
+    </tbody></table></div>
+  </section>
+  {% endif %}
+  {% if w.errors %}<details class="small"><summary class="crit">results.json 不符合格式（{{ w.errors | length }} 处）</summary><ul>{% for e in w.errors[:20] %}<li class="mono">{{ e }}</li>{% endfor %}</ul></details>{% endif %}
+  {% if res %}{% for t in res.tables %}
+  <figure class="ds-table"><figcaption><strong>{{ t.label }}</strong>{% if t.model %} · {{ t.model }}{% endif %} <span class="muted">{{ t.estimator }}</span>{% if t.needs_r %} <span class="chip warn">需要 R</span>{% endif %}</figcaption>
+    {% if t.rows %}<div class="ds-scroll"><table class="data ds-num"><thead><tr><th>项</th><th>估计值</th><th>标准误</th><th>p</th><th>95% 置信区间</th><th>样本量</th></tr></thead><tbody>
+      {% for row in t.rows %}<tr><td class="lead">{{ row.term }}</td><td>{{ fmt(row.estimate) }}</td><td>{{ fmt(row.se) }}</td><td>{{ fmt(row.p) }}</td><td>{% if row.ci %}[{{ fmt(row.ci[0]) }}, {{ fmt(row.ci[1]) }}]{% else %}{{ fmt(none) }}{% endif %}</td><td>{{ fmt(row.n) }}</td></tr>{% endfor %}
+    </tbody></table></div>{% endif %}
+    {% if t.notes %}<ul class="small muted">{% for n in t.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+  </figure>
+  {% endfor %}{% endif %}
+  {% for f in w.figures %}<img src="/replicate/{{ plan.id }}/runs/{{ r.id }}/files/{{ f }}" alt="{{ f }}" loading="lazy" style="max-width: 100%">{% endfor %}
+  <p class="small">{% for s in w.code %}<a class="chip" href="/replicate/{{ plan.id }}/runs/{{ r.id }}/files/{{ s }}">{{ s }}</a> {% endfor %}
+    <a class="chip" href="/replicate/{{ plan.id }}/runs/{{ r.id }}/files/logs/run.log">run.log</a>{% if res %} <a class="chip" href="/replicate/{{ plan.id }}/runs/{{ r.id }}/files/outputs/results.json">results.json</a>{% endif %}</p>
+</section>
+{% else %}
+<p class="muted">还没有运行记录。</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% set no_global_drop = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('guide.css') }}">{% endblock %}
+{% block crumbs %}<a href="/">首页</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">开始使用</span>{% endblock %}
+{% block content %}
+<div class="coach">
+  <header class="page-header">
+    <div class="titles"><p class="muted small">上手引导</p><h1 class="page-title">从一个问题，一篇文献开始</h1><p class="page-desc">做完这一轮，你会有一个课题、一篇关联文献和一项下一步工作。</p></div>
+    <form action="/guide/dismiss" method="post"><button class="btn ghost small" type="submit">稍后再说</button></form>
+  </header>
+  <nav aria-label="上手步骤"><ol class="coach-path">
+    {% for label in guide.steps %}<li{% if loop.index == step %} aria-current="step"{% endif %}>
+      {% if loop.index <= guide.step %}<a href="/guide?step={{ loop.index }}"{% if loop.index != step %} class="muted"{% endif %}>{{ ui.icon('circle-check' if guide.done[loop.index0] else 'circle-dot', 'sm') }}{{ label }}</a>
+      {% else %}<span class="muted">{{ loop.index }} · {{ label }}</span>{% endif %}
+    </li>{% endfor %}
+  </ol></nav>
+  {% if error %}<div class="banner danger" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+  <div class="coach-body">
+    <section class="card coach-main" aria-label="当前步骤">
+      {% if step == 1 %}
+      <div class="card-head"><h2>你想研究什么？</h2><span class="badge outline">1 / 4</span></div>
+      <p class="muted">先写一个暂定课题，之后随时可以改。</p>
+      {% if projects %}<details{% if values.project %} open{% endif %}><summary>从已有课题继续</summary>
+        <form class="stack" action="/guide/project?step=1" method="post"><div class="field"><label for="coach-existing">课题</label><select id="coach-existing" name="project" required>{% for slug, p in projects.items() %}<option value="{{ slug }}"{% if slug == values.project or guide.project and slug == guide.project.slug %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></div><button class="btn secondary" type="submit">使用这个课题</button></form>
+      </details><hr>{% endif %}
+      <form class="stack" action="/guide/project?step=1" method="post">
+        <input type="hidden" name="projects_sha" value="{{ projects_sha }}"><input type="hidden" name="directions_sha" value="{{ directions_sha }}">
+        <div class="field"><label for="coach-name">课题名称</label><input id="coach-name" name="name" value="{{ values.name or '' }}" required maxlength="200" placeholder="例如：城市如何应对极端高温" autofocus></div>
+        {% if directions %}<div class="field"><label for="coach-direction">研究方向</label><select id="coach-direction" name="direction"><option value="">新建方向</option>{% for d in directions %}<option value="{{ d.slug }}"{% if values.direction == d.slug %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>{% endif %}
+        <div class="field"><label for="coach-direction-name">{{ '新方向名称' if directions else '研究方向' }}</label><input id="coach-direction-name" name="direction_name" value="{{ values.direction_name or '' }}" maxlength="80" placeholder="例如：城市治理"{% if not directions %} required{% endif %}></div>
+        <div class="field"><label for="coach-direction-key">新方向简称</label><input id="coach-direction-key" name="direction_key" value="{{ values.direction_key or '' }}" pattern="[A-Z]{2,5}" maxlength="5" placeholder="例如：CITY"{% if not directions %} required{% endif %}><span class="muted small">2–5 个大写字母，用于议题编号，如 CITY-0001。</span></div>
+        <div class="field"><label for="coach-question">想弄清的问题 <span class="muted">· 可稍后补充</span></label><textarea id="coach-question" name="question" rows="2" maxlength="1000" placeholder="例如：哪些安排能让预警更早转化为行动？">{{ values.question or '' }}</textarea></div>
+        <div class="form-actions"><button class="btn" type="submit">建立课题{{ ui.icon('arrow-right', 'sm') }}</button></div>
+      </form>
+      {% elif step == 2 %}
+      <div class="card-head"><h2>放入第一篇文献</h2><span class="badge outline">2 / 4</span></div>
+      <p class="muted">选择一篇与「{{ guide.project.name }}」有关的 PDF，会自动关联到这个课题。</p>
+      <form action="/guide/import" method="post" enctype="multipart/form-data" data-coach-upload>
+        <input type="hidden" name="project" value="{{ guide.project.slug }}"><input type="hidden" name="direction" value="{{ guide.project.direction or '' }}">
+        <label class="dropzone">{{ ui.icon('file-up') }}<strong aria-live="polite">选择或拖入 PDF</strong><span class="small">先从一篇开始</span><input type="file" name="files" accept="application/pdf" required aria-label="选择文献 PDF"></label>
+        <div class="form-actions"><button class="btn" type="submit">导入并继续{{ ui.icon('arrow-right', 'sm') }}</button></div>
+      </form>
+      {% if library %}<hr><details><summary>从文献库选择</summary><form class="stack" action="/guide/paper" method="post"><input type="hidden" name="project" value="{{ guide.project.slug }}"><div class="field"><label for="coach-paper">文献</label><select id="coach-paper" name="paper" required>{% for p in library %}<option value="{{ p.id }}">{{ p.title }}</option>{% endfor %}</select></div><button class="btn secondary" type="submit">关联并继续</button></form></details>{% endif %}
+      {% elif step == 3 %}
+      <div class="card-head"><h2>先看原文，再看概要</h2><span class="badge outline">3 / 4</span></div>
+      <p class="muted">打开文献，找到研究问题和作者的核心论点。有中文概要时，对照它标出的原文页码。</p>
+      <div class="row-item"><div class="main-col"><strong class="title serif">{{ guide.paper.title }}</strong><div class="sub">已关联到 {{ guide.project.name }}</div></div></div>
+      <div class="form-actions"><a class="btn" href="/papers/{{ guide.paper.id }}?guide=1">打开阅读器{{ ui.icon('arrow-right', 'sm') }}</a></div>
+      <p class="muted small">读过后，点击阅读页顶部的「返回引导」。</p>
+      <form class="stack" action="/guide/review" method="post"><input type="hidden" name="project" value="{{ guide.project.slug }}"><input type="hidden" name="paper" value="{{ guide.paper.id }}"><button class="btn secondary" type="submit">我已对照原文，继续</button></form>
+      {% elif step == 4 %}
+      <div class="card-head"><h2>让这次阅读留下下一步</h2><span class="badge outline">4 / 4</span></div>
+      <p class="muted">记一件接下来要做的事，它会成为「{{ guide.project.name }}」的子议题。</p>
+      <form class="stack" action="/guide/next" method="post">
+        <input type="hidden" name="project" value="{{ guide.project.slug }}"><input type="hidden" name="paper" value="{{ guide.paper.id }}"><input type="hidden" name="revision" value="{{ revision }}">
+        <div class="field"><label for="coach-next">下一步</label><input id="coach-next" name="title" value="{{ values.title or '' }}" maxlength="200" required placeholder="例如：找一篇对这个解释持不同意见的论文" autofocus></div>
+        <div class="field"><label for="coach-note">这篇文献给你的启发 <span class="muted">· 选填</span></label><textarea id="coach-note" name="note" rows="4" maxlength="4000" placeholder="用自己的话记下有用之处，或仍然不确定的问题。">{{ values.note or '' }}</textarea></div>
+        <div class="field"><label for="coach-due">截止日期 <span class="muted">· 选填</span></label><input type="date" id="coach-due" name="due" value="{{ values.due or '' }}"></div>
+        <div class="form-actions"><button class="btn" type="submit">保存到课题{{ ui.icon('arrow-right', 'sm') }}</button></div>
+      </form>
+      {% else %}
+      <div class="card-head"><h2>第一轮研究，已经连起来了</h2>{{ ui.icon('check') }}</div>
+      <p class="muted">这次留下的内容都已保存，之后可以继续修改。</p>
+      <ul class="list">
+        <li class="list-item">{{ ui.icon('folder') }}<div class="body"><a class="title" href="/issues?project={{ guide.project.slug }}">{{ guide.project.name }}</a><span class="sub">课题</span></div></li>
+        <li class="list-item">{{ ui.icon('book-open') }}<div class="body"><a class="title" href="/papers/{{ guide.paper.id }}">{{ guide.paper.title }}</a><span class="sub">关联文献</span></div></li>
+        <li class="list-item">{{ ui.icon('list-checks') }}<div class="body"><a class="title" href="/issues/{{ guide.task.id }}">{{ guide.task.title }}</a><span class="sub">下一步{% if guide.task.due %} · {{ guide.task.due | date_zh }}{% endif %}</span></div></li>
+      </ul>
+      <div class="form-actions"><a class="btn" href="/issues?project={{ guide.project.slug }}">进入课题{{ ui.icon('arrow-right', 'sm') }}</a><form action="/guide/finish" method="post"><button class="btn ghost" type="submit">完成引导</button></form></div>
+      {% endif %}
+    </section>
+    <aside class="coach-note" aria-label="这一步的提示">
+      <strong>{{ ['把问题放在一个地方', '原文留在你的工作区', '概要帮你定位，判断由你做', '先推进一小步', '接下来，按你的节奏'][step - 1] }}</strong>
+      <p class="muted small">{{ ['研究方向用来归类，课题承载具体问题。名字暂定就好。', '导入后可以直接阅读。没有连接模型，也能完成这一轮。', '没有生成概要时，直接读摘要和结论。确认继续不会替你采纳 AI 建议。', '笔记和文献链接会一起保存在子议题里，不会被当作已核验的结论。', '继续读文献、调整下一步，再逐渐积累自己的研究产出。'][step - 1] }}</p>
+      <strong>发现新的文献与新闻</strong><p class="muted small">从国际关系预设开始，选择你感兴趣的内容。</p><p><a class="small" href="/settings/interests?return_to=/guide">选择学科与兴趣{{ ui.icon('arrow-right', 'sm') }}</a></p>
+      <strong>随时可以停下</strong><p class="muted small">稍后从首页继续，或在设置里重新打开引导。</p>
+      <a class="small" href="/settings#connections">稍后连接助手{{ ui.icon('arrow-right', 'sm') }}</a>
+    </aside>
+  </div>
+  <footer><span class="muted small">已完成 {{ guide.total }} / 4</span><a class="muted small" href="/">返回首页</a></footer>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{# One checklist row of a replication plan; the checkbox and the note post on change. #}
+<li class="ds-step{% if step.done %} done{% endif %}" id="step-{{ i }}">
+  <label class="ds-step-check">
+    <input type="checkbox" name="done" value="1" {% if step.done %}checked{% endif %}
+           hx-post="/data/plans/{{ p.id }}/steps/{{ i }}" hx-vals='{"toggle": "1"}' hx-trigger="change"
+           hx-target="#step-{{ i }}" hx-swap="outerHTML">
+    <span class="ds-step-n">{{ i + 1 }}</span>
+    <span class="ds-step-text">{{ step.text }}</span>
+  </label>
+  <input class="ds-step-note inline-edit" type="text" name="note" value="{{ step.note or '' }}" placeholder="备注（完成情况、文件位置、问题）"
+         hx-post="/data/plans/{{ p.id }}/steps/{{ i }}" hx-trigger="change" hx-target="#step-{{ i }}" hx-swap="outerHTML">
+  <form method="post" action="/data/plans/{{ p.id }}/steps/{{ i }}/delete" class="ds-inline">
+    <button class="ds-x" type="submit" title="删除这一步" aria-label="删除这一步">×</button>
+  </form>
+</li>

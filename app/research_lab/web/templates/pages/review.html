@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">积累回顾</span>{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>积累回顾</h1><p class="lede">看这一年留下了什么：每周是否有产出，文献和证据积累到哪一步，年度目标走了多远。</p></div></div>
+
+<div class="tiles">
+  <div class="tile"><div class="tile-label">本周划线</div><div class="tile-value">{{ tiles.excerpts_week }}</div><div class="tile-sub">累计 {{ excerpt_total }}</div></div>
+  <div class="tile"><div class="tile-label">距上次有结论的产出</div><div class="tile-value">{% if tiles.weeks_since_last is none %}—{% else %}{{ tiles.weeks_since_last }} 周{% endif %}</div><div class="tile-sub">{% if tiles.weeks_since_last is none %}还没有写出结论{% elif tiles.weeks_since_last >= 4 %}<span class="crit">需要调整时间安排</span>{% elif tiles.weeks_since_last >= 2 %}<span class="warn">该写一份初稿了</span>{% else %}节奏正常{% endif %}</div></div>
+  <div class="tile"><div class="tile-label">文献地图</div><div class="tile-value">{{ tiles.works_placed }} <span class="of">/ {{ tiles.works_target }}</span></div><div class="meter"><span style="width: {{ (tiles.works_placed * 100 / tiles.works_target) | round | int if tiles.works_target else 0 }}%"></span></div><div class="tile-sub">已归入阵营的文献</div></div>
+  <div class="tile"><div class="tile-label">证据矩阵</div><div class="tile-value">{{ tiles.cells_resolved }} <span class="of">/ {{ tiles.cells_total }}</span></div><div class="meter"><span style="width: {{ (tiles.cells_resolved * 100 / tiles.cells_total) | round | int if tiles.cells_total else 0 }}%"></span></div><div class="tile-sub">已判定的格子</div></div>
+</div>
+
+<div class="section-head"><h2>每周节奏</h2><span class="muted small">{{ strip[0].week | week_short_zh }} → {{ strip[-1].week | week_short_zh }}</span></div>
+<div class="cadence">
+  {% for c in strip %}<a class="cell{% if c.level %} lvl-{{ c.level }}{% endif %}{% if c.current %} current{% endif %}{% if c.empty_past %} empty{% endif %}" {% if c.ref %}href="/artifacts/{{ c.ref }}"{% endif %} title="{{ c.week | week_zh }}{% if c.title %} · {{ c.title }}{% endif %}"></a>{% endfor %}
+</div>
+<p class="meta">有颜色的格子表示那一周有一份写出结论的产出，颜色越深越成熟；描边是本周。</p>
+
+<div class="section-head"><h2>{{ year_label }}</h2><a href="/now">编辑目标</a></div>
+<ul class="goals">
+  {% for g in goals %}
+  <li{% if g.reached %} class="reached"{% endif %}>
+    <span class="g-label">{{ g.label }}</span>
+    <span class="g-bar"><span style="width: {{ g.pct }}%"></span></span>
+    <span class="g-num">{{ g.done }} / {{ g.target }}</span>
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="section-head"><h2>最近的产出</h2><a href="/artifacts">书架</a></div>
+<ul class="artifact-list">{% for a in latest_artifacts %}{% include "partials/_artifact_row.html" %}{% endfor %}</ul>
+<p class="meta" style="margin-top: 16px"><a href="/harvest">月度收获</a> · <a href="/now">本周计划</a></p>
+{% endblock %}

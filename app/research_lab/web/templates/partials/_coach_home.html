@@ -1,0 +1,10 @@
+{% if guide and guide.active and not guide.hidden %}
+<section class="card" aria-label="上手引导" style="margin-bottom: 24px">
+  <div class="card-head"><h2>{{ '第一轮研究已开始' if guide.finished else '继续上手' }}</h2><span class="muted small">{{ guide.total }}/4</span></div>
+  <div class="row" style="justify-content: space-between">
+    <span>{{ guide.project.name if guide.project else '' }}{% if not guide.finished %} · {{ guide.steps[guide.step - 1] }}{% endif %}</span>
+    <a class="btn secondary small" href="/guide">{{ '查看成果' if guide.finished else '继续' }}{{ ui.icon('arrow-right', 'sm') }}</a>
+  </div>
+  <p class="muted small" style="margin: 12px 0 0"><a href="/settings/interests">选择学科与兴趣</a> · 订阅论文与新闻</p>
+</section>
+{% endif %}

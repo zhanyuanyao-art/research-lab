@@ -1,0 +1,10 @@
+<li>
+  <span class="week">{{ a.week | week_short_zh }}</span>
+  <a class="title" href="/artifacts/{{ a.ref }}">{{ a.title }}</a>
+  <span class="tail">
+    <span class="chip">{{ L.group[L.type_group[a.type]] }} · {{ L.type[a.type] }}</span>
+    <span class="chip level-{{ a.level }}">{{ L.level[a.level] }}</span>
+    {% if projects.get(a.project) %}<span class="chip">{{ projects[a.project].name }}</span>{% endif %}
+    {% if not a.counts %}<span class="chip warn">结论待写</span>{% endif %}
+  </span>
+</li>

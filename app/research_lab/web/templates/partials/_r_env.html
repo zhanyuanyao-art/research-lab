@@ -1,0 +1,70 @@
+{#- Card 0204: 复现环境 on 设置, rendered by GET /settings/r-env (routes/settings.py, from replication/renv.view): which R
+    runs the authors' code, whether it takes CRAN's binary packages, the build tools and system libraries Homebrew's R
+    needs with the command for what is missing, the lab's shared library, and Preinstall. The preinstall's progress is
+    the same .jobline as 一键跑完 (partials/_run_all_status.html; replication.js ticks its clock and keeps it open across
+    polls); while it runs the section polls itself every 3 s. -#}
+{% import "partials/ui.html" as ui with context %}
+{% set j = env.job %}
+{% set marks = {'waiting': ('outline', '等待'), 'running': ('info', '进行中'), 'done': ('success', '完成'), 'failed': ('danger', '没装上')} %}
+{% set tone = 'running' if j.running else {'done': 'ok', 'error': 'warn'}.get(j.state, 'idle') %}
+<section class="card" id="r-env" aria-live="polite"{% if j.running %} hx-get="/settings/r-env" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  <div class="card-head"><h3>复现环境</h3>
+    <button class="btn ghost small" type="button" hx-get="/settings/r-env?fresh=1" hx-target="#r-env" hx-swap="outerHTML">Check again</button>
+  </div>
+  {% if not env.r %}
+  <p style="margin: 0">这台电脑没有找到 R，作者的 R 代码跑不了。</p>
+  <p class="small" style="margin: 8px 0 0">推荐装官方 R：到 <a href="{{ env.download }}" target="_blank" rel="noopener">{{ env.download }}</a> 下载安装包，装好后点 Check again。</p>
+  {% else %}
+  {% set have = env.tools | selectattr('present') | list %}
+  {% set lack = env.tools | rejectattr('present') | list %}
+  <dl class="kv">
+    <dt>R</dt><dd data-r-flavor="{{ env.r.flavor }}">R {{ env.r.version }} · {{ env.r.flavor_label }}</dd>
+    <dt>装包方式</dt><dd>{% if env.r.binaries %}先装 CRAN 的二进制包，基本不用编译{% else %}只能从源码编译，慢，还要下面这些工具{% endif %}</dd>
+    <dt>编译工具</dt><dd data-r-tools>{% if not lack %}都有了{% else %}还缺 {{ lack | map(attribute='formula') | join('、') }}{% endif %}{% if have and lack %}<span class="muted"> · 已有 {{ have | map(attribute='formula') | join('、') }}</span>{% endif %}</dd>
+    <dt>预装包</dt><dd data-r-preset>常用的 {{ env.preset_total }} 个里装好了 {{ env.preset_have }} 个{% if env.shared_count %} · 共享包库里一共 {{ env.shared_count }} 个包{% endif %}</dd>
+  </dl>
+  {% if env.command %}
+  <p class="small" style="margin: 12px 0 0">缺的在终端运行 <code class="mono copyable" data-r-command>{{ env.command }}</code>，装好后点 Check again。{% if env.r.binaries %}官方 R 只在少数没有二进制的包上用到它们。{% endif %}</p>
+  {% endif %}
+  {% if not env.can_build %}
+  <p class="small" style="margin: 8px 0 0">还缺命令行开发工具，在终端运行 <code class="mono copyable">xcode-select --install</code>。</p>
+  {% endif %}
+  {% if not env.r.binaries %}
+  <p class="small muted" style="margin: 8px 0 0" data-r-official>换成官方 R 就能直接装二进制包，不用编译：到 <a href="{{ env.download }}" target="_blank" rel="noopener">{{ env.download }}</a> 下载安装。装好后这里自动改用它，已有复现的包会在下次准备环境时重装一遍。</p>
+  {% endif %}
+  <div class="row" style="margin-top: 14px; flex-wrap: nowrap; align-items: flex-start">
+    <details class="jobline" id="r-env-box" data-tone="{{ tone }}">
+      <summary class="jobline-head">
+        <span class="jobline-dot" aria-hidden="true"></span>
+        <span class="jobline-text" data-r-job>
+          {%- if j.running %}正在预装 · 完成 {{ j.done }}/{{ j.total }}{% if j.current %} · 正在装 {{ j.current }}{% endif %}
+          {%- elif j.state == 'done' %}常用包都装好了
+          {%- elif j.state == 'error' %}装完了，{{ j.failed | length }} 个没装上，展开看原因
+          {%- elif j.state == 'stopped' %}已停止，可以再装一次
+          {%- elif j.state == 'interrupted' %}上一次预装被中断了，可以再装一次
+          {%- else %}把常用的 {{ j.total }} 个 R 包一次装进共享包库，以后每个复现直接用{% endif -%}
+        </span>
+        {% if j.took %}<span class="jobline-time"{% if j.running and j.since %} data-since="{{ j.since }}"{% endif %}>{{ j.took }}</span>{% endif %}
+        {% if j.state %}<span class="jobline-chev" aria-label="展开每个包">{{ ui.icon('chevron-down', 'sm') }}</span>{% endif %}
+      </summary>
+      {% if j.state %}
+      <ol class="jobline-steps">
+        {% for s in j.steps %}{% set m = marks.get(s.state, ('outline', s.state)) %}
+        <li data-pkg="{{ s.name }}" data-state="{{ s.state }}">
+          <span class="badge {{ m[0] }}">{{ m[1] }}</span>
+          <span class="jobline-step mono">{{ s.name }}</span>
+          <span class="muted">{{ s.detail }}</span>
+          <span class="jobline-time">{{ s.took }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+    </details>
+    {% if j.running %}
+    <form method="post" action="/settings/r-env/stop"><button class="btn secondary small" type="submit">Stop</button></form>
+    {% elif env.can_build %}
+    <form method="post" action="/settings/r-env/preinstall"><button class="btn small" type="submit" data-preinstall>Preinstall</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>

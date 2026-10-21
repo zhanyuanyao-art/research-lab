@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('vendor/toastui-editor.min.css') }}"><link rel="stylesheet" href="{{ asset('vendor/toastui-editor-dark.min.css') }}">{% endblock %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}<a href="/projects/{{ p.slug }}?tab=files">{{ p.name }}</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">{{ label }}</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title">{{ label }}</h1>
+    <p class="page-desc">课题文件夹里的 <span class="mono">{{ name }}</span>。由导出生成的表格（「导出文献地图」「导出证据」）会在下次导出时重写；你自己写的小节保持不变。</p>
+  </div>
+  <div class="page-actions"><a class="btn secondary" href="/projects/{{ p.slug }}?tab=files">{{ ui.icon('folder-open') }}Back to project</a></div>
+</header>
+<nav class="tabs">{% for n, l in files.items() %}<a class="tab{% if n == name %} on{% endif %}" href="/projects/{{ p.slug }}/files/{{ n }}">{{ l.split(' ')[0] }}</a>{% endfor %}</nav>
+{% if error %}<div class="banner warning" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+{% if saved %}<div class="flash">{{ ui.icon('check', 'sm') }}已保存。</div>{% endif %}
+{% if conflict %}{% include "partials/_editor_conflict.html" %}{% endif %}
+<form method="post" action="/projects/{{ p.slug }}/files/{{ name }}" id="body-form" data-editor data-field="text" data-source="/projects/{{ p.slug }}/files/{{ name }}/source" class="card flush editor-card">
+  <input type="hidden" name="sha" value="{{ sha }}">
+  <div class="editor-bar">
+    <span class="segmented small mode-switch"><button type="button" class="on" data-editor-mode="wysiwyg" hidden title="像文档一样编辑">Doc</button><button type="button" data-editor-mode="markdown" hidden title="查看或编辑 Markdown 源码">Source</button></span>
+    <span class="editor-count" id="editor-count"></span>
+    <span class="editor-status muted small" id="editor-status" aria-live="polite">自动保存 · <kbd>⌘</kbd> <kbd>S</kbd> 立即保存</span>
+    <button class="btn small" type="submit" id="editor-save">Save</button>
+  </div>
+  <div id="editor-conflict"></div>
+  <div id="tui-editor" class="tui-host"></div>
+  <textarea name="text" id="body-src" class="mono body-src" rows="28" spellcheck="false">{{ text }}</textarea>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('vendor/toastui-editor-all.min.js') }}" defer></script>
+<script src="{{ asset('vendor/toastui-editor-i18n-zh-cn.js') }}" defer></script>
+<script src="{{ asset('editor.js') }}" defer></script>{% endblock %}

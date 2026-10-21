@@ -1,0 +1,38 @@
+- slug: us-rok-reassurance
+  name: US–ROK Reassurance
+  direction: alliance-us
+  question: Synthetic research question
+  stage: submitted
+  next: Compare synthetic evidence
+  keywords: []
+  note: Synthetic fixture
+- slug: asean-centrality
+  name: ASEAN Centrality
+  direction: sea-asean
+  question: Synthetic research question
+  stage: exploring
+  next: Compare synthetic evidence
+  keywords: []
+  note: Current main project. Grew out of the ASEAN relational-networks paper.
+- slug: institutional-reassurance
+  name: Institutional Reassurance
+  direction: strategy-signaling
+  question: Synthetic project
+  stage: idea
+  note: Synthetic fixture
+- slug: us-iran-talks
+  name: US–Iran Talks
+  direction: strategy-signaling
+  question: Synthetic research question
+  stage: exploring
+  next: Compare synthetic evidence
+  keywords: []
+  note: Synthetic fixture
+- slug: disaster-management
+  name: 灾害管理
+  direction: periphery-nts
+  question: Synthetic research question
+  stage: exploring
+  next: Compare synthetic evidence
+  keywords: []
+  note: Synthetic fixture

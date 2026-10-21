@@ -1,0 +1,81 @@
+;; The R run's sandbox (card 0186, replication/rrun.py): the authors' R scripts run under this profile, through
+;; /usr/bin/sandbox-exec -f sandbox_r.sb -D NAME=value ... <R_HOME>/bin/exec/R --vanilla --no-echo --file=<script>.
+;; Deny by default, then an explicit list (review of card 0186: an allow-default profile let a script launch apps through
+;; lsd, write the user's preferences through cfprefsd, read the clipboard and capture the screen). The baseline is Apple's
+;; own system.sb (dyld, system libraries, the handful of mach services every process needs); what the run adds is below.
+;;
+;; Parameters, all real paths (/private/var/... rather than /var/...):
+;;   WORKSPACE   the plan's workspace: readable as a whole (author/, the plan's R library rlib/, rrun/, outputs/)
+;;   R_HOME      the R installation (Homebrew: /opt/homebrew/Cellar/r/<version>/lib/R), read-only
+;;   PREFIX      the prefix R's libraries live under (Homebrew: /opt/homebrew), read-only below Cellar, opt, lib and share
+;;   SHARED_LIB  the lab's shared library of preinstalled packages (card 0204: <data>/replication/rlib-shared/<R>/rlib, R's
+;;               site library after the plan's own), read-only; /nonexistent/rlib-shared when there is none
+;;
+;; Reads: system paths (system.sb), the workspace, the shared library, R_HOME and PREFIX's library folders, the system programs R's own
+;; startup calls (sh, uname). Nothing else: not $HOME, not /private/tmp or the user's temp folder, not the app's data
+;; folder outside the workspace, not private/ in the repository, no .env file. Writes: <workspace>/rrun (the scripts'
+;; working folder and the copies of the authors' code), <workspace>/tmp (R's tempdir and HOME) and <workspace>/outputs;
+;; files and folders only (no links, FIFOs or devices); never author/, the mirrored data/, the plan's R library, the
+;; shared library, the logs. Network: none at all, localhost included. Processes: fork is allowed because R cannot start without it (utils'
+;; .onLoad runs `uname` through system(), so a profile that forbids fork leaves R without its own utils and stats
+;; packages), but only these programs may be executed: R itself, sh, uname and rm (R cleans its temp folder with it); a child inherits this profile and stays
+;; in the script's process group, which rrun.py kills together with every descendant it can see. Mach services: only
+;; the ones system.sb lists, minus the preference daemon, so there is no LaunchServices (open), no pasteboard, no window
+;; server or screen capture, no cfprefsd (defaults write, user preferences). The denials at the end repeat that for what
+;; system.sb itself opens; they come last because the last matching rule wins.
+
+(version 1)
+(deny default)
+(import "system.sb")
+
+;; stat() of every parent folder of an allowed path (realpath, getcwd): names and sizes only, never contents or listings
+(allow file-read-metadata)
+
+;; Reading: the workspace, the R installation and its libraries, the system programs R starts
+(allow file-read* (subpath (param "WORKSPACE")) (subpath (param "R_HOME")) (subpath (param "SHARED_LIB"))
+                  (subpath (string-append (param "PREFIX") "/Cellar")) (subpath (string-append (param "PREFIX") "/opt"))
+                  (subpath (string-append (param "PREFIX") "/lib")) (subpath (string-append (param "PREFIX") "/share"))
+                  (literal "/bin/sh") (literal "/bin/bash") (literal "/bin/rm") (literal "/usr/bin/uname"))
+;; Loading shared objects: R's own, the packages in rlib and in the shared library (compiled or unpacked when those were
+;; installed), Homebrew's
+(allow file-map-executable (subpath (param "WORKSPACE")) (subpath (param "R_HOME")) (subpath (param "SHARED_LIB"))
+                           (subpath (string-append (param "PREFIX") "/Cellar")) (subpath (string-append (param "PREFIX") "/opt"))
+                           (subpath (string-append (param "PREFIX") "/lib")))
+
+;; Executing: R's interpreter and launcher scripts, sh and uname. Nothing in the workspace, nothing else.
+(allow process-fork)
+(allow process-exec* (subpath (string-append (param "R_HOME") "/bin"))
+                     (literal "/bin/sh") (literal "/bin/bash") (literal "/bin/rm") (literal "/usr/bin/uname"))
+(allow signal (target self))
+(allow process-info-pidinfo (target self))
+
+;; Writing: rrun, tmp, outputs (and /dev/null and friends, which system.sb opens)
+(allow file-write* (subpath (string-append (param "WORKSPACE") "/rrun"))
+                   (subpath (string-append (param "WORKSPACE") "/tmp"))
+                   (subpath (string-append (param "WORKSPACE") "/outputs")))
+;; author/ holds the authors' code exactly as saved; the mirrored data/ and the plan's R library are the app's.
+(deny file-write* (subpath (string-append (param "WORKSPACE") "/author"))
+                  (subpath (string-append (param "WORKSPACE") "/data"))
+                  (subpath (string-append (param "WORKSPACE") "/rlib"))
+                  (subpath (string-append (param "WORKSPACE") "/rfix"))
+                  (subpath (string-append (param "WORKSPACE") "/logs"))
+                  (subpath (param "SHARED_LIB")))
+(deny process-exec* (subpath (param "WORKSPACE")) (subpath (param "SHARED_LIB")))
+;; Only files and folders: a link planted in the workspace would lead the app (which reads and writes the workspace
+;; outside this sandbox) to a file elsewhere. workspace.sweep() is the second fence, the app's O_NOFOLLOW opens the third.
+(deny file-write-create (vnode-type SYMLINK) (vnode-type FIFO) (vnode-type SOCKET) (vnode-type CHARACTER-DEVICE)
+                        (vnode-type BLOCK-DEVICE))
+
+;; What system.sb opens that a script has no business with: preferences (cfprefsd keeps the user's defaults, and
+;; `defaults write` goes through it), LaunchServices, the pasteboard, the window server and screen capture
+(deny mach-lookup (global-name "com.apple.cfprefsd.agent") (global-name "com.apple.cfprefsd.daemon")
+                  (local-name "com.apple.cfprefsd.agent")
+                  (global-name-prefix "com.apple.lsd") (global-name-prefix "com.apple.coreservices")
+                  (global-name-prefix "com.apple.pasteboard") (global-name-prefix "com.apple.windowserver")
+                  (global-name-prefix "com.apple.screencapture") (global-name-prefix "com.apple.replayd")
+                  (global-name-prefix "com.apple.CoreDisplay") (global-name-prefix "com.apple.iohideventsystem")
+                  (global-name-prefix "com.apple.tccd") (global-name-prefix "com.apple.dock"))
+(deny user-preference-write)
+(deny network*)
+(deny appleevent-send)
+(deny file-read* (regex #"/\.env[^/]*$"))

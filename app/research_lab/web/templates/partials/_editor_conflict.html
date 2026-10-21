@@ -1,0 +1,23 @@
+{#- Shared by every sha-guarded editor. Callers may set conflict_action (POST url), conflict_field (form field,
+    default "body") and conflict_back (the 载入磁盘版本 link); without them the artifact defaults apply. -#}
+{%- set _action = conflict_action if conflict_action is defined else '/artifacts/' ~ a.ref ~ '/body' -%}
+{%- set _field = conflict_field if conflict_field is defined else 'body' -%}
+{%- set _back = conflict_back if conflict_back is defined else '/artifacts/' ~ a.ref ~ '?tab=edit' -%}
+<div class="conflict" id="conflict" role="alert" data-current-sha="{{ conflict.current_sha }}">
+  <p class="crit"><strong>保存冲突：</strong>文件在你打开编辑器之后已在磁盘上被修改（可能来自另一个标签页、AI 写入或手动编辑）。本次没有写入任何内容，你的文本仍保留在编辑器里。</p>
+  <pre class="diff">{% for line in conflict.diff.splitlines() %}<span class="{{ 'add' if line.startswith('+') and not line.startswith('+++') else ('del' if line.startswith('-') and not line.startswith('---') else ('hunk' if line.startswith('@@') else '')) }}">{{ line }}</span>
+{% endfor %}</pre>
+  <p class="muted small">“-” 行是磁盘上的当前版本，“+” 行是你的编辑。</p>
+  {% if from_editor %}
+  <div class="row">
+    <button class="btn" type="button" data-conflict="overwrite" data-sha="{{ conflict.current_sha }}">Keep mine</button>
+    <button class="btn secondary" type="button" data-conflict="reload">Load disk version</button>
+  </div>
+  {% else %}
+  <form method="post" action="{{ _action }}">
+    <input type="hidden" name="sha" value="{{ conflict.current_sha }}">
+    <textarea name="{{ _field }}" class="mono">{{ mine }}</textarea>
+    <div class="row"><button class="btn" type="submit">Keep mine</button> <a href="{{ _back }}">载入磁盘版本</a></div>
+  </form>
+  {% endif %}
+</div>

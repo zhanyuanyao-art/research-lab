@@ -1,0 +1,95 @@
+{#
+  Two modes.
+  1. Included by a page (reader, /excerpts): renders the drawer container and the [data-hotkey=excerpt] trigger.
+     Variables: paper (row with id, optional), file_id (optional).
+  2. Returned by GET /_p/excerpt-form (excerpt_form_fragment=True): the capture form itself.
+#}
+{% import "partials/ui.html" as ui with context %}
+{% if excerpt_form_fragment %}
+{% set _use_label = {'definition': '定义', 'evidence': '证据', 'counter': '反证', 'mechanism': '机制', 'method': '方法',
+                     'framing': '框定', 'quotable': '可引用'} %}
+{% set _stance_label = {'supports': '支持', 'contradicts': '反驳', 'neutral': '中立'} %}
+{% set _strength_label = {'direct': '直接', 'inferential': '推断', 'circumstantial': '旁证'} %}
+{% set _source_label = {'primary-official': '一手 · 官方文件', 'primary-statement': '一手 · 声明', 'interview': '访谈',
+                        'secondary-scholarly': '二手 · 学术文献', 'media': '媒体'} %}
+<form class="stack excerpt-form" method="post" action="/excerpts" hx-post="/excerpts" hx-target="#excerpt-saved" hx-swap="afterbegin">
+  <div id="excerpt-form-errors"></div>
+  {% if paper %}
+  <input type="hidden" name="paper_id" value="{{ paper.id }}">
+  <p class="xf-source serif">{{ paper.title }}</p>
+  {% else %}
+  <div><label for="xf-paper">文献</label>
+    <select id="xf-paper" name="paper_id" required>
+      <option value="">选择一篇文献…</option>
+      {% for p in papers %}<option value="{{ p.id }}">{{ p.title[:80] }}{% if p.year %} · {{ p.year }}{% endif %}</option>{% endfor %}
+    </select></div>
+  {% endif %}
+  {% if file_id is not none %}<input type="hidden" name="file_id" value="{{ file_id }}">{% endif %}
+  {% if page_index is not none %}<input type="hidden" name="page_index" value="{{ page_index }}">{% endif %}
+  {#- 课题: the paper's (the current 课题 when the paper is in it, else its first), changeable here -#}
+  <div class="xf-project"><label for="xf-project">课题</label>
+    <select id="xf-project" name="project"><option value=""{% if not project %} selected{% endif %}>不挂课题</option>{% for slug, pr in projects.items() %}<option value="{{ slug }}"{% if slug == project %} selected{% endif %}>{{ pr.name }}</option>{% endfor %}</select></div>
+  <div><label for="xf-quote">原文</label>
+    <textarea id="xf-quote" class="serif inline-edit" name="quote" rows="4" data-autogrow required placeholder="选中文字后按 E 自动填入，也可以粘贴">{{ quote }}</textarea></div>
+  <div><label for="xf-note">我的笔记</label>
+    <textarea id="xf-note" class="inline-edit" name="my_note" rows="3" data-autogrow required autofocus data-autofocus placeholder="这段为什么重要？一句话即可"></textarea></div>
+  <div class="row xf-meta">
+    <div class="segmented" role="radiogroup" aria-label="类型">
+      {% for k in vocab.kinds %}<label><input type="radio" name="kind" value="{{ k }}"{% if loop.first %} checked{% endif %}><span>{{ L.excerpt_kind[k] }}</span></label>{% endfor %}
+    </div>
+    <label class="xf-locator">页码 <input id="xf-locator" type="text" name="locator" value="{{ locator }}" required></label>
+  </div>
+  <details class="xf-more">
+    <summary>更多标注<span class="muted">用途、案例、概念、假设</span></summary>
+    <div class="stack">
+      <div><label>用途 <span class="muted">按 1–7 切换</span></label>
+        <div class="pill-group use-pills">
+          {% for u in vocab.uses %}<label title="{{ loop.index }}"><input type="checkbox" name="uses" value="{{ u }}"><span>{{ _use_label.get(u, u) }}</span></label>{% endfor %}
+        </div></div>
+      <div class="row">
+        <div class="grow"><label for="xf-cases">案例</label>
+          <input id="xf-cases" type="text" name="cases" list="xf-cases-list" placeholder="如 EAS, 2017" autocomplete="off">
+          <datalist id="xf-cases-list">{% for c in vocab.cases %}<option value="{{ c }}">{% endfor %}</datalist></div>
+        <div class="grow"><label for="xf-concepts">概念</label>
+          <input id="xf-concepts" type="text" name="concepts" list="xf-concepts-list" autocomplete="off">
+          <datalist id="xf-concepts-list">{% for c in vocab.concepts %}<option value="{{ c.id }}">{{ c.label }}</option>{% endfor %}</datalist></div>
+      </div>
+      {% if vocab.claims %}
+      <div><label>对假设的立场 <span class="muted">用途选了证据或反证时填写</span></label>
+        {% for c in vocab.claims %}
+        <div class="expl-row"><span class="expl-code">{{ c.code or loop.index }}</span><span class="expl-text">{{ c.statement }}</span>
+          <span class="segmented small">
+            <label><input type="radio" name="explanation_{{ c.id }}" value="" checked><span>未判断</span></label>
+            {% for st in vocab.stances %}<label><input type="radio" name="explanation_{{ c.id }}" value="{{ st }}"><span>{{ _stance_label.get(st, st) }}</span></label>{% endfor %}
+          </span></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="row">
+        <div class="grow"><label for="xf-camp">学派</label>
+          <select id="xf-camp" name="camp"><option value="">沿用文献的学派</option>
+            {% for c in vocab.camps %}<option value="{{ c }}">{{ L.camp[c] }}</option>{% endfor %}</select></div>
+        <div class="grow"><label for="xf-strength">证据强度</label>
+          <select id="xf-strength" name="strength"><option value="">不标注</option>{% for st in vocab.strengths %}<option value="{{ st }}">{{ _strength_label.get(st, st) }}</option>{% endfor %}</select></div>
+        <div class="grow"><label for="xf-source">来源类型</label>
+          <select id="xf-source" name="source_type">{% for st in vocab.source_types %}<option value="{{ st }}"{% if st == 'secondary-scholarly' %} selected{% endif %}>{{ _source_label.get(st, st) }}</option>{% endfor %}</select></div>
+      </div>
+    </div>
+  </details>
+  <div class="row">
+    <button class="btn" type="submit">Save</button>
+    <span class="muted small">⌘↩ 保存 · Esc 关闭</span>
+  </div>
+</form>
+{% else %}
+<link rel="stylesheet" href="{{ asset('excerpts.css') }}">
+<button type="button" class="btn small excerpt-trigger" data-hotkey="excerpt">{{ ui.icon('highlighter', 'sm') }}Highlight <kbd>E</kbd></button>
+<aside id="excerpt-drawer" class="excerpt-drawer" hidden aria-label="划线"
+       data-paper-id="{{ paper.id if paper else '' }}" data-file-id="{{ file_id if file_id is defined and file_id is not none else '' }}">
+  <header class="drawer-head"><strong>新划线</strong>
+    <button type="button" class="btn ghost icon small" data-drawer-close aria-label="关闭">{{ ui.icon('x', 'sm') }}</button></header>
+  <div id="excerpt-drawer-body"></div>
+  <div id="excerpt-saved" class="excerpt-saved"></div>
+</aside>
+<script src="{{ asset('excerpts.js') }}" defer></script>
+{% endif %}

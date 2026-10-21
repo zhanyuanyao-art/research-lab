@@ -1,0 +1,82 @@
+{#- Card 0195: 一键跑完 on a replication plan, the step list and what only Leo can do (get a data file, install a
+    dependency). Include it once on the plan page:
+        {% include "partials/_run_all_status.html" %}
+    Without `run` it draws a heading that loads the block (GET /data/plans/<plan>/pipeline), so the page needs no new
+    context; routes/run_all.py renders it with `run` (replication.pipeline.state + run_all.timing). While a run is going
+    the block polls itself every 3 s; the poll that sees it end reloads the page. Upload forms keep a picked file across
+    polls (hx-preserve). Card 0203: the run is one line in a .jobline box, like the assistant's 运行中 line: it pulses
+    and its clock ticks while running (replication.js), and the arrow opens the nine steps; 需要你 stays below. -#}
+{% import "partials/ui.html" as ui with context %}
+{% if p is defined and p %}
+{% if run is not defined %}
+<div id="run-all" hx-get="/data/plans/{{ p.id }}/pipeline" hx-trigger="load" hx-swap="outerHTML">
+  <h3>一键跑完</h3>
+</div>
+{% else %}
+{% set marks = {'waiting': ('outline', '等待'), 'running': ('info', '进行中'), 'done': ('success', '完成'),
+                'blocked': ('warning', '卡住'), 'failed': ('danger', '出错'), 'skipped': ('outline', '跳过')} %}
+{% set current = run.steps | selectattr('key', 'equalto', run.current) | first %}
+{% set tone = 'running' if run.running else ({'done': 'ok', 'needs': 'warn'}.get(run.state, 'idle' if not run.steps else 'crit')) %}
+<div id="run-all" aria-live="polite"{% if run.running %} hx-get="/data/plans/{{ p.id }}/pipeline?poll=1" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  <div class="row run-all-row">
+    <details class="jobline" id="run-all-box" data-tone="{{ tone }}" data-plan="{{ p.id }}">
+      <summary class="jobline-head">
+        <span class="jobline-dot" aria-hidden="true"></span>
+        <span class="jobline-text" data-run-all-summary>
+          {%- if not run.steps %}一键跑完：从取复现包到导出一次跑完，只有缺数据或缺依赖时才需要你
+          {%- elif run.running %}{{ current.label if current else '准备中' }}{% if run.at %} · 第 {{ run.at }}/{{ run.steps | length }} 步{% endif %}
+          {%- elif run.state == 'done' %}全部跑完了
+          {%- elif run.state == 'needs' %}能跑的都跑完了，{{ run.needs | length + run.needs_more }} 件事需要你
+          {%- elif run.state == 'interrupted' %}上一轮被中断了，可以再跑一次
+          {%- elif run.state == 'stopped' %}已停止，可以再跑一次
+          {%- else %}跑完了，有的步骤没成功{% endif -%}
+        </span>
+        {% if run.steps and run.took %}<span class="jobline-time"{% if run.running and run.since %} data-since="{{ run.since }}"{% endif %}{% if run.ended_at and not run.running %} title="{{ run.ended_at }} 跑完"{% endif %}>{{ run.took }}</span>{% endif %}
+        {% if run.steps %}<span class="jobline-chev" aria-label="展开步骤">{{ ui.icon('chevron-down', 'sm') }}</span>{% endif %}
+      </summary>
+      {% if run.steps %}
+      <ol class="jobline-steps">
+        {% for s in run.steps %}{% set m = marks.get(s.state, ('outline', s.state)) %}
+        <li data-step="{{ s.key }}" data-state="{{ s.state }}">
+          <span class="badge {{ m[0] }}">{{ m[1] }}</span>
+          <span class="jobline-step">{{ s.label }}</span>
+          <span class="muted">{{ s.detail }}</span>
+          <span class="jobline-time"{% if s.state == 'running' and run.since %} data-since="{{ run.since }}" data-step-since="{{ s.started }}"{% endif %}>{{ s.took }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+    </details>
+    {% if not run.running %}
+    <form method="post" action="/data/plans/{{ p.id }}/run-all"><button class="btn small" type="submit" data-run-all>{{ 'Run again' if run.steps else 'Run all' }}</button></form>
+    {% endif %}
+  </div>
+  {% if run.needs %}
+  <h4 style="margin: 12px 0 4px">需要你</h4>
+  <ul style="list-style: none; padding: 0; margin: 0">
+    {% for n in run.needs %}
+    <li style="padding: 8px 0; border-top: 1px solid var(--border)" data-need="{{ n.kind }}">
+      {% if n.kind == 'dependency' %}
+      <p class="small" style="margin: 0"><span class="badge info">缺依赖</span> <strong>{{ n.title }}</strong></p>
+      <p class="small muted" style="margin: 2px 0">{{ n.why }}</p>
+      {% if n.affects %}<p class="small" style="margin: 2px 0">影响：{{ n.affects | join('、') }}{% if n.affects_more %} 等，另有 {{ n.affects_more }} 项{% endif %}</p>{% endif %}
+      {% if n.command %}<p class="small" style="margin: 4px 0 0">在终端运行 <code class="mono" style="user-select: all; padding: 2px 6px; background: var(--hover); border-radius: 4px">{{ n.command }}</code>，装好后再跑一次。</p>{% endif %}
+      {% else %}
+      <p class="small" style="margin: 0"><span class="badge warning">等数据</span> <strong class="mono" style="word-break: break-all">{{ n.title }}</strong></p>
+      <p class="small muted" style="margin: 2px 0">{{ n.why }}{% if n.where %}。{{ n.where }}{% endif %}</p>
+      {% if n.affects %}<p class="small" style="margin: 2px 0">影响：{{ n.affects | join('、') }}{% if n.affects_more %} 等，另有 {{ n.affects_more }} 项{% endif %}</p>{% endif %}
+      <form id="run-all-up-{{ n.uid }}" hx-preserve="true" class="row" method="post" action="/data/plans/{{ p.id }}/missing/upload"
+            enctype="multipart/form-data" style="align-items: center; flex-wrap: nowrap; margin: 4px 0 0">
+        <input type="hidden" name="path" value="{{ n.key }}">
+        <input type="file" name="file" required accept=".csv,.tsv,.xlsx,.dta,.sav,.parquet,.json,.zip" aria-label="上传 {{ n.title }}">
+        <button class="btn small secondary" type="submit">Upload</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if run.needs_more %}<p class="muted small" style="margin: 4px 0 0">另有 {{ run.needs_more }} 项未列出，先处理上面的。</p>{% endif %}
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}

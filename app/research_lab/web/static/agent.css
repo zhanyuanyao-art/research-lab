@@ -1,0 +1,30 @@
+/* /agent and /settings only. */
+.ai-strip { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: baseline; font-size: 0.74rem; color: var(--muted); margin: 0 0 16px; }
+.ai-strip strong { color: var(--fg); font-weight: 500; }
+.ai-strip .meter { width: 120px; display: inline-block; vertical-align: middle; margin: 0 6px; }
+.ai-strip .meter.over span { background: var(--critical); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.filters a { font-size: 0.7rem; padding: 3px 9px; border: 1px solid var(--rule); border-radius: 999px; text-decoration: none; color: var(--muted); }
+.filters a.active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+table.jobs td { font-size: 0.86rem; }
+table.jobs td.actions { white-space: nowrap; }
+table.jobs td.actions form, table.jobs td.actions button { display: inline; }
+.status { font-size: 0.7rem; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--rule); }
+.status.queued { color: var(--warn); border-color: var(--warn); }
+.status.claimed { color: var(--accent); border-color: var(--accent); }
+.status.done { color: var(--muted); }
+.status.failed { color: var(--critical); border-color: var(--critical); }
+.status.cancelled { color: var(--muted); text-decoration: line-through; }
+.cmd { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.cmd code { font-size: 0.72rem; padding: 2px 6px; background: var(--accent-soft); border-radius: 4px; user-select: all; }
+.copy { font-size: 0.64rem; background: none; border: 1px solid var(--rule); color: var(--muted); border-radius: 4px; padding: 1px 6px; cursor: pointer; }
+.jobmd { font-size: 0.95rem; }
+.jobmd pre { max-height: 420px; }
+.jobmd h1 { font-size: 1.2rem; }
+.jobmd h2 { font-size: 1rem; color: var(--muted); }
+.field-error { color: var(--critical); font-size: 0.7rem; }
+.state-ok { color: var(--accent); } .state-missing { color: var(--warn); }
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 0.92rem; }
+dl.kv dt { font-size: 0.7rem; color: var(--muted); padding-top: 3px; }
+dl.kv dd { margin: 0; }
+

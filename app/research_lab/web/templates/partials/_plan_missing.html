@@ -1,0 +1,65 @@
+{#- Card 0188: 待补数据, the data files the author's scripts read that the lab does not have, one row each with the scripts that need
+    it, why it is not here, where it may come from and an upload. Include it once on the plan page, below the datasets:
+        {% include "partials/_plan_missing.html" %}
+    Without `gaps` it only draws a heading that loads the panel by itself (GET /data/plans/<plan>/missing), so the page
+    needs no new context; routes/missing.py renders it again with `gaps` (replication.missing.Report) for the panel, and after an
+    upload with `uploaded`, which also sends the plan's dataset list again out of band. -#}
+{% if p is defined and p %}
+{% if gaps is not defined %}
+<div id="plan-missing" hx-get="/data/plans/{{ p.id }}/missing" hx-trigger="load" hx-swap="outerHTML">
+  <h3 id="missing">待补数据</h3>
+  <p class="muted small">正在检查脚本要读的数据文件…</p>
+</div>
+{% else %}
+<div id="plan-missing">
+  <h3 id="missing">待补数据</h3>
+  <p class="muted small" style="margin: 0 0 8px">作者的脚本读了、但这里没有的数据文件。程序先去取作者的复现包，取不到的列在这里，请你取到后在对应的一行上传。补上之前，用到它的脚本结果在清单里标「等数据」，不影响别的部分。</p>
+  {% if error %}<p class="crit small" style="margin: 0 0 8px">{{ error }}</p>{% endif %}
+  {% if uploaded %}<p class="small" style="margin: 0 0 8px"><span class="badge success">已补</span> <span class="mono">{{ uploaded.item.key }}</span> 已导入，并关联到这份方案。</p>{% endif %}
+  {% if gaps.note %}
+  <p class="muted" style="margin: 0">{{ gaps.note }}</p>
+  {% elif not gaps.items %}
+  <p class="muted" style="margin: 0">按 {{ gaps.scripts | length }} 个脚本算，它们读的数据都已经有了。</p>
+  {% else %}
+  {% set open_rows = gaps.total_missing %}
+  <p style="margin: 0 0 4px"><strong>{% if open_rows %}还缺{% if gaps.truncated %}至少{% endif %} {{ open_rows }} 个文件{% else %}都补上了{% endif %}</strong>
+    <span class="muted small">按 {{ gaps.scripts | length }} 个脚本算{% if gaps.filled %}，{{ gaps.filled | length }} 个已补{% endif %}。来源线索是按路径和复现包的文件清单用规则猜的，没有用 AI。</span></p>
+  <div class="ds-scroll" style="margin: 0 0 8px">
+    <table class="data">
+      <thead><tr><th>文件</th><th>为什么没有</th><th>可能从哪里拿</th><th>哪些脚本要用</th><th>补交</th></tr></thead>
+      <tbody>
+      {% for it in gaps.items %}<tr>
+        <td class="mono small" style="word-break: break-all">{{ it.key }}</td>
+        {% if it.filled %}
+        <td class="small"><span class="badge success">已补</span></td>
+        <td class="small">上传了 <span class="mono">{{ it.filled_with }}</span>{% if it.dataset %}，导入为 <a href="/data/datasets/{{ it.dataset }}">{{ it.dataset_name or it.filled_with }}</a>{% endif %}</td>
+        {% else %}
+        <td class="small"><span class="badge warning">等数据</span> {{ it.reason }}</td>
+        <td class="small">{{ it.hint }}</td>
+        {% endif %}
+        <td class="mono small">{% for s in it.scripts %}{{ s }}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</td>
+        <td>{% if it.filled %}<span class="muted small">—</span>{% else %}
+          <form class="row" style="align-items: center; flex-wrap: nowrap" hx-post="/data/plans/{{ p.id }}/missing/upload" hx-target="#plan-missing" hx-swap="outerHTML"
+                hx-encoding="multipart/form-data" hx-disabled-elt="find button">
+            <input type="hidden" name="path" value="{{ it.key }}">
+            <input type="hidden" name="scope" value="{{ scope }}">
+            <input type="file" name="file" required accept=".csv,.tsv,.xlsx,.dta,.sav,.parquet,.json,.zip" aria-label="上传 {{ it.name }}">
+            <button class="btn small secondary" type="submit">Upload</button>
+          </form>{% endif %}</td>
+      </tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if gaps.hidden %}<p class="muted small" style="margin: 0 0 4px">还有 {{ gaps.hidden }} 个文件没有列出{% if gaps.truncated %}（脚本读的文件太多，只数到前面这些）{% endif %}，先补上面的。</p>{% endif %}
+  <p class="muted small" style="margin: 0 0 4px">能收 CSV、TSV、Excel（.xlsx）、Stata、SPSS、Parquet、JSON，或装着这些的 ZIP，单个文件不超过 500 MB；.rds 需要 R、旧版 .xls 要先另存为 .xlsx。上传后会导入成数据集并关联到这份方案。</p>
+  {% endif %}
+  {% if gaps.unknown %}<p class="muted small" style="margin: 0 0 4px">没找到这些脚本：{{ gaps.unknown | join('、') }}</p>{% endif %}
+  {% if scope == 'all' %}
+  <a class="small" href="/data/plans/{{ p.id }}/detail#missing" hx-get="/data/plans/{{ p.id }}/missing" hx-target="#plan-missing" hx-swap="outerHTML">只看主分析脚本</a>
+  {% elif gaps.more_scripts %}
+  <a class="small" href="/data/plans/{{ p.id }}/detail#missing" hx-get="/data/plans/{{ p.id }}/missing?scripts=all" hx-target="#plan-missing" hx-swap="outerHTML">把附录、稳健性等其他脚本也算进来（共 {{ gaps.all_scripts | length }} 个脚本）</a>
+  {% endif %}
+</div>
+{% if uploaded %}{% with oob = true %}{% include "partials/_plan_datasets.html" %}{% endwith %}{% endif %}
+{% endif %}
+{% endif %}

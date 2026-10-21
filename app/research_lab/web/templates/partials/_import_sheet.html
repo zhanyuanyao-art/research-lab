@@ -1,0 +1,22 @@
+{#- The import sheet's body (card 0130, docs/design/LIBRARY-UI.md §3.3, §五 8): drop zone and Choose files, the paste
+    box for DOIs, arXiv ids and article URLs, 放到 (方向 · 课题 · 集合, preselected from the page it opened on, routes/
+    imports.py defaults), and the queue that static/import.js fills, one row per file or line. Served by GET
+    /imports/sheet into dialog#import-sheet. -#}
+{% import "partials/ui.html" as ui with context %}
+<link rel="stylesheet" href="{{ asset('import.css') }}">
+<header><h2 id="import-title">导入文献</h2><button class="btn ghost icon small" type="button" data-import-close aria-label="Close" title="Close (Esc)">{{ ui.icon('x', 'sm') }}</button></header>
+<form class="imp-body" id="import-form" data-import-form>
+  <label class="drop-zone" data-import-drop>{{ ui.icon('file-up') }}<span>拖入 PDF，或 <strong>Choose files</strong>　一次可以多份</span><input type="file" accept="application/pdf" multiple hidden data-import-files></label>
+  <div class="imp-ids">
+    <label for="imp-ids">或者粘贴 DOI、arXiv 编号或文章网址，每行一个</label>
+    <textarea id="imp-ids" name="ids" rows="2" placeholder="10.1017/S0003055419000731" spellcheck="false" data-import-ids></textarea>
+    <div class="imp-ids-act"><button class="btn secondary small" type="submit" data-import-add>Add</button></div>
+  </div>
+  <div class="imp-file"><span>放到</span>
+    <select name="direction" aria-label="方向" data-import-pick><option value=""{% if not picks.direction %} selected{% endif %}>不指定方向</option>{% for d in direction_list %}<option value="{{ d.slug }}"{% if d.slug == picks.direction %} selected{% endif %}>{{ d.name or d.slug }}</option>{% endfor %}</select>
+    <select name="project" aria-label="课题" data-import-pick><option value="">不挂课题</option>{% for slug, name in project_list %}<option value="{{ slug }}"{% if slug == picks.project %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+    <select name="collection" aria-label="集合" data-import-pick><option value="">不放集合</option>{% for c in collection_list %}<option value="{{ c.id }}"{% if c.id == picks.collection %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  </div>
+  <ul class="imp-queue" data-import-queue aria-live="polite" hidden></ul>
+</form>
+<footer><span class="muted">关掉窗口也不会中断，导入在后台继续，新导入的文献出现在列表顶部。</span><span class="spacer"></span><button class="btn small" type="button" data-import-close>Done</button></footer>

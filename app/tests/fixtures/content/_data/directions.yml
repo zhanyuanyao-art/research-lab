@@ -1,0 +1,32 @@
+- slug: alliance-us
+  name: 联盟政治与美国研究
+  color: ''
+  key: APUS
+  keywords:
+    - alliance
+    - reassurance
+- slug: sea-asean
+  name: 东南亚与东盟研究
+  color: ''
+  key: SEAS
+  keywords:
+    - ASEAN
+    - centrality
+    - southeast asia
+    - hedging
+- slug: strategy-signaling
+  name: 战略研究与信号分析
+  color: ''
+  key: SSIG
+  keywords:
+    - costly signal
+    - signaling
+    - crisis bargaining
+    - signal
+- slug: periphery-nts
+  name: 周边安全与非传统安全
+  color: ''
+  key: NTSP
+  keywords:
+    - disaster
+    - humanitarian

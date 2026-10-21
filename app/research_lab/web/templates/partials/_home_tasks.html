@@ -1,0 +1,45 @@
+{# One HTMX replacement contains the heading, counts and all grouped rows. #}
+{% import "partials/ui.html" as ui with context %}
+{% set ht_hx = 'hx-select="#home-tasks" hx-target="#home-tasks" hx-swap="outerHTML" hx-select-oob="#home-progress"' %}
+{#- Due dates take files/dates.py tone, as on /tasks and the issue page: today or overdue red, within seven
+    days orange, done and parked grey. dashboard.build binds the page's day into due_tone. -#}
+{% macro deadline(due, status='todo') %}{% if due %}{% set tn = due_tone(due, status) %}<time datetime="{{ due }}" title="截止日期"{% if tn %} class="due-{{ tn }}"{% endif %}>{{ ui.icon('calendar','sm') }}{{ due[5:7] | int }}月{{ due[8:10] | int }}日</time>{% else %}<span class="agenda-no-due">未设截止</span>{% endif %}{% endmacro %}
+{% macro children(nodes) %}
+{% for n in nodes %}{% set t=n.issue %}
+  {% if n.children %}<details class="agenda-child-group" data-agenda-key="{{ t.id }}"><summary>{{ ui.icon('chevron-right','sm') }}{% if t.key %}<span class="issue-key">{{ t.key }}</span>{% endif %}<a href="{{ t.url }}">{{ t.title }}</a>{{ deadline(t.due, t.status) }}</summary><div class="agenda-child-list">{{ children(n.children) }}</div></details>
+  {% else %}<div class="agenda-task">
+    {% if n.actionable %}<form method="post" action="/plan/task/{{ t.id }}" hx-post="/plan/task/{{ t.id }}" {{ ht_hx | safe }}><button class="agenda-check" type="submit" name="status" value="{{ 'todo' if t.status == 'done' else 'done' }}" aria-label="{{ '撤销完成' if t.status == 'done' else '标记完成' }}：{{ t.title }}"><span class="issue-state {{ t.status }}">{% if t.status == 'done' %}{{ ui.icon('check','sm') }}{% endif %}</span></button></form>{% else %}<span class="agenda-check"><span class="issue-state {{ t.status }}"></span></span>{% endif %}
+    <div class="agenda-task-copy">{% if t.key %}<span class="issue-key">{{ t.key }}</span>{% endif %}<a href="{{ t.url }}"{% if t.postponed %} title="截止推迟过 {{ t.postponed }} 次"{% endif %}>{% if t.status == 'done' %}<s>{{ t.title }}</s>{% else %}{{ t.title }}{% endif %}</a></div>{{ deadline(t.due, t.status) }}
+  </div>{% endif %}
+{% endfor %}
+{% endmacro %}
+{% macro parent_row(p) %}
+<details class="agenda-parent" data-agenda-key="project-{{ p.slug }}">
+  <summary>{{ ui.icon('chevron-right','sm') }}{% if p.key %}<span class="issue-key">{{ p.key }}</span>{% endif %}<a class="agenda-parent-title" href="{{ p.url }}">{{ p.title }}</a><span class="agenda-parent-progress" title="本周到期和本周完成的议题">{{ p.done }}/{{ p.total }}</span><span class="agenda-parent-meta">{{ ui.dir_tag(p.direction,link=false) }}{{ deadline(p.due, p.status) }}</span></summary>
+  <div class="agenda-child-list">{{ children(p.nodes) }}</div>
+</details>
+{% endmacro %}
+<section id="home-tasks" class="home-agenda">
+  <header class="section-head">
+    <div class="row"><h2>待办</h2>{% if agenda.parents %}<span class="count">{{ agenda.parents | length }}</span>{% endif %}</div>
+    <div class="aside"><span>{{ current_week | week_zh }}</span><a href="/issues?view=todo">全部待办{{ ui.icon('arrow-right','sm') }}</a></div>
+  </header>
+  <div class="card flush">
+    {% if plan_error %}<p class="small crit agenda-notice">{{ '本周安排已被修改，本周一句没有写入；待办的处理已生效。' if plan_error == 'stale' else '缺少本周安排，本周一句没有写入。' }}</p>{% elif planned %}<p class="small ok agenda-notice">本周计划已定。</p>{% endif %}
+    {% for p in agenda.parents[:5] %}{{ parent_row(p) }}{% else %}<div class="agenda-empty"><span>本周没有到期的待办</span><a href="/issues">进入课题安排本周工作{{ ui.icon('arrow-right','sm') }}</a></div>{% endfor %}
+    {% if agenda.parents | length > 5 %}<a class="agenda-more" href="/tasks?view=week">查看其余 {{ agenda.parents | length - 5 }} 个课题{{ ui.icon('arrow-right','sm') }}</a>{% endif %}
+    {% if agenda.completed_parents %}<details class="agenda-completed" data-agenda-key="completed"><summary>本周已完成 {{ agenda.completed_parents | length }} 个课题的安排</summary>{% for p in agenda.completed_parents %}{{ parent_row(p) }}{% endfor %}</details>{% endif %}
+    {% if plan_state == 'planning' %}
+    <details class="agenda-plan" id="week-plan"><summary>{{ ui.icon('calendar','sm') }}{{ '过期的怎么处理' if tasks_overdue else '安排本周' }}{% if tasks_overdue %}<span class="muted">{{ tasks_overdue | length }} 项已过截止</span>{% endif %}</summary>
+      <form method="post" action="/plan" hx-post="/plan" class="stack" {{ ht_hx | safe }}>
+        <input type="hidden" name="sha" value="{{ now_sha or '' }}">
+        {% if tasks_overdue %}<p class="small muted">{{ tasks_overdue | length }} 项待办已过截止，选一个新截止，或者搁置、标为完成</p>
+        {% for t in tasks_overdue[:8] %}<div class="agenda-plan-row"><span>{{ t.title }}{% if t.due %} <span class="muted">· 截止 {{ t.due[5:7] | int }}月{{ t.due[8:10] | int }}日</span>{% endif %}</span><div class="segmented small"><label><input type="radio" name="decision-{{ t.id }}" value="friday" checked>本周五</label><label><input type="radio" name="decision-{{ t.id }}" value="next_friday">下周五</label><label><input type="radio" name="decision-{{ t.id }}" value="park">搁置</label><label><input type="radio" name="decision-{{ t.id }}" value="done">已完成</label></div></div>{% endfor %}
+        {% if tasks_overdue | length > 8 %}<a class="small" href="/tasks?view=overdue">查看其余 {{ tasks_overdue | length - 8 }} 项待办</a>{% endif %}{% endif %}
+        <div class="field"><label for="plan-this-week">本周只做一件事</label><input type="text" class="inline-edit" id="plan-this-week" name="this_week" value="{{ now.this_week or '' }}" placeholder="这周最想推进的事"></div>
+        <div class="form-actions"><button class="btn small" type="submit">{{ 'Apply and plan' if tasks_overdue else 'Plan the week' }}</button></div>
+      </form>
+    </details>
+    {% elif tasks_overdue %}<div class="agenda-footer"><a href="/tasks?view=overdue">{{ tasks_overdue | length }} 项待办已过截止{{ ui.icon('arrow-right','sm') }}</a></div>{% endif %}
+  </div>
+</section>

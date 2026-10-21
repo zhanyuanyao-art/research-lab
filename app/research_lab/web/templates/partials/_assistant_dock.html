@@ -1,0 +1,53 @@
+{% import "partials/ui.html" as ui with context %}
+{#- The floating assistant. base.html includes the shell on every page outside /chat; GET /chat/dock renders the
+    fragment (dock_fragment) that fills it when it opens: the thread switcher and one conversation. chat.js
+    (dock()) owns the behaviour; the open state and thread live in the viewer's localStorage ("rl.dock"). -#}
+{% if dock_fragment %}
+<div data-dock-meta data-thread="{{ thread.id if thread else '' }}" data-title="{{ thread.title if thread else '新对话' }}" hidden></div>
+<div data-dock-threads-src hidden>
+  {% for t in threads[:12] %}
+  <a class="dock-thread{% if thread and thread.id == t.id %} active{% endif %}" href="/chat/{{ t.id }}" data-dock-thread="{{ t.id }}">
+    <span class="dock-thread-title">{{ t.title }}</span>
+    {% set st = (thread_status or {}).get(t.id) %}{% if st in ('queued', 'running', 'waiting', 'failed') %}<span class="badge small {{ {'waiting': 'warning', 'failed': 'danger'}.get(st, '') }}">{{ {'queued': '排队中', 'running': '进行中', 'waiting': '等你回复', 'failed': '失败'}[st] }}</span>{% endif %}
+    <span class="dock-thread-time">{{ t.updated_at | local_time('%m-%d %H:%M') }}</span>
+  </a>
+  {% else %}<p class="muted dock-thread-empty">还没有对话。</p>{% endfor %}
+  <a class="dock-thread-all" href="/chat">{{ ui.icon('list', 'sm') }}全部对话</a>
+</div>
+{% with older_href = ('/chat/' ~ thread.id) if thread else '' %}{% include "partials/_chat_stream.html" %}{% endwith %}
+{% else %}
+<div class="assistant-dock" id="assistant-dock" data-dock>
+  <section class="dock-panel" id="dock-panel" role="dialog" aria-label="{{ assistant_name }}" aria-modal="false">
+    <header class="dock-head">
+      <details class="menu dock-switch">
+        <summary title="切换对话"><span data-dock-title>{{ assistant_name }}</span>{{ ui.icon('chevron-down', 'sm') }}</summary>
+        <div class="menu-panel dock-threads" data-dock-threads></div>
+      </details>
+      <button class="btn ghost icon small" type="button" data-dock-new title="新对话" aria-label="新对话">{{ ui.icon('plus', 'sm') }}</button>
+      <a class="btn ghost small" href="/chat" data-dock-expand title="在完整视图中打开">Expand</a>
+      <button class="btn ghost icon small" type="button" data-dock-close title="收起（⌘J）" aria-label="收起">{{ ui.icon('chevron-down') }}</button>
+    </header>
+    <div class="chat-scroll dock-scroll"><div class="chat-stream" aria-live="polite"></div></div>
+    <div class="dock-foot">{% with composer_dock = true %}{% include "partials/_composer.html" %}{% endwith %}</div>
+  </section>
+  <button class="dock-fab" type="button" data-dock-toggle aria-controls="dock-panel" aria-expanded="false"
+    aria-label="{{ assistant_name }}{% if ai_counts and ai_counts.queued %}，{{ ai_counts.queued }} 个待处理{% endif %}" title="{{ assistant_name }}（⌘J）">
+    <span class="dock-fab-open">{{ ui.icon('sparkles', 'lg') }}</span><span class="dock-fab-close">{{ ui.icon('chevron-down', 'lg') }}</span>
+    {% if ai_counts and ai_counts.queued %}<span class="dock-count">{{ ai_counts.queued }}</span>{% endif %}
+  </button>
+</div>
+{#- Before first paint: reopen a panel the viewer left open (not on a phone-width sheet, which would hide the page
+    they just went to), and start loading its conversation before the deferred scripts run. -#}
+<script>(function () {
+  try {
+    var d = document.getElementById('assistant-dock'), s = JSON.parse(localStorage.getItem('rl.dock') || 'null');
+    if (!d || !s || !s.open || window.matchMedia('(max-width: 640px)').matches) return;
+    d.classList.add('is-open', 'is-restoring');
+    d.querySelector('[data-dock-toggle]').setAttribute('aria-expanded', 'true');
+    if (s.title) d.querySelector('[data-dock-title]').textContent = s.title;
+    window.RLDockPrefetch = fetch('/chat/dock?thread=' + encodeURIComponent(s.thread || ''), { credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+    window.RLDockPrefetch.catch(function () {});   // chat.js reports a failure; this only keeps the console quiet
+  } catch (e) {}
+})();</script>
+{% endif %}

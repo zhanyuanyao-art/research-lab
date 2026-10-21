@@ -1,0 +1,26 @@
+{% import "partials/ui.html" as ui with context %}
+{# Conversation list, newest first. Context: threads (service.list_threads), thread (current, optional). #}
+<nav class="chat-threads" id="chat-threads" aria-label="对话列表">
+  <div class="chat-pane-head">
+    <h2>对话</h2>
+    <a class="btn ghost icon small" href="/chat" title="新对话" aria-label="新对话">{{ ui.icon('plus', 'sm') }}</a>
+  </div>
+  <div class="chat-thread-scroll">
+  {% if threads %}
+  <ul class="chat-thread-list">
+    {% for t in threads %}
+    <li{% if thread and thread.id == t.id %} class="active"{% endif %}>
+      <a href="/chat/{{ t.id }}"{% if thread and thread.id == t.id %} aria-current="page"{% endif %}>
+        <span class="chat-thread-title">{{ t.title }}</span>
+        <span class="chat-thread-meta">
+          <span>{{ t.updated_at | local_time('%m-%d %H:%M') }}</span>
+          {% set st = (thread_status or {}).get(t.id) %}{% if st in ('queued', 'running', 'waiting', 'failed') %}<span class="badge small {{ {'waiting': 'warning', 'failed': 'danger'}.get(st, '') }}">{{ {'queued': '排队中', 'running': '进行中', 'waiting': '等你回复', 'failed': '失败'}[st] }}</span>{% endif %}
+        </span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted chat-empty">还没有对话。在右边提一个问题，就会出现在这里。</p>{% endif %}
+  </div>
+  <a class="chat-jobs-link{% if jobs_page %} active{% endif %}" href="/chat/jobs">{{ ui.icon('inbox', 'sm') }}<span>后台任务</span>{% if open_jobs %}<span class="badge small">{{ open_jobs }} 进行中</span>{% endif %}</a>
+</nav>

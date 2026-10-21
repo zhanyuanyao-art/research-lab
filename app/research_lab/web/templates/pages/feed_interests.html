@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/settings">设置</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">学科与兴趣</span>{% endblock %}
+{% block content %}
+<div class="stack" style="max-width: 760px">
+  <header class="page-header">
+    <div class="titles"><h1 class="page-title">你想关注什么？</h1><p class="page-desc">先选学科，再加兴趣。随时可以在设置里调整。</p></div>
+  </header>
+  {% if error %}<div class="banner danger" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+  {% if saved and not error %}<div class="flash" role="status">{{ ui.icon('check', 'sm') }}订阅已保存，下次刷新生效。</div>{% endif %}
+  {% if prefs %}
+  <form method="post" action="/settings/interests" class="stack">
+    <input type="hidden" name="sha" value="{{ prefs.sha }}"><input type="hidden" name="return_to" value="{{ return_to }}">
+    <section class="card" aria-label="订阅内容">
+      <div class="card-head"><h2>订阅内容</h2>{% if not prefs.configured %}<span class="badge outline">国际关系预设</span>{% endif %}</div>
+      <div class="row">
+        {% for key, name in [('papers', '论文'), ('news', '新闻')] %}<label class="row" style="display: inline-flex; gap: 6px; margin: 0 14px 0 0"><input type="checkbox" name="channels" value="{{ key }}"{% if key in prefs.channels %} checked{% endif %}>{{ name }}</label>{% endfor %}
+      </div>
+    </section>
+    {% for group in ['学科', '兴趣'] %}
+    <section class="card" aria-label="{{ group }}">
+      <div class="card-head"><h2>{{ group }}</h2><span class="muted small">可多选</span></div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 0 20px">
+      {% for p in prefs.catalog if p.group == group %}
+      <div class="row-item" style="align-items: flex-start">
+        <input type="checkbox" name="profiles" id="interest-{{ p.id }}" value="{{ p.id }}" style="flex-shrink: 0; margin-top: 4px"{% if p.id in prefs.selected %} checked{% endif %}>
+        <div class="main-col">
+          <label for="interest-{{ p.id }}" class="title" style="margin: 0">{{ p.name }}</label>
+          <details class="small muted" style="margin-top: 6px"><summary>来源 · {{ p.journal_names | length }} 本期刊{% if p.news_names %}、{{ p.news_names | length }} 个新闻源{% endif %}</summary>
+            <p style="margin: 8px 0; overflow-wrap: anywhere">{{ p.journal_names | join(' · ') }}</p>
+            {% if p.news_names %}<p style="margin: 8px 0">{{ p.news_names | join(' · ') }}</p>{% endif %}
+          </details>
+        </div>
+      </div>
+      {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+    <section class="card">
+      <div class="field"><label for="interest-keywords">论文关键词 <span class="muted">· 选填</span></label>
+        <textarea name="keywords" id="interest-keywords" rows="2" maxlength="500" placeholder="例如：alliance, ASEAN, disaster management">{{ prefs.keywords }}</textarea>
+        <p class="help">用逗号分隔，英文词更容易匹配英文论文。关键词用于优先推荐，也会保留其他论文。</p>
+      </div>
+      <p class="muted small" style="margin-bottom: 0">{% if prefs.manual %}另有 {{ prefs.manual }} 个自定义来源，会继续保留。{% endif %}取消预设不删除已有条目。</p>
+    </section>
+    <div class="form-actions"><button class="btn" type="submit">Save</button><a class="btn ghost" href="{{ return_to }}">{{ 'Back' if prefs.configured else 'Skip' }}</a></div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

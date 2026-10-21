@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "partials/_data_macros.html" import fmt, plan_status, origin_chip, flash %}
+{% set wide = true %}
+{% set no_global_drop = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('data.css') }}">{% endblock %}
+{% block crumbs %}<span class="current">数据</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title">数据</h1>
+  </div>
+  <div class="page-actions">
+    <a class="btn secondary" href="/data/plans/new">{{ ui.icon('flask-conical') }}Plan from papers</a>
+    <a class="btn" href="#import" onclick="document.getElementById('import').classList.add('show')">{{ ui.icon('upload') }}Import dataset</a>
+  </div>
+</header>
+{% include "partials/_direction_filter.html" %}
+{{ flash(msg, err) }}
+<nav class="tabs data-tabs" aria-label="数据">
+  <a href="/data" class="{% if tab != 'datasets' %}active{% endif %}">复现 <span class="count">{{ replications|length }}</span></a>
+  <a href="/data?tab=datasets" class="{% if tab == 'datasets' %}active{% endif %}">数据集 <span class="count">{{ total }}</span></a>
+</nav>
+{%- if tab != 'datasets' %}
+{#- Card 0196: one row per replication, grouped by research direction; the row says how it came out and what Leo has to do. -#}
+<section class="data-replications" data-testid="replications">
+{%- for group in replication_groups %}
+  <h2 class="section-title">{{ group.name }} <span class="count">{{ group.rows|length }}</span></h2>
+  <div class="card flush"><ul class="list">{% for r in group.rows %}
+    <li class="list-item"><a class="body" href="/data/plans/{{ r.id }}"><span class="title serif">{{ r.title }}</span><span class="sub">{{ r.status }}</span></a>
+      <span class="trail">{% if r.needs %}<span class="chip warn">需要你 {{ r.needs }}</span>{% endif %}{{ ui.icon('chevron-right', 'sm') }}</span></li>{% endfor %}
+  </ul></div>
+{%- else %}
+{{ ui.empty('flask-conical', '还没有复现', '', '/data/plans/new', 'Plan from papers') }}
+{%- endfor %}
+</section>
+{%- else %}
+
+<section class="card import-panel{% if not total %} show{% endif %}" id="import" style="margin-bottom: 20px">
+  <div class="card-head"><h3>导入数据集</h3><span class="muted small">CSV、Excel、Stata、SPSS、Parquet；中文列名和 GBK 编码都可以</span></div>
+  <form class="grid-2" method="post" action="/data/datasets" enctype="multipart/form-data" style="align-items: end">
+    <div class="field" style="grid-column: 1 / -1"><label for="ds-file">文件</label><input id="ds-file" type="file" name="file" required accept=".csv,.tsv,.txt,.xlsx,.xlsm,.dta,.sav,.zsav,.parquet,.pq"></div>
+    <div class="field"><label for="ds-name">名称</label><input id="ds-name" type="text" name="name" placeholder="默认用文件名"></div>
+    <div class="field"><label for="ds-paper">关联文献</label><select id="ds-paper" name="paper_id"><option value="">不关联</option>{% for pp in papers %}<option value="{{ pp.id }}">{{ pp.title | truncate(48) }}{% if pp.year %} · {{ pp.year }}{% endif %}</option>{% endfor %}</select></div>
+    <div class="field"><label for="ds-sheet">工作表</label><input id="ds-sheet" type="text" name="sheet" placeholder="Excel 默认第一个工作表"></div>
+    <div class="form-actions"><button class="btn" type="submit">Import</button></div>
+  </form>
+</section>
+
+{#- One list of datasets; each carries its replication plans and analyses (docs/design/DATA-v2.md). The direction
+    bar under the header is the workbench's one tag system. -#}
+
+{% if datasets %}
+<div class="card flush"><table class="data data-list">
+  <thead><tr><th>数据集</th><th>规模</th><th class="num">复现方案</th><th class="num">分析</th><th>最近分析</th></tr></thead>
+  <tbody>{% for d in datasets %}
+    <tr>
+      <td><a class="ds-title" href="/data/datasets/{{ d.id }}">{{ d.name }}</a>
+        <div class="sub">{% if d.direction %}{{ ui.dir_tag(d.direction, link=false) }}{% endif %}<span>{{ d.source_kind|upper }}</span>{% if d.paper_title %}<a href="/papers/{{ d.paper_id }}">{{ d.paper_title|truncate(40) }}</a>{% endif %}</div></td>
+      <td class="nowrap">{{ d.rows }} 行 × {{ d.cols }} 列</td>
+      <td class="num">{{ d.n_plans or '' }}</td>
+      <td class="num">{{ d.n_runs or '' }}</td>
+      <td class="nowrap muted">{% if d.last_run %}{{ d.last_run[5:7]|int }}月{{ d.last_run[8:10]|int }}日{% else %}<span class="faint">—</span>{% endif %}</td>
+    </tr>
+  {% endfor %}</tbody>
+</table></div>
+{% elif total %}
+{{ ui.empty('table', '这个方向还没有数据集', '', '/data?direction=', 'View all') }}
+{% else %}
+{{ ui.empty('table', '还没有数据集', '导入后会自动生成概况：缺失、取值范围、常见取值和前 50 行预览。') }}
+{% endif %}
+
+{% if unattached %}
+<section class="data-waiting">
+  <h2 class="section-title">待配数据 <span class="count">{{ unattached|length }}</span></h2>
+  <div class="card flush"><ul class="list">{% for p in unattached %}
+    <li class="list-item">
+      <div class="body">
+        <a class="title serif" href="/data/plans/{{ p.id }}">{{ p.paper_title|truncate(70) if p.paper_title else '未关联文献的方案' }}</a>
+        <div class="sub">{{ plan_status(p.status, status_labels) }} {{ origin_chip(p.origin) }}<span>步骤 {{ p.steps_done }}/{{ p.steps_total }}</span></div>
+      </div>
+      <span class="trail">{{ ui.icon('chevron-right') }}</span>
+    </li>
+  {% endfor %}</ul></div>
+</section>
+{% endif %}
+
+{% if orphan_runs %}
+<section class="data-waiting">
+  <h2 class="section-title">数据集已删除的分析 <span class="count">{{ orphan_runs|length }}</span></h2>
+  <div class="card flush"><ul class="list">{% for r in orphan_runs %}
+    <li class="list-item">
+      <div class="body">
+        <a class="title" href="/data/runs/{{ r.id }}">{{ r.method_label }}</a>
+        <div class="sub">{% if r.reading %}<span class="badge success">已写解读</span>{% endif %}<span>结果保留，不能再重新运行</span></div>
+      </div>
+      <span class="trail">{{ (r.created_at or '')[:10] }}</span>
+    </li>
+  {% endfor %}</ul></div>
+</section>
+{% endif %}
+{%- endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('data.js') }}" defer></script>
+<script>if ((location.hash || '') === '#import') document.getElementById('import').classList.add('show');</script>{% endblock %}

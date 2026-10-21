@@ -1,0 +1,19 @@
+{# One chat message. Context: message_view() in routes/chat.py (m, content, card_html, poll, failed, job, suggestions). #}
+<article class="chat-msg chat-msg-{{ m.role }}{{ ' is-pending' if pending else '' }}" id="msg-{{ m.id }}" data-message-id="{{ m.id }}"
+  {% if poll %}hx-get="/chat/message/{{ m.id }}" hx-trigger="{{ poll }}" hx-swap="outerHTML"{% endif %}>
+  {% if m.role == 'user' %}
+  <div class="chat-bubble" title="{{ m.created_at }}">{{ content }}</div>
+  {% else %}
+  <div class="chat-reply" title="{{ m.created_at }}">
+    {% if content %}<div class="chat-text">{{ content | chat_md }}</div>{% endif %}
+    {% if failed %}
+    <p class="crit chat-failed">没有收到回复{% if job and job.error %}: {{ job.error[:200] }}{% endif %}.
+      <button class="btn small secondary" hx-post="/chat/message/{{ m.id }}/retry" hx-target="#msg-{{ m.id }}" hx-swap="outerHTML">Retry</button></p>
+    {% endif %}
+    {{ card_html }}
+    {% if suggestions %}
+    <div class="chat-suggest">{% for c in suggestions %}<button type="button" class="chip chat-cmd" data-chat-command="{{ c }}" data-send>{{ c }}</button>{% endfor %}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</article>

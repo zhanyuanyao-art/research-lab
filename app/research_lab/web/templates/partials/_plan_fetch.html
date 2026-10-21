@@ -1,0 +1,74 @@
+{#- Card 0165: the files of one 复现数据链接 (List files), the picks (Import) and what each import did. The panel replaces
+    #plan-fetch; nothing is downloaded until Import. A 409 (the links changed since the page was drawn) is swapped in too, by the wrapper in data_plan.html.
+    Card 0183: three groups, Code / Docs / Data. `auto` (fetch.AutoPlan) pre-ticks what the main analysis needs, from the author's code. -#}
+{% macro file_rows(files, auto) %}{% set ticked = auto.picks if auto else [] %}
+      {% for f in files %}<tr{% if not f.fetchable %} class="muted"{% endif %}>
+        <td><input type="checkbox" name="pick" value="{{ f.name }}" aria-label="选择 {{ f.name }}"{% if f.name in ticked %} checked{% endif %}{% if not f.fetchable %} disabled{% endif %}></td>
+        <td class="mono">{{ f.name }}</td>
+        <td style="text-align: right; white-space: nowrap">{{ f.size | filesizeformat if f.size is not none else '—' }}</td>
+        <td class="small">{% if f.note %}{{ f.note }}{% elif auto %}{{ auto.label(f) }}{% endif %}</td>
+      </tr>{% endfor %}
+{% endmacro %}
+{% macro group(title, hint, files, auto) %}{% if files %}
+    <p style="margin: 14px 0 4px"><strong>{{ title }}</strong> <span class="muted small">{{ files | length }} 个，{{ hint }}</span></p>
+    <div style="overflow-x: auto">
+    <table class="data">
+      <thead><tr><th style="width: 32px"></th><th>文件</th><th style="text-align: right">大小</th><th></th></tr></thead>
+      <tbody>{{ file_rows(files, auto) }}</tbody>
+    </table>
+    </div>
+{% endif %}{% endmacro %}
+<div id="plan-fetch"><p id="plan-list-busy" class="htmx-indicator muted small">正在列出文件，并读一遍代码和说明书…</p>
+<div class="card" style="margin-top: 12px">
+  {% if url %}<p class="small muted" style="margin: 0 0 8px">来源：<span class="mono">{{ url }}</span></p>{% endif %}
+  {% if stale %}
+  <p class="warn" style="margin: 0 0 8px">{{ stale }}</p>
+  <a class="btn small secondary" href="/data/plans/{{ p.id }}/detail#links">Reload</a>
+  {% elif error %}
+  <p class="crit" style="margin: 0">{{ error }}</p>
+  {% elif results is not none %}
+  {% set ok = results | selectattr('dataset') | list %}
+  {% set saved = results | selectattr('saved') | list %}
+  <p style="margin: 0 0 8px"><strong>导入结果</strong> <span class="muted small">{{ ok | length }} 个已导入并关联到这份方案{% if saved %}，{{ saved | length }} 个代码和说明书已存进工作区{% endif %}{% if results | length > ok | length + saved | length %}，{{ results | length - ok | length - saved | length }} 个没导入{% endif %}</span></p>
+  <ul class="ds-list">
+    {% for r in results %}<li>{% if r.dataset %}<span class="mono">{{ r.name }}</span> → <a href="/data/datasets/{{ r.dataset }}">{{ r.dataset }}</a>{% elif r.saved %}<span class="mono">{{ r.name }}</span> → 存成文本 <span class="mono">{{ r.saved }}</span>{% else %}<span class="mono">{{ r.name }}</span> <span class="crit small">{{ r.error }}</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% elif listing %}
+  <p style="margin: 0 0 8px"><strong>{{ listing.title }}</strong> <span class="muted small">{{ listing.files | length }} 个数据文件{% if listing.code %}，{{ listing.code | length }} 个代码{% endif %}{% if listing.docs %}，{{ listing.docs | length }} 个说明书{% endif %}</span></p>
+  {% if listing.files or listing.code or listing.docs %}
+  {% if auto and auto.note %}<p class="warn small" style="margin: 0 0 8px">{{ auto.note }}</p>{% endif %}
+  {% if auto and auto.pkg and auto.pkg.main %}
+  <p style="margin: 0 0 4px"><strong>主分析</strong> <span class="muted small">按作者代码里读数据的语句和模型调用，用规则读出来的，没有用 AI</span></p>
+  <div class="ds-scroll" style="margin: 0 0 8px">
+    <table class="data">
+      <thead><tr><th>脚本</th><th>读取的数据</th><th>模型调用</th></tr></thead>
+      <tbody>
+      {% for m in auto.pkg.main %}<tr>
+        <td class="mono">{{ m }}</td>
+        <td class="mono small">{% for d in auto.pkg.data_of(m) %}{{ d }}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</td>
+        <td class="small">{{ auto.models_text(m) or '—' }}</td>
+      </tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small" style="margin: 0 0 4px">这些脚本、它们读的数据和说明书已经勾选，可以改。</p>
+  {% elif auto and auto.pkg %}
+  <p class="muted small" style="margin: 0 0 4px">代码里没找到同时读数据又拟合模型的脚本，请手动勾选。</p>
+  {% endif %}
+  <form hx-post="/data/plans/{{ p.id }}/links/{{ index }}/import" hx-target="#plan-fetch" hx-swap="outerHTML"
+        hx-indicator="#plan-fetch-busy" hx-disabled-elt="find button">
+    <input type="hidden" name="sources_version" value="{{ version }}">
+    {{ group("Code", "只存成文本，不会运行", listing.code, auto) }}
+    {{ group("Docs", "README 和说明书，存成文本", listing.docs, auto) }}
+    {{ group("Data", "导入后关联到这份方案", listing.files, auto) }}
+    <div class="row" style="align-items: center; margin-top: 12px">
+      <button class="btn small" type="submit">Import</button>
+      <span id="plan-fetch-busy" class="htmx-indicator muted small">正在下载并导入，文件大时要等一会儿…</span>
+    </div>
+    <p class="muted small" style="margin: 6px 0 0">只下载勾选的文件。数据导入后自动关联到这份方案；代码和说明书只存成文本，放进这份方案的工作区。数据文件不超过 500 MB，代码和文字说明书不超过 2 MB，PDF 说明书不超过 25 MB；超出的和暂时取不了的标灰。</p>
+  </form>
+  {% else %}<p class="muted" style="margin: 0">这个来源里没有认得的数据、代码或说明书。认得的数据有 CSV、Excel、Stata、SPSS、Parquet、JSON、ZIP，代码有 R、Rmd、Stata do、Python、SQL、shell。</p>{% endif %}
+  {% endif %}
+</div>
+</div>
+{% if results is not none %}{% with oob = true %}{% include "partials/_plan_datasets.html" %}{% endwith %}{% endif %}

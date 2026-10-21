@@ -1,0 +1,43 @@
+{#- One book review in 推送 · 论文 · Book reviews (card 0154), in the same cell and line shapes as a paper (_feed_item.html):
+    the reviewed book is the title, then 「by <book author>」 with publisher and year, then one grey line 「Reviewed by
+    <reviewer> · <journal> · date」. A title the parser could not read stays as the journal printed it. The title opens
+    the review through its DOI; 收藏 and 忽略 work like a paper's. No summary: reviews skip the assistant. -#}
+{% import "partials/ui.html" as ui with context %}
+{% from "partials/_feed_actions.html" import actions with context %}
+{% set row_id = 'fp-' ~ it.id %}
+{#- only a web address becomes a link: a stored javascript: or data: value never does (card 0155 review) -#}
+{% set pdf = it.oa_pdf_url if it.oa_pdf_url and it.oa_pdf_url.startswith(('https://', 'http://')) else none %}
+{% set stream = (layout | default('story')) == 'stream' %}
+{% set vals = {'layout': 'stream' if stream else 'story'} %}
+{% set by = ('by ' ~ it.book_authors if it.book_authors else '') ~ (' · ' if it.book_authors and it.book_imprint else '') ~ (it.book_imprint or '') %}
+{% macro title_link(cls) -%}
+{%- if it.url %}<a class="{{ cls }}" href="{{ it.url }}" target="_blank" rel="noopener" lang="en"{% if it.book_title %} title="{{ it.title }}"{% endif %}>{{ it.display_title }}</a>
+{%- else %}<span class="{{ cls }}" lang="en">{{ it.display_title }}</span>{% endif -%}
+{%- endmacro %}
+{% if stream %}
+<li class="stream-row review{% if it.status == 'dismissed' %} dismissed{% endif %}" id="{{ row_id }}">
+  {% if it.status == 'dismissed' %}
+  <span class="line muted">已忽略 · {{ it.display_title }}</span><span class="src-col"></span>{{ actions(it, row_id, vals) }}
+  {% else %}
+  <span class="line">{{ title_link('title') }}{% if by %}<span class="orig" lang="en">{{ by }}</span>{% endif %}</span>
+  <span class="src-col">{{ ui.dir_dot(it.direction) }}<span class="src">{{ it.origin_label }}</span>{% if pdf %} <a class="review-pdf" href="{{ pdf }}" target="_blank" rel="noopener">Download</a>{% endif %}</span>
+  {{ actions(it, row_id, vals) }}
+  {% endif %}
+</li>
+{% else %}
+<article class="story review{% if it.status == 'dismissed' %} dismissed{% endif %}" id="{{ row_id }}">
+  {% if it.status == 'dismissed' %}
+  <div class="foot"><span class="byline">已忽略<span class="sep"></span>{{ it.display_title }}</span>{{ actions(it, row_id, vals) }}</div>
+  {% else %}
+  {{ title_link('title') }}
+  {% if by %}<div class="book-by" lang="en">{{ by }}</div>{% endif %}
+  <div class="foot">
+    {{ ui.dir_dot(it.direction) }}
+    <span class="byline">{% if it.reviewer_names %}Reviewed by {{ it.reviewer_names }}<span class="sep"></span>{% endif %}{{ it.origin_label }}{% if it.date %}<span class="sep"></span>{{ it.date | date_zh }}{% endif %}</span>
+    {#- a review is not auto-imported (card 0155); a free PDF is one click away -#}
+    {% if pdf %}<a class="btn ghost quiet small review-pdf tip end" href="{{ pdf }}" target="_blank" rel="noopener" data-tip="{{ '出版社免费提供' if it.oa_license == 'publisher' else '可获取原文' }}">Download</a>{% endif %}
+    {{ actions(it, row_id, vals) }}
+  </div>
+  {% endif %}
+</article>
+{% endif %}

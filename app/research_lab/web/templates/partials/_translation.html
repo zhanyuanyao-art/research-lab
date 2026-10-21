@@ -1,0 +1,33 @@
+{#- 译文 in the reader's 信息 tab (card 0129, docs/design/LIBRARY-UI.md §3.2): one property row per target language
+    with its state and actions. Variables: paper, file, trans_targets, trans_status, trans_polling, lang_names,
+    ai_mode; optional trans_msg, trans_error. Translations are display-only: excerpts quote the original. -#}
+<section id="translation-card" class="side-section translation-card"{% if trans_polling %} hx-get="/papers/{{ paper.id }}/translation" hx-trigger="every {{ trans_poll_every or '3s' }}" hx-swap="outerHTML"{% endif %}>
+  <h3>译文</h3>
+  {% if trans_msg %}<p class="flash">{{ trans_msg }}</p>{% endif %}
+  {% if trans_error %}<p class="crit small-note">{{ trans_error }}</p>{% endif %}
+  {% if not file %}
+    <p class="muted small">这篇论文还没有 PDF 文件，无法翻译。</p>
+  {% else %}
+  <dl class="prop-list trans-list">
+    {% for t in trans_targets %}{% set st = trans_status[t] %}{% set name = lang_names.get(t, t) %}
+    <dt>{{ name }}</dt>
+    <dd class="trans-row">
+      {% if st.chunks_total == 0 %}<span class="muted">没有可翻译的页面文字</span>
+      {% elif st.complete %}<span class="state state-done">已完成</span><span class="muted">{{ st.pages_done }}/{{ st.pages_total }} 页</span>
+      {% elif st.started %}<span class="state state-{{ 'running' if st.chunks_open else 'partial' }}">{{ '进行中' if st.chunks_open else '未完成' }}</span>
+        <span class="muted">{{ st.chunks_done }}/{{ st.chunks_total }} 段 · {{ st.pages_done }}/{{ st.pages_total }} 页</span>
+      {% else %}<span class="muted">还没有译文</span>{% endif %}
+      {% if st.chunks_total and not st.complete and not st.chunks_open %}
+      <form hx-post="/papers/{{ paper.id }}/translate" hx-target="#translation-card" hx-swap="outerHTML"><input type="hidden" name="lang" value="{{ t }}"><button class="btn ghost small" title="翻译为{{ name }}">{{ 'Continue' if st.started else 'Translate' }}<span class="spinner"></span></button></form>
+      {% endif %}
+      {% if st.pages_done %}<a class="btn ghost small" href="/papers/{{ paper.id }}/read?view=both&amp;lang={{ t }}">Side by side</a>{% endif %}
+      {% if st.complete %}<form hx-post="/papers/{{ paper.id }}/translate" hx-target="#translation-card" hx-swap="outerHTML" hx-confirm="重新翻译会覆盖现有{{ name }}译文，确定吗？"><input type="hidden" name="lang" value="{{ t }}"><input type="hidden" name="force" value="1"><button class="btn ghost small">Retranslate</button></form>{% endif %}
+      {% if st.chunks_open and not st.chunks_claimed and ai_mode == 'agent' %}<p class="job-status">已排入助手队列，处理后自动出现。</p>
+      {% elif st.chunks_open %}<p class="job-status">正在翻译（{{ st.chunks_open }} 段在队列中）<span class="spinner"> …</span> 可以继续做别的事。</p>{% endif %}
+      {% if st.chunks_failed %}<p class="crit small-note">{{ st.chunks_failed }} 段失败：{{ st.errors | join('；') }}</p>{% endif %}
+    </dd>
+    {% endfor %}
+  </dl>
+  <p class="muted small">机器译文，供对照阅读。</p>
+  {% endif %}
+</section>

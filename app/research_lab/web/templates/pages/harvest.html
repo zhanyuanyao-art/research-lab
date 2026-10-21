@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('weekly.css') }}">{% endblock %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">月度收获</span>{% endblock %}
+{% block content %}
+{% set kind_label = {'monthly': '月度', 'quarterly': '季度', 'annual': '年度'} %}
+<p class="kicker">{{ kind_label.get(kind, kind) }}收获 · {{ period }} · <span title="{{ from_week }} → {{ to_week }}">{{ from_week | week_zh }} → {{ to_week | week_zh }}</span></p>
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+{% if saved %}<p class="ok">已写入 _harvests/{{ period }}.md。</p>{% endif %}
+
+<h2>周轴上的 产出</h2>
+<div class="week-axis">
+  {% for w in axis %}
+  <div class="axis-week{% if w.arts %} filled{% endif %}">
+    <span class="axis-label" title="{{ w.week }}">{{ w.week | week_short_zh }}</span>
+    {% for r in w.arts %}<a class="axis-item{% if not r.counts %} draft{% endif %} lvl-{{ r.level }}" href="/artifacts/{{ r.ref }}" title="{{ r.ref }} · {{ r.title }} · {{ L.level[r.level] }}{% if not r.counts %} · 结论待写{% endif %}">{{ (types.get(r.type) or {}).get('emoji', '') }} {{ r.title | truncate(38) }}</a>{% endfor %}
+  </div>
+  {% endfor %}
+</div>
+<p class="muted small">本期共 {{ covered | length }} 个 产出{% if counting is defined %}，其中 {{ counting | length }} 个计数{% endif %}。虚线条目的 Claim 仍为空。</p>
+
+{% if new %}
+<section class="panel">
+  <h2>{{ harvest_title or title }}</h2>
+  <p>用 <code>templates/harvest.md</code> 生成 <code>_harvests/{{ period }}.md</code>，其中 <code>kind: {{ kind }}</code>、<code>period: {{ period }}</code>、<code>from: {{ from_week }}</code>、<code>to: {{ to_week }}</code>。{% if kind != 'monthly' %}会加上 “What am I actually researching?” 一节。{% endif %}</p>
+  <form method="post" action="/harvest">
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <input type="hidden" name="period" value="{{ period }}">
+    <button class="btn" type="submit">Create harvest file</button>
+  </form>
+</section>
+{% else %}
+<div class="week-grid">
+  <section>
+    {% if conflict %}
+    <div class="conflict" role="alert">
+      <p class="crit">本页加载后，磁盘上的文件被改动了，所以没有写入任何内容。</p>
+      <pre class="diff">{% for line in conflict.diff.splitlines() %}{% set c = 'add' if line.startswith('+') else 'del' if line.startswith('-') else 'hunk' if line.startswith('@') else '' %}<span class="{{ c }}">{{ line }}</span>
+{% endfor %}</pre>
+      <div class="two-col">
+        <div><h3>磁盘上的当前版本</h3><textarea class="mono" readonly rows="12">{{ conflict.current }}</textarea></div>
+        <div><h3>你的修改</h3><textarea class="mono" readonly rows="12">{{ conflict.proposed }}</textarea></div>
+      </div>
+      <p class="muted small">编辑器保留了你的修改；再次写入会用编辑器里的文本替换文件。</p>
+    </div>
+    {% endif %}
+    <div class="tabs" data-tabs>
+      <button type="button" class="tab on" data-tab="rendered">Preview</button>
+      <button type="button" class="tab" data-tab="editor">Edit Markdown</button>
+    </div>
+    <article class="artifact" data-pane="rendered"{% if conflict or error %} hidden{% endif %}>
+      <h1>{{ h.title }}</h1>
+      {{ h.doc.body | md | safe }}
+    </article>
+    <form method="post" action="/harvest/{{ period }}/save" class="stack editor" data-pane="editor" data-dirty-guard{% if not (conflict or error) %} hidden{% endif %}>
+      <input type="hidden" name="sha" value="{{ sha }}">
+      <textarea name="text" class="mono" rows="32">{{ text }}</textarea>
+      <div class="row"><button class="btn" type="submit">Write file</button><span class="muted small">如果文件在你打开后被改动过，写入会被拒绝。</span></div>
+    </form>
+  </section>
+
+  <aside class="week-side">
+    <section class="panel">
+      <h2>关系</h2>
+      {% if relations %}
+      <ul class="relation-list">{% for r in relations %}<li><a class="mono" href="/artifacts/{{ r.a }}">{{ r.a }}</a> → <a class="mono" href="/artifacts/{{ r.b }}">{{ r.b }}</a>{% if not r.inside %} <span class="muted small">（不在本期内）</span>{% endif %}</li>{% endfor %}</ul>
+      {% else %}<p class="muted">本期的 产出 之间还没有 <code>related</code> 链接。</p>{% endif %}
+    </section>
+
+    <section class="panel">
+      <h2>收获复盘</h2>
+      <div id="review-panel">
+        {% if review %}{% with draft = review, sha = '' %}{% include "partials/_draft_result.html" %}{% endwith %}{% endif %}
+      </div>
+      <button class="btn secondary" hx-post="/harvest/{{ period }}/review" hx-target="#review-panel" hx-swap="innerHTML">{{ 'Rerun' if review else 'Find links' }}<span class="spinner"></span></button>
+      <p class="muted small">最多给出本期计数 产出 之间的三条关联，外加一次管线检查和四条建议。关联只会存为待确认的链接。</p>
+    </section>
+
+    <section class="panel">
+      <h2>研究管线</h2>
+      <ul class="checklist">
+        {% for p in pipeline %}
+        <li><strong>{{ p.name }}</strong> · 阶段 <span class="chip">{{ L.stage[p.stage] }}</span> · 本期 {{ p.artifacts | length }} 个 产出{% if p.artifacts %}：{% for r in p.artifacts %}<span class="chip">{{ L.type[r.type] }}</span> {% endfor %}{% endif %}</li>
+        {% endfor %}
+      </ul>
+      <p class="note">推进阶段在项目页上进行，前提是相应的里程碑已通过：
+        {% for p in pipeline %}<a href="/projects/{{ p.slug }}">{{ p.name }}</a>{{ '、' if not loop.last }}{% endfor %}。</p>
+    </section>
+  </aside>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('weekly.js') }}" defer></script>{% endblock %}

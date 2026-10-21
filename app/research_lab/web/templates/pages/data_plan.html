@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% set no_global_drop = true %}
+{% from "partials/_data_macros.html" import fmt, plan_status, origin_chip, flash %}
+{% block head %}<link rel="stylesheet" href="{{ asset('data.css') }}">
+{#- The fetch panel's 正在列出 / 正在下载 lines take no room until a request is running. -#}
+<style>#plan-fetch .htmx-indicator { display: none; } #plan-fetch .htmx-indicator.htmx-request { display: block; }
+{#- 全书复现清单 (card 0187): aligned columns, the caption takes what is left and cuts to one line (the full text is its title). -#}
+.ds-cov { table-layout: fixed; width: 100%; min-width: 760px; }
+.ds-cov col.c-label { width: 6.5rem; } .ds-cov col.c-page { width: 3.5rem; } .ds-cov col.c-script { width: 13rem; }
+.ds-cov col.c-owner { width: 8.5rem; } .ds-cov col.c-tick { width: 3rem; }
+.ds-cov td { vertical-align: middle; }
+.ds-cov .cov-label { white-space: nowrap; }
+.ds-cov .cov-cap, .ds-cov .cov-script { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-cov .cov-page { text-align: right; white-space: nowrap; }
+.ds-cov .cov-tick { text-align: center; }
+.ds-cov-group { margin: 12px 0; }
+.ds-cov-group > summary { cursor: pointer; padding: 6px 0; }
+.ds-cov-group .row { margin: 8px 0; }
+</style>{% endblock %}
+{% block crumbs %}<a href="/data">数据</a>{{ ui.icon('chevron-right', 'sm') }}{% if mode == 'plan' %}<a href="/data/plans/{{ p.id }}">{{ short_title }}</a>{{ ui.icon('chevron-right', 'sm') }}{% endif %}<span class="current">{{ title }}</span>{% endblock %}
+{% block content %}
+{% if mode == 'new' %}
+<header class="page-header"><div class="titles"><h1 class="page-title">从文献生成复现方案</h1><p class="page-desc">助手只读方法、数据和研究设计部分，整理出数据来源、变量、模型和步骤。方案是草稿，不包含任何结果。</p></div></header>
+{{ flash(msg, err) }}
+
+{% if chosen %}
+<div class="card">
+  <p class="kicker">已选论文</p>
+  <h3 class="ds-paper-title"><a href="/papers/{{ chosen.id }}">{{ chosen.title }}</a> <span class="muted">{{ chosen.year or '' }}</span></h3>
+  {#- material.picked arrives with card 0182 ('keywords' | 'order'); read it with .get so this page works before or after that merge. -#}
+  {% set how = material.get('picked') or material.source %}
+  {% if how == 'sections' %}
+    <p>将发送方法和数据章节：{% for h in material.headings %}<span class="chip">{{ h }}</span> {% endfor %}
+      <span class="muted">（{{ material.pieces|length }} 段，页 {{ material.pieces|map(attribute=0)|join('、') }}）</span>，以及结果表格和数据可得性那一页。</p>
+  {% elif how == 'keywords' %}
+    <p>将发送按关键词挑出的研究设计和数据页：<span class="muted">页 {{ material.pieces|map(attribute=0)|join('、') }}</span>，以及结果表格和数据可得性那一页。</p>
+  {% elif material.source == 'pages' %}
+    <p class="warn">没有识别到方法部分，将发送第 2 页到参考文献之前的正文（页 {{ material.pieces|map(attribute=0)|join('、') }}）。</p>
+  {% else %}
+    <p class="crit">这篇论文没有可用的正文文本（未导入 PDF 或没有文本层），无法生成方案。</p>
+  {% endif %}
+  {% if material.source != 'none' %}
+  <form hx-post="/data/plans/new" hx-target="#plan-job" hx-swap="innerHTML" class="row">
+    <input type="hidden" name="paper_id" value="{{ chosen.id }}">
+    {% if job and job.status == 'done' %}<input type="hidden" name="force" value="1">{% endif %}
+    <button class="btn" type="submit">{{ 'Regenerate plan' if job and job.status == 'done' else 'Generate plan' }}</button>
+    <span class="muted">{{ '助手会在后台完成' if ai_mode in ('deepseek', 'claude') else '先进入队列，等助手上线后处理' }}</span>
+  </form>
+  {% endif %}
+  <div id="plan-job">{% if job %}{% include "partials/_data_job.html" %}{% endif %}</div>
+  {% if existing %}
+  <p class="kicker more">这篇论文已有的方案</p>
+  <ul class="ds-list">{% for p in existing %}<li><a href="/data/plans/{{ p.id }}">{{ p.id }}</a> {{ plan_status(p.status, status_labels) }} {{ origin_chip(p.origin) }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>
+{% endif %}
+
+<h2>选择论文</h2>
+{% if candidates %}
+<ul class="ds-list ds-papers">
+  {% for c in candidates %}
+  <li{% if chosen and c.id == chosen.id %} class="on"{% endif %}>
+    <a class="ds-title" href="/data/plans/new?paper={{ c.id }}">{{ c.title }}</a>
+    <div class="ds-meta"><code>{{ c.id }}</code> · {{ c.authors[:2]|join(', ') }}{% if c.year %} · {{ c.year }}{% endif %} · {{ c.page_count }} 页
+      {% if c.has_methods %}<span class="chip ds-user">有方法部分</span>{% else %}<span class="chip">未识别方法部分</span>{% endif %}
+      {% if c.n_plans %}<span class="chip">{{ c.n_plans }} 份方案</span>{% endif %}</div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="ds-empty"><p><strong>还没有可用的论文。</strong></p><p>先在 <a href="/papers">论文</a> 导入带文本层的 PDF，再回来生成复现方案。</p></div>
+{% endif %}
+
+<h2>或者手动新建</h2>
+<form class="row" method="post" action="/data/plans/blank">
+  <input type="hidden" name="paper_id" value="{{ chosen.id if chosen else '' }}">
+  <button class="btn secondary small" type="submit">New blank plan{% if chosen %} ({{ chosen.id }}){% endif %}</button>
+</form>
+
+{% else %}
+{% set pl = p.plan %}
+<div class="ds-head">
+  <h1 class="page-title serif">{{ p.paper_title or "复现方案" }}</h1>
+  <div class="row">
+    {{ plan_status(p.status, status_labels) }} {{ origin_chip(p.origin) }}
+    {% if p.paper_id %}<a class="chip" href="/papers/{{ p.paper_id }}">论文 {{ (p.paper_title or p.paper_id)|truncate(50) }}</a>{% endif %}
+    {% if p.artifact_ref %}<a class="chip" href="/artifacts/{{ p.artifact_ref }}">已导出为产出</a>{% endif %}
+    <span class="chip">步骤 {{ p.steps_done }}/{{ p.steps_total }}</span>
+  </div>
+</div>
+{{ flash(msg, err) }}
+{% if p.origin == 'ai-suggested' %}
+<div class="banner warning"><span class="glyph">!</span>
+  <span class="text">这是助手根据论文方法部分整理的草稿。审阅之前它不计入任何里程碑，也不能导出。请逐项核对（数据来源、变量、模型），改正后再标记为已审阅。</span>
+  <form method="post" action="/data/plans/{{ p.id }}/review"><button class="btn" type="submit">Mark reviewed</button></form>
+</div>
+{% else %}
+<form class="row ds-statusbar" method="post" action="/data/plans/{{ p.id }}/status">
+  <span class="field-label">状态</span>
+  <div class="pill-group">{% for s in statuses %}<label><input type="radio" name="status" value="{{ s }}"{% if s == p.status %} checked{% endif %} onchange="this.form.requestSubmit()">{{ status_labels[s] }}</label>{% endfor %}</div>
+  <noscript><button class="btn small" type="submit">Update</button></noscript>
+</form>
+{% endif %}
+
+{#- Card 0185: what this replication has cost so far, by step (plans.ledger). -#}
+{% if ledger.tokens %}
+<details class="ds-ledger">
+  <summary class="muted small">这份复现已花 {{ '{:,}'.format(ledger.tokens) }} tokens{% if ledger.cost_cny >= 0.01 %}，约 ¥{{ '%.2f'|format(ledger.cost_cny) }}{% endif %}</summary>
+  <table class="data ds-num">
+    <thead><tr><th>步骤</th><th>次数</th><th>输入</th><th>输出</th><th>合计</th></tr></thead>
+    <tbody>{% for st in ledger.steps %}
+      <tr><td>{{ st.label }}{% if st.models %} <span class="muted small">{{ st.models|join('、') }}</span>{% endif %}</td><td>{{ st.runs }}</td>
+        <td>{{ '{:,}'.format(st.input) if st.input is not none else '—' }}</td><td>{{ '{:,}'.format(st.output) if st.output is not none else '—' }}</td>
+        <td>{{ '{:,}'.format(st.tokens) }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small">输入里包含命中缓存的部分；工作区的 AI 运行只记总数。</p>
+</details>
+{% endif %}
+
+{#- Card 0158 builds the workspace; it opens once the 复现目标 are reviewed (card 0157, REPLICATION-v2 第一步). -#}
+<div class="row ds-workspace">
+  {% if targets_reviewed %}<a class="btn" href="/replicate/{{ p.id }}">Open workspace</a>
+  {% else %}<span class="btn disabled" aria-disabled="true" title="复现目标审阅后才能打开">Open workspace</span><span class="muted small">复现目标审阅之后才能进入工作区。</span>{% endif %}
+</div>
+
+<div class="{{ 'card suggested' if p.origin == 'ai-suggested' else 'card' }}">
+<h2 class="ds-h2-first">设计概要</h2>
+<form class="stack ds-grid-form" method="post" action="/data/plans/{{ p.id }}/fields">
+<input type="hidden" name="version" value="{{ versions.fields }}">
+  <div><label for="f-unit">分析单位</label><input id="f-unit" type="text" name="unit_of_analysis" value="{{ pl.unit_of_analysis }}"></div>
+  <div><label for="f-period">时期</label><input id="f-period" type="text" name="period" value="{{ pl.period }}"></div>
+  <div class="span2"><label for="f-sample">样本规则</label><input id="f-sample" type="text" name="sample_rule" value="{{ pl.sample_rule }}"></div>
+  <div><label for="f-family">模型类型</label>
+    <select id="f-family" name="model_family">{% for f in families %}<option{% if f == pl.model.family %} selected{% endif %}>{{ f }}</option>{% endfor %}</select></div>
+  <div><label for="f-feas">可行性</label>
+    <select id="f-feas" name="feasibility_level">{% for l in levels %}<option value="{{ l }}"{% if l == pl.feasibility.level %} selected{% endif %}>{{ level_labels[l] }}</option>{% endfor %}</select></div>
+  <div class="span2"><label for="f-spec">模型设定</label><textarea id="f-spec" name="model_specification" class="mono">{{ pl.model.specification }}</textarea></div>
+  <div class="span2"><label for="f-why">可行性理由</label><input id="f-why" type="text" name="feasibility_why" value="{{ pl.feasibility.why }}"></div>
+  <div><label for="f-rob">稳健性检验（每行一条）</label><textarea id="f-rob" name="robustness">{{ pl.robustness|join('\n') }}</textarea></div>
+  <div><label for="f-obt">待获取（每行一条）</label><textarea id="f-obt" name="to_obtain">{{ pl.to_obtain|join('\n') }}</textarea></div>
+  <div><label for="f-cav">注意事项（每行一条）</label><textarea id="f-cav" name="caveats">{{ pl.caveats|join('\n') }}</textarea></div>
+  <div><label for="f-dir">方向</label>
+    <select id="f-dir" name="direction"><option value="">（未设置）</option>
+      {% for d in directions %}<option value="{{ d.slug }}"{% if d.slug == p.direction %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+  <div class="span2"><button class="btn" type="submit">Save</button></div>
+</form>
+
+<h2 id="targets">复现目标 <span class="chip">论文报告值</span></h2>
+<p class="muted small">论文自己报告的数值，照原文抄录并注明页码，用来和复现结果对照；它们不是我们的结果。助手抽取的每一条都已核对过原文页码上确有这个数值。编号（T1、T2……）不会变，后面的步骤靠它对应；把项、报告值和备注都清空即删除这一行。</p>
+{% if targets and not targets_reviewed %}
+<div class="banner warning"><span class="glyph">!</span>
+  <span class="text">请对照原文逐条核对表、列、项、数值、标准误、区间、显著性、样本量和页码。审阅之前这些目标不算数，也不能进入后面的步骤。</span>
+  <form method="post" action="/data/plans/{{ p.id }}/targets/review"><button class="btn" type="submit">Mark targets reviewed</button></form>
+</div>
+{% elif targets_reviewed %}<p class="small ok">复现目标已审阅（{{ p.targets_reviewed_at[:10] }}）。</p>{% endif %}
+<form method="post" action="/data/plans/{{ p.id }}/targets">
+<input type="hidden" name="targets_version" value="{{ targets_version }}">
+{#- Eight columns do not fit a phone: the table keeps usable widths and scrolls sideways inside the card. -#}
+<div style="overflow-x: auto">
+<table class="data ds-edit ds-targets" data-grow style="min-width: 960px">
+  <thead><tr><th>编号</th><th>表 / 图</th><th>列 / 模型</th><th>项</th><th>报告值</th><th>标准误</th><th>区间</th><th>显著性</th><th>N</th><th>页</th><th>备注</th></tr></thead>
+  <tbody>
+  {% for t in targets %}<tr><td class="muted small"><input type="hidden" name="tgt_tid" value="{{ t.tid }}">{{ t.tid }}</td>{% for k in ('table', 'model', 'term', 'value', 'se', 'ci', 'sig', 'n', 'page', 'note') %}<td><input type="text" name="tgt_{{ k }}" value="{{ t[k] }}" aria-label="{{ t.tid }} {{ k }}"{% if k in ('value', 'se', 'ci') %} class="mono"{% endif %}></td>{% endfor %}</tr>
+  {% endfor %}
+  <tr class="ds-blank"><td class="muted small"><input type="hidden" name="tgt_tid" value="">新</td>{% for k in ('table', 'model', 'term', 'value', 'se', 'ci', 'sig', 'n', 'page', 'note') %}<td><input type="text" name="tgt_{{ k }}"{% if k == 'term' %} placeholder="新目标的项"{% endif %} aria-label="{{ k }}"{% if k in ('value', 'se', 'ci') %} class="mono"{% endif %}></td>{% endfor %}</tr>
+  </tbody>
+</table>
+</div>
+<div class="row"><button class="btn small secondary" type="button" data-add-row>Add row</button><button class="btn small" type="submit">Save</button></div>
+</form>
+
+<h2 id="coverage">全书复现清单 <span class="chip">规则扫描，不用助手</span></h2>
+<p class="muted small">论文正文和附录里的全部表和图，对上作者脚本；正文结果默认勾上。勾选是这一期要复现的项，汇报人写谁来讲它。附录请在文献页给这篇补一份 PDF（作为同一篇的第二个文件），再点 Scan。</p>
+<form class="row" method="post" action="/data/plans/{{ p.id }}/coverage/scan">
+  <button class="btn small secondary" type="submit">Scan</button>
+  {% if coverage.total %}<span class="muted small">共 {{ coverage.total }} 项 · 已勾 {{ coverage.ticked }} · 对上脚本 {{ coverage.mapped }}</span>
+  {% else %}<span class="muted small">还没有清单。</span>{% endif %}
+</form>
+{% if coverage.groups %}
+{% if not coverage.has_appendix %}<p class="muted small">现在只有正文：这篇还没有附录文件。</p>{% endif %}
+{% if coverage.omitted %}<p class="muted small">另有 {{ coverage.omitted }} 项未列出：清单最多列 {{ coverage.limit }} 项。</p>{% endif %}
+<form method="post" action="/data/plans/{{ p.id }}/coverage">
+{% for g in coverage.groups %}
+<details class="ds-cov-group"{% if g.group == 'main' %} open{% endif %}>
+  <summary><strong>{{ g.label }}</strong> <span class="muted small">{{ g.total }} 项 · 已勾 {{ g.ticked }} · 对上脚本 {{ g.mapped }}</span></summary>
+  <div class="row"><button class="btn small secondary" type="button" data-cov-all="1">All</button><button class="btn small secondary" type="button" data-cov-all="0">None</button></div>
+  <div style="overflow-x: auto">
+  <table class="data ds-edit ds-cov">
+    <colgroup><col class="c-label"><col><col class="c-page"><col class="c-script"><col class="c-owner"><col class="c-tick"></colgroup>
+    <thead><tr><th>表 / 图</th><th>标题</th><th class="cov-page">页</th><th>脚本</th><th>汇报人</th><th class="cov-tick">勾</th></tr></thead>
+    <tbody>
+    {% for r in g.rows %}
+    <tr>
+      <td class="cov-label"><input type="hidden" name="cov_id" value="{{ r.id }}">{{ r.label }}</td>
+      <td class="cov-cap" title="{{ r.caption }}">{{ r.caption or '—' }}</td>
+      <td class="cov-page muted small">{{ r.page or '—' }}</td>
+      <td class="cov-script">{% if r.scripts %}{% set s = r.scripts[0] %}<span class="mono small{{ '' if s.have else ' muted' }}" title="{% for x in r.scripts %}{{ x.path }}：{{ x.note }}{% if not loop.last %}&#10;{% endif %}{% endfor %}">{{ s.path }}</span>{% if r.scripts|length > 1 %} <span class="muted small">+{{ r.scripts|length - 1 }}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td class="cov-owner"><input type="text" name="cov_owner_{{ r.id }}" value="{{ r.owner }}" maxlength="40" aria-label="{{ r.label }} 汇报人"></td>
+      <td class="cov-tick"><input type="checkbox" name="cov_tick" value="{{ r.id }}"{% if r.ticked %} checked{% endif %} aria-label="勾选 {{ r.label }}"></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</details>
+{% endfor %}
+<div class="row"><button class="btn small" type="submit">Save</button></div>
+</form>
+<script>document.querySelectorAll('[data-cov-all]').forEach(function (b) { b.addEventListener('click', function () { var on = b.dataset.covAll === '1'; b.closest('details').querySelectorAll('input[name=cov_tick]').forEach(function (c) { c.checked = on; }); }); });</script>
+{% endif %}
+
+<h2 id="sources">数据来源</h2>
+<form method="post" action="/data/plans/{{ p.id }}/sources">
+<input type="hidden" name="version" value="{{ versions.sources }}">
+<table class="data ds-edit" data-grow>
+  <thead><tr><th>名称</th><th>获取方式</th><th>位置 / 网址（按论文描述）</th></tr></thead>
+  <tbody>
+  {% for s in pl.data_sources %}<tr><td><input type="text" name="src_name" value="{{ s.name }}"></td><td><input type="text" name="src_access" value="{{ s.access }}"></td><td><input type="text" name="src_url_or_where" value="{{ s.url_or_where }}"></td></tr>{% endfor %}
+  <tr class="ds-blank"><td><input type="text" name="src_name" placeholder="新数据来源"></td><td><input type="text" name="src_access" placeholder="公开 / 申请 / 付费"></td><td><input type="text" name="src_url_or_where"></td></tr>
+  </tbody>
+</table>
+<div class="row"><button class="btn small secondary" type="button" data-add-row>Add row</button><button class="btn small" type="submit">Save</button></div>
+</form>
+
+<h3 id="links">复现数据链接</h3>
+<p class="muted small">论文给出的复现数据地址（Dataverse、OSF、GitHub、作者主页），只收公开的 http(s) 链接。清空网址即删除这一行。</p>
+<form method="post" action="/data/plans/{{ p.id }}/links">
+<input type="hidden" name="version" value="{{ versions.links }}">
+<table class="data ds-edit" data-grow>
+  <thead><tr><th>网址</th><th>类型</th><th>获取</th><th>说明</th></tr></thead>
+  <tbody>
+  {% for l in pl.links %}<tr><td><div style="display: flex; align-items: center; gap: 6px"><input type="url" name="lnk_url" value="{{ l.url }}" class="mono">{% if l.url.startswith('https://') or l.url.startswith('http://') %}<a class="ds-link-open" href="{{ l.url }}" target="_blank" rel="noopener noreferrer" title="打开" aria-label="打开 {{ l.url }}">{{ ui.icon('external-link', 'sm') }}</a>
+      <button class="btn small secondary" type="button" style="white-space: nowrap" hx-get="/data/plans/{{ p.id }}/links/{{ loop.index0 }}/files?v={{ sources_version }}" hx-target="#plan-fetch" hx-swap="outerHTML" hx-indicator="#plan-list-busy" hx-disabled-elt="this">List files</button>{% endif %}</div></td>
+    <td><select name="lnk_kind">{% for k in link_kinds %}<option value="{{ k }}"{% if k == l.kind %} selected{% endif %}>{{ link_kind_labels[k] }}</option>{% endfor %}</select></td>
+    <td><select name="lnk_access">{% for a in link_access %}<option value="{{ a }}"{% if a == l.access %} selected{% endif %}>{{ link_access_labels[a] }}</option>{% endfor %}</select></td>
+    <td><input type="text" name="lnk_note" value="{{ l.note }}"></td></tr>
+  {% endfor %}
+  <tr class="ds-blank"><td><input type="url" name="lnk_url" placeholder="https://doi.org/10.7910/DVN/…" class="mono"></td>
+    <td><select name="lnk_kind">{% for k in link_kinds %}<option value="{{ k }}">{{ link_kind_labels[k] }}</option>{% endfor %}</select></td>
+    <td><select name="lnk_access">{% for a in link_access %}<option value="{{ a }}">{{ link_access_labels[a] }}</option>{% endfor %}</select></td>
+    <td><input type="text" name="lnk_note"></td></tr>
+  </tbody>
+</table>
+<div class="row"><button class="btn small secondary" type="button" data-add-row>Add row</button><button class="btn small" type="submit">Save</button></div>
+</form>
+{% if pl.links %}<p class="muted small">保存过的链接旁有 List files：它会列出这个来源里的数据、作者代码和说明书，并把代码和说明书当文本读一遍，按读数据的语句预先勾好主分析要用的文件；数据要等你勾选后点 Import 才下载。数据导入并关联到这份方案，代码和说明书只存成文本，不会运行。</p>{% endif %}
+{#- htmx fires beforeSwap on the target, so the wrapper lets a 409 (page older than the links) show its message. -#}
+<div hx-on::before-swap="if (event.detail.xhr.status === 409) { event.detail.shouldSwap = true; event.detail.isError = false; }">
+<div id="plan-fetch"><p id="plan-list-busy" class="htmx-indicator muted small">正在列出文件，并读一遍代码和说明书…</p></div>
+</div>
+
+<h2 id="assumptions">识别假设</h2>
+<p class="muted small">设计成立所依赖的假设，比如双重差分的平行趋势、交错处理的处理时点；后面的步骤会逐条检验。清空内容即删除这一行。</p>
+<form method="post" action="/data/plans/{{ p.id }}/assumptions">
+<input type="hidden" name="version" value="{{ versions.assumptions }}">
+<table class="data ds-edit" data-grow>
+  <thead><tr><th>假设</th><th>状态</th></tr></thead>
+  <tbody>
+  {% for a in pl.assumptions %}<tr><td><input type="text" name="asm_text" value="{{ a.text }}"></td>
+    <td><select name="asm_status">{% for st in assumption_statuses %}<option{% if st == a.status %} selected{% endif %}>{{ st }}</option>{% endfor %}</select></td></tr>
+  {% endfor %}
+  <tr class="ds-blank"><td><input type="text" name="asm_text" placeholder="新假设（留空不保存）"></td>
+    <td><select name="asm_status">{% for st in assumption_statuses %}<option>{{ st }}</option>{% endfor %}</select></td></tr>
+  </tbody>
+</table>
+<div class="row"><button class="btn small secondary" type="button" data-add-row>Add row</button><button class="btn small" type="submit">Save</button></div>
+</form>
+
+<h2 id="variables">变量</h2>
+<form method="post" action="/data/plans/{{ p.id }}/variables">
+<input type="hidden" name="version" value="{{ versions.variables }}">
+<table class="data ds-edit" data-grow>
+  <thead><tr><th>角色</th><th>变量</th><th>测量</th><th>来源</th></tr></thead>
+  <tbody>
+  {% for v in pl.variables %}
+  <tr><td><select name="var_role">{% for r in roles %}<option value="{{ r }}"{% if r == v.role %} selected{% endif %}>{{ role_labels[r] }}</option>{% endfor %}</select></td>
+    <td><input type="text" name="var_name" value="{{ v.name }}"></td><td><input type="text" name="var_measure" value="{{ v.measure }}"></td>
+    <td><input type="text" name="var_source" value="{{ v.source }}"></td></tr>
+  {% endfor %}
+  <tr class="ds-blank"><td><select name="var_role">{% for r in roles %}<option value="{{ r }}">{{ role_labels[r] }}</option>{% endfor %}</select></td>
+    <td><input type="text" name="var_name" placeholder="新变量（留空不保存）"></td><td><input type="text" name="var_measure"></td><td><input type="text" name="var_source"></td></tr>
+  </tbody>
+</table>
+<div class="row"><button class="btn small secondary" type="button" data-add-row>Add row</button><button class="btn small" type="submit">Save</button></div>
+</form>
+
+<h2 id="steps">步骤清单 <span class="muted">{{ p.steps_done }}/{{ p.steps_total }}</span></h2>
+<ol class="ds-steps">
+  {% for step in pl.steps %}{% set i = loop.index0 %}{% include "partials/_data_step.html" %}{% endfor %}
+</ol>
+<form class="row" method="post" action="/data/plans/{{ p.id }}/steps">
+  <input type="text" name="text" placeholder="添加一步" aria-label="添加一步" class="ds-grow">
+  <button class="btn small secondary" type="submit">Add</button>
+</form>
+</div>
+
+<h2 id="datasets">数据集</h2>
+{% include "partials/_plan_datasets.html" %}
+{% include "partials/_plan_missing.html" %}
+
+{% if plan_runs %}
+<h2>此方案的运行</h2>
+<ul class="ds-list">{% for r in plan_runs %}<li><a class="ds-title" href="/data/runs/{{ r.id }}">{{ r.method_label }} · {{ r.dataset_name or r.dataset_id }}</a> <span class="ds-meta"><code>{{ r.id }}</code></span></li>{% endfor %}</ul>
+{% endif %}
+
+<h2 id="deck">展示稿</h2>
+<div class="row">
+  <a class="btn small primary" href="/data/plans/{{ p.id }}/deck" data-testid="plan-deck-open">{{ 'Open deck' if deck.exists else 'Make deck' }}</a>
+  {% if deck.exists %}<a href="/data/plans/{{ p.id }}/deck.pptx" download>Download .pptx</a>{% endif %}
+</div>
+
+<h2>导出</h2>
+{% if p.origin == 'ai-suggested' %}
+<p class="muted">标记为已审阅后可导出为 research-design 成果（表格写入 Design 部分，不写入 Claim）。</p>
+{% else %}
+<form class="row" method="post" action="/data/plans/{{ p.id }}/export">
+  <select name="project" aria-label="项目">{% for pr in projects %}<option value="{{ pr.slug }}"{% if pr.slug == default_project %} selected{% endif %}>{{ pr.name }}</option>{% endfor %}</select>
+  <button class="btn secondary small" type="submit">Export research design</button>
+</form>
+{% endif %}
+
+<h2>删除</h2>
+<form method="post" action="/data/plans/{{ p.id }}/delete" data-confirm="删除复现方案 {{ p.id }}？关联的运行会保留。">
+  <button class="btn secondary ds-danger small" type="submit">Delete plan</button>
+</form>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('data.js') }}" defer></script>{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/chat/{{ session.thread_id or '' }}">助手</a>{{ ui.icon('chevron-right', 'sm') }}<a href="/chat/research/{{ session.id }}/review">审阅产出</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">留存来源</span>{% endblock %}
+{% block content %}
+<header class="page-header"><div class="titles"><h1 class="page-title">{{ source.title }}</h1><p class="page-desc">{{ source_label }} · {{ source.locator }} · 获取于 {{ source.retrieved_at[:10] }}</p></div><a class="btn secondary" href="/chat/research/{{ session.id }}/review">Back to review</a></header>
+<section class="card stack"><p><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">打开原始来源</a></p><pre style="white-space: pre-wrap; overflow-wrap: anywhere">{{ source.passage }}</pre><details><summary>来源校验信息</summary><p class="muted small">{{ source.sha256 }}</p></details></section>
+{% endblock %}

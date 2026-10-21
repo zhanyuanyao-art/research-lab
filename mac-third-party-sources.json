@@ -1,0 +1,1324 @@
+{
+  "status": "dependency-notices-for-private-review",
+  "runtime": {
+    "version": "3.14.3",
+    "standalone_build": "20260325"
+  },
+  "notices": [
+    {
+      "name": "pymupdf-1.28.2-COPYING",
+      "source": "https://raw.githubusercontent.com/pymupdf/PyMuPDF/1.28.2/COPYING",
+      "offset": 240,
+      "bytes": 34520,
+      "sha256": "57c8ff33c9c0cfc3ef00e650a1cc910d7ee479a8bc509f6c9209a7c2a11399d6",
+      "package": "pymupdf"
+    },
+    {
+      "name": "python-native-cpython.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.cpython.txt",
+      "offset": 34906,
+      "bytes": 36164,
+      "sha256": "86e61415828a8b5b06ec8d024e6f086ce155a8b85fd0c419c0ba4dc004e74fdd",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-openssl-3.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.openssl-3.txt",
+      "offset": 71220,
+      "bytes": 10175,
+      "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-libffi.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.libffi.txt",
+      "offset": 81539,
+      "bytes": 1132,
+      "sha256": "deaf3a42effb551a5b140fa9afefed183a27f1341c6d1bf430d106a5e6931fc0",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-bzip2.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.bzip2.txt",
+      "offset": 82813,
+      "bytes": 1743,
+      "sha256": "1f38bbc7caacafd65169276d759c0d88c991b753b643ce35d0e45ea1971dd441",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-expat.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.expat.txt",
+      "offset": 84698,
+      "bytes": 1144,
+      "sha256": "122f2c27000472a201d337b9b31f7eb2b52d091b02857061a8880371612d9534",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-liblzma.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.liblzma.txt",
+      "offset": 85988,
+      "bytes": 660,
+      "sha256": "9a4062de0a2c388a98cf35a35d348b62fa97c838a71c3c28ee1a2d7d0a565b02",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-libedit.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.libedit.txt",
+      "offset": 86794,
+      "bytes": 1614,
+      "sha256": "29cea33c32bbc9785142386377915612a2fa786482c46843383384aded2e09b1",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-ncurses.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.ncurses.txt",
+      "offset": 88554,
+      "bytes": 1447,
+      "sha256": "87a4c4442337b8968ef956031c406b74f9cb7149b7ba87311bdaba534816201c",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-mpdecimal.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.mpdecimal.txt",
+      "offset": 90151,
+      "bytes": 1284,
+      "sha256": "669512af7219f58be03a398766d7c9da11a3b3df9d3f05cb74c5ceca25c8da3b",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-sqlite.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.sqlite.txt",
+      "offset": 91579,
+      "bytes": 1481,
+      "sha256": "38bef3d28b24f145ea293bd3b6eb4b20396982abc8303128fb493986ea5bc719",
+      "package": "python-runtime"
+    },
+    {
+      "name": "python-native-zlib.txt",
+      "source": "https://raw.githubusercontent.com/astral-sh/python-build-standalone/20260325/LICENSE.zlib.txt",
+      "offset": 93200,
+      "bytes": 995,
+      "sha256": "818922b2620f12801a12bf78e399644a30990e66824abd8ca8ec24d451d6f92c",
+      "package": "python-runtime"
+    },
+    {
+      "name": "pyobjc-core License.txt",
+      "source": "https://files.pythonhosted.org/packages/a5/78/abc4ce5920305780aeb36b4067a86253378b36e29ba96673a3deb02eb03a/pyobjc_core-12.2.2.tar.gz",
+      "offset": 94375,
+      "bytes": 1249,
+      "sha256": "0ca04b07928d4872b9d9bb22187ca0426dd8bfab08f26eada0999a71dc81aaff",
+      "package": "pyobjc-core",
+      "version": "12.2.2",
+      "archive_sha256": "3906452339cd06a3bb07df103c2511d4cb0f7a22d8771c0b802eba15d9a642b6",
+      "archive_path": "pyobjc_core-12.2.2/License.txt"
+    },
+    {
+      "name": "pyobjc-framework-security License.txt",
+      "source": "https://files.pythonhosted.org/packages/c2/92/c304b7fc3a0fe7484a2a3cf25711e70c8fa2b6969d82f4010e35b9af2164/pyobjc_framework_security-12.2.2.tar.gz",
+      "offset": 95832,
+      "bytes": 1249,
+      "sha256": "0ca04b07928d4872b9d9bb22187ca0426dd8bfab08f26eada0999a71dc81aaff",
+      "package": "pyobjc-framework-security",
+      "version": "12.2.2",
+      "archive_sha256": "33efab1ff7d18570148f8f3ddd44eca305f733aee00b9115d5263bef81018f65",
+      "archive_path": "pyobjc_framework_security-12.2.2/License.txt"
+    },
+    {
+      "name": "pyobjc-framework-uniformtypeidentifiers License.txt",
+      "source": "https://files.pythonhosted.org/packages/70/c6/31ac40c4d918baa36ca06d196bfec0f47f804a74684988cf424060469d98/pyobjc_framework_uniformtypeidentifiers-12.2.2.tar.gz",
+      "offset": 97317,
+      "bytes": 1249,
+      "sha256": "0ca04b07928d4872b9d9bb22187ca0426dd8bfab08f26eada0999a71dc81aaff",
+      "package": "pyobjc-framework-uniformtypeidentifiers",
+      "version": "12.2.2",
+      "archive_sha256": "12f8ba77dcc949ffb9f0f48743cae326aebec8e69cb1ac55a1d1e04dca7bd59a",
+      "archive_path": "pyobjc_framework_uniformtypeidentifiers-12.2.2/License.txt"
+    },
+    {
+      "name": "proxy-tools 0.1.0 LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/jtushman/proxy_tools/f82ae43524fd6d9917b0e9490c7d0394dff8d155/LICENSE.txt",
+      "offset": 98727,
+      "bytes": 1436,
+      "sha256": "a428fb8a2e762af3eb0a6edbbb88e9b42ccfee80fd9b423958bcacf9b9abbfe4",
+      "package": "proxy-tools",
+      "version": "0.1.0",
+      "proof": {
+        "source_commit": "f82ae43524fd6d9917b0e9490c7d0394dff8d155",
+        "source_url": "https://raw.githubusercontent.com/jtushman/proxy_tools/f82ae43524fd6d9917b0e9490c7d0394dff8d155/proxy_tools/__init__.py",
+        "matches_sdist": true,
+        "source_sha256": "d1539d95e1a713c068ca81d42e047b2c76568964cf277596d4e19efb22f476be",
+        "license_url": "https://raw.githubusercontent.com/jtushman/proxy_tools/f82ae43524fd6d9917b0e9490c7d0394dff8d155/LICENSE.txt",
+        "license_sha256": "a428fb8a2e762af3eb0a6edbbb88e9b42ccfee80fd9b423958bcacf9b9abbfe4"
+      },
+      "note": "Metadata says MIT; the byte-identical release code at this commit accompanies BSD-2-Clause text."
+    },
+    {
+      "name": "dompurify 2.3.3 LICENSE",
+      "source": "https://registry.npmjs.org/dompurify/-/dompurify-2.3.3.tgz",
+      "offset": 100269,
+      "bytes": 16899,
+      "sha256": "8b6902e953e2eb2876412a4ba75291758b77e88e220962e3423af4d080db1a59",
+      "package": "dompurify",
+      "version": "2.3.3",
+      "integrity": "sha512-dqnqRkPMAjOZE0FogZ+ceJNM2dZ3V/yNOuFB7+39qpO93hHhfRpHw3heYQC7DPK9FqbQTfBKUJhiSfz4MvXYwg=="
+    },
+    {
+      "name": "orderedmap 2.0.0 LICENSE",
+      "source": "https://registry.npmjs.org/orderedmap/-/orderedmap-2.0.0.tgz",
+      "offset": 117277,
+      "bytes": 1094,
+      "sha256": "13110d66c514a7890c4b388a353bc08fa094fe13d5ed7f3a222cc0a0caa3fd17",
+      "package": "orderedmap",
+      "version": "2.0.0",
+      "integrity": "sha512-buf4PoAMlh45b8a8gsGy/X6w279TSqkyAS0C0wdTSJwFSU+ljQFJON5I8NfjLHoCXwpSROIo2wr0g33T+kQshQ=="
+    },
+    {
+      "name": "prosemirror-commands 1.3.0 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-commands/-/prosemirror-commands-1.3.0.tgz",
+      "offset": 118510,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-commands",
+      "version": "1.3.0",
+      "integrity": "sha512-BwBbZ5OAScPcm0x7H8SPbqjuEJnCU2RJT9LDyOiiIl/3NbL1nJZI4SFNHwU2e/tRr2Xe7JsptpzseqvZvToLBQ=="
+    },
+    {
+      "name": "prosemirror-history 1.3.0 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-history/-/prosemirror-history-1.3.0.tgz",
+      "offset": 119745,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-history",
+      "version": "1.3.0",
+      "integrity": "sha512-qo/9Wn4B/Bq89/YD+eNWFbAytu6dmIM85EhID+fz9Jcl9+DfGEo8TTSrRhP15+fFEoaPqpHSxlvSzSEbmlxlUA=="
+    },
+    {
+      "name": "prosemirror-inputrules 1.2.0 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-inputrules/-/prosemirror-inputrules-1.2.0.tgz",
+      "offset": 120989,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-inputrules",
+      "version": "1.2.0",
+      "integrity": "sha512-eAW/M/NTSSzpCOxfR8Abw6OagdG0MiDAiWHQMQveIsZtoKVYzm0AflSPq/ymqJd56/Su1YPbwy9lM13wgHOFmQ=="
+    },
+    {
+      "name": "prosemirror-keymap 1.2.0 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-keymap/-/prosemirror-keymap-1.2.0.tgz",
+      "offset": 122221,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-keymap",
+      "version": "1.2.0",
+      "integrity": "sha512-TdSfu+YyLDd54ufN/ZeD1VtBRYpgZnTPnnbY+4R08DDgs84KrIPEPbJL8t1Lm2dkljFx6xeBE26YWH3aIzkPKg=="
+    },
+    {
+      "name": "prosemirror-model 1.18.1 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-model/-/prosemirror-model-1.18.1.tgz",
+      "offset": 123452,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-model",
+      "version": "1.18.1",
+      "integrity": "sha512-IxSVBKAEMjD7s3n8cgtwMlxAXZrC7Mlag7zYsAKDndAqnDScvSmp/UdnRTV/B33lTCVU3CCm7dyAn/rVVD0mcw=="
+    },
+    {
+      "name": "prosemirror-state 1.4.1 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-state/-/prosemirror-state-1.4.1.tgz",
+      "offset": 124681,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-state",
+      "version": "1.4.1",
+      "integrity": "sha512-U/LBDW2gNmVa07sz/D229XigSdDQ5CLFwVB1Vb32MJbAHHhWe/6pOc721faI17tqw4pZ49i1xfY/jEZ9tbIhPg=="
+    },
+    {
+      "name": "prosemirror-transform 1.6.0 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-transform/-/prosemirror-transform-1.6.0.tgz",
+      "offset": 125922,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-transform",
+      "version": "1.6.0",
+      "integrity": "sha512-MAp7AjsjEGEqQY0sSMufNIUuEyB1ZR9Fqlm8dTwwWwpEJRv/plsKjWXBbx52q3Ml8MtaMcd7ic14zAHVB3WaMw=="
+    },
+    {
+      "name": "prosemirror-view 1.27.0 LICENSE",
+      "source": "https://registry.npmjs.org/prosemirror-view/-/prosemirror-view-1.27.0.tgz",
+      "offset": 127150,
+      "bytes": 1099,
+      "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d",
+      "package": "prosemirror-view",
+      "version": "1.27.0",
+      "integrity": "sha512-yNCQW5eiPkrMgjOT5Xa/ItIvcM7JBG7ikZKaHo26hdBW5OLNnIWGZ0BV6/OiBk742teLybLVNPCpYUcW405Ckg=="
+    },
+    {
+      "name": "resize-observer-polyfill 1.5.1 LICENSE",
+      "source": "https://registry.npmjs.org/resize-observer-polyfill/-/resize-observer-polyfill-1.5.1.tgz",
+      "offset": 128400,
+      "bytes": 1097,
+      "sha256": "49fad6f35ac45600d018ee56051c63e52103820d97d5ad512fe7018ec395b3df",
+      "package": "resize-observer-polyfill",
+      "version": "1.5.1",
+      "integrity": "sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg=="
+    },
+    {
+      "name": "rope-sequence 1.3.2 LICENSE",
+      "source": "https://registry.npmjs.org/rope-sequence/-/rope-sequence-1.3.2.tgz",
+      "offset": 129615,
+      "bytes": 1083,
+      "sha256": "4e961838f6a3d8397aac7c5822bd6a9de3efe92ab8147b86fe96eb53a187c768",
+      "package": "rope-sequence",
+      "version": "1.3.2",
+      "integrity": "sha512-ku6MFrwEVSVmXLvy3dYph3LAMNS0890K7fabn+0YIRQ2T96T9F4gkFf0vf0WW0JUraNWwGRtInEpH7yO4tbQZg=="
+    },
+    {
+      "name": "tslib 2.3.1 LICENSE.txt",
+      "source": "https://registry.npmjs.org/tslib/-/tslib-2.3.1.tgz",
+      "offset": 130796,
+      "bytes": 655,
+      "sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751",
+      "package": "tslib",
+      "version": "2.3.1",
+      "integrity": "sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw=="
+    },
+    {
+      "name": "tui-code-snippet 2.3.3 LICENSE",
+      "source": "https://registry.npmjs.org/tui-code-snippet/-/tui-code-snippet-2.3.3.tgz",
+      "offset": 131578,
+      "bytes": 1070,
+      "sha256": "f62a769dc80adac959b66d9720ef2a0343526254266a8bf2be29484545b6d321",
+      "package": "tui-code-snippet",
+      "version": "2.3.3",
+      "integrity": "sha512-5NEHTDFKillDNPy6MCgpXDNBTB7SZkHBFOF6vXfCDIFZcBdFYFXTd2xvAVvIeM3UYFRWu27xUf/Kxl5f9+RooQ=="
+    },
+    {
+      "name": "w3c-keyname 2.2.4 LICENSE",
+      "source": "https://registry.npmjs.org/w3c-keyname/-/w3c-keyname-2.2.4.tgz",
+      "offset": 132760,
+      "bytes": 1094,
+      "sha256": "13110d66c514a7890c4b388a353bc08fa094fe13d5ed7f3a222cc0a0caa3fd17",
+      "package": "w3c-keyname",
+      "version": "2.2.4",
+      "integrity": "sha512-tOhfEwEzFLJzf6d1ZPkYfGj+FWhIpBux9ppoP3rlclw3Z0BZv3N7b7030Z1kYth+6rDuAsXUFr+d0VE6Ed1ikw=="
+    },
+    {
+      "name": "Lucide 0.468.0 LICENSE",
+      "source": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/LICENSE",
+      "offset": 133970,
+      "bytes": 880,
+      "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc"
+    },
+    {
+      "name": "mupdf-1.28.2-source/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/COPYING",
+      "offset": 134964,
+      "bytes": 34520,
+      "sha256": "57c8ff33c9c0cfc3ef00e650a1cc910d7ee479a8bc509f6c9209a7c2a11399d6",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/docs/license.md",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/docs/license.md",
+      "offset": 169606,
+      "bytes": 1254,
+      "sha256": "1412b5e5fb96eaff8676441921586b1fe3951358815ae1780568779cd5714740",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/resources/fonts/droid/NOTICE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/resources/fonts/droid/NOTICE",
+      "offset": 170995,
+      "bytes": 10695,
+      "sha256": "38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/resources/fonts/han/LICENSE.txt",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/resources/fonts/han/LICENSE.txt",
+      "offset": 181828,
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/resources/fonts/noto/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/resources/fonts/noto/COPYING",
+      "offset": 186264,
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/brotli/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/brotli/LICENSE",
+      "offset": 190697,
+      "bytes": 1084,
+      "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/cmark-gfm/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/cmark-gfm/COPYING",
+      "offset": 191916,
+      "bytes": 7567,
+      "sha256": "c22e885f33b821bddb24cf007145e5540655b6c0f403e49e6c76a93c28e6d9a9",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/curl/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/curl/COPYING",
+      "offset": 199613,
+      "bytes": 1088,
+      "sha256": "8c8824f50e73a021f5dde1fccbf69685939247399a33a32abab1fa448c9ddabb",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/curl/docs/LICENSE-MIXING.md",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/curl/docs/LICENSE-MIXING.md",
+      "offset": 200846,
+      "bytes": 4636,
+      "sha256": "6f4bfc06c8209f38bb7bd4a16820e94b5c05e9de4e8c14ec094f15dddfaed777",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/extract/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/extract/COPYING",
+      "offset": 205615,
+      "bytes": 34520,
+      "sha256": "57c8ff33c9c0cfc3ef00e650a1cc910d7ee479a8bc509f6c9209a7c2a11399d6",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/freeglut/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/freeglut/COPYING",
+      "offset": 240269,
+      "bytes": 1439,
+      "sha256": "b6593d5ec4c113a274abb85b10e8615895cb0ddb89f7912af5fe5aa8df38a275",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/freetype/LICENSE.TXT",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/freetype/LICENSE.TXT",
+      "offset": 241846,
+      "bytes": 2149,
+      "sha256": "bd36c8b474855fa294c2ec5c184544478ef3720aad37d65a6296a4f264fd2d3b",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/freetype/docs/FTL.TXT",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/freetype/docs/FTL.TXT",
+      "offset": 244134,
+      "bytes": 6743,
+      "sha256": "5a5ee54c5001bbad1cdc1a57cc3dd4c42199b2da09d39c7ee41fab002d02967f",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/freetype/docs/GPLv2.TXT",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/freetype/docs/GPLv2.TXT",
+      "offset": 251018,
+      "bytes": 17994,
+      "sha256": "c4120c6752c910c299e3bd9cb3a46ff262c268303ca2069b61f92f10a5656c18",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/gumbo-parser/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/gumbo-parser/COPYING",
+      "offset": 269150,
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/harfbuzz/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/harfbuzz/COPYING",
+      "offset": 280641,
+      "bytes": 1971,
+      "sha256": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/harfbuzz/src/ms-use/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/harfbuzz/src/ms-use/COPYING",
+      "offset": 282757,
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/jbig2dec/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/jbig2dec/COPYING",
+      "offset": 284032,
+      "bytes": 34520,
+      "sha256": "57c8ff33c9c0cfc3ef00e650a1cc910d7ee479a8bc509f6c9209a7c2a11399d6",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/jbig2dec/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/jbig2dec/LICENSE",
+      "offset": 318686,
+      "bytes": 1170,
+      "sha256": "1bf5258afe453934484fd0cea97508b72301633a6a78b0ae8a9ee44ac78f26d9",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/lcms2/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/lcms2/LICENSE",
+      "offset": 319987,
+      "bytes": 1075,
+      "sha256": "74fe8934cee0e63e8368d4a6b3a703b603e753a62b75b75273572e98a57ebf75",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/lcms2/plugins/threaded/COPYING.GPL3",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/lcms2/plugins/threaded/COPYING.GPL3",
+      "offset": 321215,
+      "bytes": 35146,
+      "sha256": "c53a65c2fd561c87eaabf1072ef5dcab8653042bc15308465f52413585eb6271",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/lcms2/utils/jpgicc/LICENSE_iccjpeg",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/lcms2/utils/jpgicc/LICENSE_iccjpeg",
+      "offset": 356513,
+      "bytes": 3234,
+      "sha256": "8baac37d14eed89b82ffcb041677dd701164eb5cc0f26e165fe47eb11afa0dca",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/leptonica/leptonica-license.txt",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/leptonica/leptonica-license.txt",
+      "offset": 359896,
+      "bytes": 1521,
+      "sha256": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/leptonica/src/leptonica-license.txt",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/leptonica/src/leptonica-license.txt",
+      "offset": 361570,
+      "bytes": 1521,
+      "sha256": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/mujs/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/mujs/COPYING",
+      "offset": 363221,
+      "bytes": 759,
+      "sha256": "0ca9b4fbfbcab8ac7d32475890d866efc02f4cffb6b6da5c0e9a0615cc3d82fe",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/mujs/docs/license.html",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/mujs/docs/license.html",
+      "offset": 364120,
+      "bytes": 1400,
+      "sha256": "533d750392fdfa8a856732a479f9b267310b4fd31732b21695fa3663444dd344",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/openjpeg/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/openjpeg/LICENSE",
+      "offset": 365654,
+      "bytes": 2112,
+      "sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/tesseract/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/tesseract/LICENSE",
+      "offset": 367901,
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/LICENSE",
+      "offset": 379389,
+      "bytes": 909,
+      "sha256": "d69af7f2442fcde1c3372cbbb43907fa1f4b3a91ef3899be69dd3a726dc255a4",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/backend_qt/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/backend_qt/COPYING",
+      "offset": 380439,
+      "bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/backend_tcl/licence.txt",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/backend_tcl/licence.txt",
+      "offset": 415732,
+      "bytes": 728,
+      "sha256": "b1722b97c78ba93650e62ff02dac8bad2859eaf6d6965ce025510c8c0c508514",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/debian/copyright",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/debian/copyright",
+      "offset": 416599,
+      "bytes": 1325,
+      "sha256": "edec41dba6f270124ad3ba658dc2514bb1e1a9d8c637b7d676cde361114680eb",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/frontend/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/frontend/COPYING",
+      "offset": 418063,
+      "bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/frontend_qt/COPYING",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/frontend_qt/COPYING",
+      "offset": 453352,
+      "bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/frontend_qt/res/LICENSE_feathericons",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/frontend_qt/res/LICENSE_feathericons",
+      "offset": 488658,
+      "bytes": 1082,
+      "sha256": "7b4fbc0fda4330e71c1c20706b69e69f2c5ea721fcf3791911188e268975b523",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zint/frontend_qt/res/LICENSE_lucide",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zint/frontend_qt/res/LICENSE_lucide",
+      "offset": 489893,
+      "bytes": 880,
+      "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zlib/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zlib/LICENSE",
+      "offset": 490903,
+      "bytes": 1002,
+      "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/zxing-cpp/LICENSE",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/zxing-cpp/LICENSE",
+      "offset": 492040,
+      "bytes": 11358,
+      "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/resources/fonts/sil/OFL.txt",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/resources/fonts/sil/OFL.txt",
+      "offset": 503461,
+      "bytes": 4437,
+      "sha256": "73dfe0817e50210df5ee60d551515b9ebef9156522e45d166ca5f0a2456f1f39",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/resources/fonts/urw/OFL.txt",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/resources/fonts/urw/OFL.txt",
+      "offset": 507961,
+      "bytes": 4349,
+      "sha256": "3b709798a0943cbf824ed21b6b2c735e482cf6cb8fa11441e57381c2650253ca",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    },
+    {
+      "name": "mupdf-1.28.2-source/thirdparty/libjpeg/README",
+      "source": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "archive_sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+      "archive_path": "mupdf-1.28.2-source/thirdparty/libjpeg/README",
+      "offset": 512371,
+      "bytes": 18711,
+      "sha256": "913af09f785683accdf660b85dcf27fdd567d4ad649daa95cb8771b040db79d1",
+      "package": "mupdf",
+      "version": "1.28.2",
+      "scope": "source archive superset; includes optional upstream components"
+    }
+  ],
+  "frontend": {
+    "toastui_editor": "3.2.2",
+    "all_min_sha256": "f50e1b7c0fc4e5d9a1ccd0d8be78cb3a950ccb3bf676fbf1627810c76aeaedd8",
+    "official_bundle": "https://uicdn.toast.com/editor/3.2.2/toastui-editor-all.min.js",
+    "lockfile": "https://raw.githubusercontent.com/nhn/tui.editor/editor%403.2.2/package-lock.json",
+    "lockfile_sha256": "f1402d7de4eb69506ba3c01b1014d2776b7a06a1784ec0d91379214039ba6720",
+    "dependencies": [
+      {
+        "name": "dompurify",
+        "version": "2.3.3",
+        "url": "https://registry.npmjs.org/dompurify/-/dompurify-2.3.3.tgz",
+        "integrity": "sha512-dqnqRkPMAjOZE0FogZ+ceJNM2dZ3V/yNOuFB7+39qpO93hHhfRpHw3heYQC7DPK9FqbQTfBKUJhiSfz4MvXYwg==",
+        "notices": [
+          {
+            "path": "frontend-notices/dompurify/package/LICENSE",
+            "sha256": "8b6902e953e2eb2876412a4ba75291758b77e88e220962e3423af4d080db1a59"
+          }
+        ]
+      },
+      {
+        "name": "orderedmap",
+        "version": "2.0.0",
+        "url": "https://registry.npmjs.org/orderedmap/-/orderedmap-2.0.0.tgz",
+        "integrity": "sha512-buf4PoAMlh45b8a8gsGy/X6w279TSqkyAS0C0wdTSJwFSU+ljQFJON5I8NfjLHoCXwpSROIo2wr0g33T+kQshQ==",
+        "notices": [
+          {
+            "path": "frontend-notices/orderedmap/package/LICENSE",
+            "sha256": "13110d66c514a7890c4b388a353bc08fa094fe13d5ed7f3a222cc0a0caa3fd17"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-commands",
+        "version": "1.3.0",
+        "url": "https://registry.npmjs.org/prosemirror-commands/-/prosemirror-commands-1.3.0.tgz",
+        "integrity": "sha512-BwBbZ5OAScPcm0x7H8SPbqjuEJnCU2RJT9LDyOiiIl/3NbL1nJZI4SFNHwU2e/tRr2Xe7JsptpzseqvZvToLBQ==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-commands/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-history",
+        "version": "1.3.0",
+        "url": "https://registry.npmjs.org/prosemirror-history/-/prosemirror-history-1.3.0.tgz",
+        "integrity": "sha512-qo/9Wn4B/Bq89/YD+eNWFbAytu6dmIM85EhID+fz9Jcl9+DfGEo8TTSrRhP15+fFEoaPqpHSxlvSzSEbmlxlUA==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-history/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-inputrules",
+        "version": "1.2.0",
+        "url": "https://registry.npmjs.org/prosemirror-inputrules/-/prosemirror-inputrules-1.2.0.tgz",
+        "integrity": "sha512-eAW/M/NTSSzpCOxfR8Abw6OagdG0MiDAiWHQMQveIsZtoKVYzm0AflSPq/ymqJd56/Su1YPbwy9lM13wgHOFmQ==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-inputrules/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-keymap",
+        "version": "1.2.0",
+        "url": "https://registry.npmjs.org/prosemirror-keymap/-/prosemirror-keymap-1.2.0.tgz",
+        "integrity": "sha512-TdSfu+YyLDd54ufN/ZeD1VtBRYpgZnTPnnbY+4R08DDgs84KrIPEPbJL8t1Lm2dkljFx6xeBE26YWH3aIzkPKg==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-keymap/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-model",
+        "version": "1.18.1",
+        "url": "https://registry.npmjs.org/prosemirror-model/-/prosemirror-model-1.18.1.tgz",
+        "integrity": "sha512-IxSVBKAEMjD7s3n8cgtwMlxAXZrC7Mlag7zYsAKDndAqnDScvSmp/UdnRTV/B33lTCVU3CCm7dyAn/rVVD0mcw==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-model/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-state",
+        "version": "1.4.1",
+        "url": "https://registry.npmjs.org/prosemirror-state/-/prosemirror-state-1.4.1.tgz",
+        "integrity": "sha512-U/LBDW2gNmVa07sz/D229XigSdDQ5CLFwVB1Vb32MJbAHHhWe/6pOc721faI17tqw4pZ49i1xfY/jEZ9tbIhPg==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-state/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-transform",
+        "version": "1.6.0",
+        "url": "https://registry.npmjs.org/prosemirror-transform/-/prosemirror-transform-1.6.0.tgz",
+        "integrity": "sha512-MAp7AjsjEGEqQY0sSMufNIUuEyB1ZR9Fqlm8dTwwWwpEJRv/plsKjWXBbx52q3Ml8MtaMcd7ic14zAHVB3WaMw==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-transform/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "prosemirror-view",
+        "version": "1.27.0",
+        "url": "https://registry.npmjs.org/prosemirror-view/-/prosemirror-view-1.27.0.tgz",
+        "integrity": "sha512-yNCQW5eiPkrMgjOT5Xa/ItIvcM7JBG7ikZKaHo26hdBW5OLNnIWGZ0BV6/OiBk742teLybLVNPCpYUcW405Ckg==",
+        "notices": [
+          {
+            "path": "frontend-notices/prosemirror-view/package/LICENSE",
+            "sha256": "66bed9227483be4fd099df8827f34ff3ebac6f23922614a7eb3c6d9eef69dc0d"
+          }
+        ]
+      },
+      {
+        "name": "resize-observer-polyfill",
+        "version": "1.5.1",
+        "url": "https://registry.npmjs.org/resize-observer-polyfill/-/resize-observer-polyfill-1.5.1.tgz",
+        "integrity": "sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg==",
+        "notices": [
+          {
+            "path": "frontend-notices/resize-observer-polyfill/package/LICENSE",
+            "sha256": "49fad6f35ac45600d018ee56051c63e52103820d97d5ad512fe7018ec395b3df"
+          }
+        ]
+      },
+      {
+        "name": "rope-sequence",
+        "version": "1.3.2",
+        "url": "https://registry.npmjs.org/rope-sequence/-/rope-sequence-1.3.2.tgz",
+        "integrity": "sha512-ku6MFrwEVSVmXLvy3dYph3LAMNS0890K7fabn+0YIRQ2T96T9F4gkFf0vf0WW0JUraNWwGRtInEpH7yO4tbQZg==",
+        "notices": [
+          {
+            "path": "frontend-notices/rope-sequence/package/LICENSE",
+            "sha256": "4e961838f6a3d8397aac7c5822bd6a9de3efe92ab8147b86fe96eb53a187c768"
+          }
+        ]
+      },
+      {
+        "name": "tslib",
+        "version": "2.3.1",
+        "url": "https://registry.npmjs.org/tslib/-/tslib-2.3.1.tgz",
+        "integrity": "sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw==",
+        "notices": [
+          {
+            "path": "frontend-notices/tslib/package/LICENSE.txt",
+            "sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751"
+          }
+        ]
+      },
+      {
+        "name": "tui-code-snippet",
+        "version": "2.3.3",
+        "url": "https://registry.npmjs.org/tui-code-snippet/-/tui-code-snippet-2.3.3.tgz",
+        "integrity": "sha512-5NEHTDFKillDNPy6MCgpXDNBTB7SZkHBFOF6vXfCDIFZcBdFYFXTd2xvAVvIeM3UYFRWu27xUf/Kxl5f9+RooQ==",
+        "notices": [
+          {
+            "path": "frontend-notices/tui-code-snippet/package/LICENSE",
+            "sha256": "f62a769dc80adac959b66d9720ef2a0343526254266a8bf2be29484545b6d321"
+          }
+        ]
+      },
+      {
+        "name": "w3c-keyname",
+        "version": "2.2.4",
+        "url": "https://registry.npmjs.org/w3c-keyname/-/w3c-keyname-2.2.4.tgz",
+        "integrity": "sha512-tOhfEwEzFLJzf6d1ZPkYfGj+FWhIpBux9ppoP3rlclw3Z0BZv3N7b7030Z1kYth+6rDuAsXUFr+d0VE6Ed1ikw==",
+        "notices": [
+          {
+            "path": "frontend-notices/w3c-keyname/package/LICENSE",
+            "sha256": "13110d66c514a7890c4b388a353bc08fa094fe13d5ed7f3a222cc0a0caa3fd17"
+          }
+        ]
+      }
+    ]
+  },
+  "lucide": [
+    {
+      "name": "arrow-right",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/arrow-right.svg",
+      "sha256": "288397fdb73bb4f783cf9eabb726ff47357df1d4e3f1201dd748090579f108b9"
+    },
+    {
+      "name": "book-open",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/book-open.svg",
+      "sha256": "9b9bed0ff057283d5c5c5a1c71f8d3e927db26a56639603a92fdf7b25961510e"
+    },
+    {
+      "name": "bookmark",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/bookmark.svg",
+      "sha256": "1d5023760db81f21c3b5a63f012ef540acc01932731c733e4645012a876d39f4"
+    },
+    {
+      "name": "calendar",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/calendar.svg",
+      "sha256": "312ac8e715ac2b71bcc942dec2e8de9c1929085474f08885af35b563f6aa7a0b"
+    },
+    {
+      "name": "chart-column",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/chart-column.svg",
+      "sha256": "80664a4c5ca1bca10bcb88c1a99f62593c94d61d72d3a4bbf577eb3f3ea4da57"
+    },
+    {
+      "name": "check",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/check.svg",
+      "sha256": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0"
+    },
+    {
+      "name": "chevron-down",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/chevron-down.svg",
+      "sha256": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87"
+    },
+    {
+      "name": "chevron-left",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/chevron-left.svg",
+      "sha256": "83b0681aa38bf55e9d52a1e4b4cced624abe1fe7678ecafda133a574f1161d93"
+    },
+    {
+      "name": "chevron-right",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/chevron-right.svg",
+      "sha256": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b"
+    },
+    {
+      "name": "circle-dot",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/circle-dot.svg",
+      "sha256": "c263f6a08a089c06ad40f408ad5da9100359ab52d379e6c571cd7c5bd74eaa87"
+    },
+    {
+      "name": "clock",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/clock.svg",
+      "sha256": "e9d3e3acf4d1c280fcf8092293439dc0a4756a908ceb859de144b12451cd1cb9"
+    },
+    {
+      "name": "database",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/database.svg",
+      "sha256": "471eb14bc8d144896a82dfc4aa9daf350f769f0896f4bef33e50aabdbb51130d"
+    },
+    {
+      "name": "download",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/download.svg",
+      "sha256": "3daeee13ded5a3afa2198b1bb4e2262d163922f97d96ac6ff9953e8ed4fe039d"
+    },
+    {
+      "name": "ellipsis",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/ellipsis.svg",
+      "sha256": "4f495cc72013ffdfec677f03b33a150f7b4dd741979283fd6853a09024bca112"
+    },
+    {
+      "name": "external-link",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/external-link.svg",
+      "sha256": "3891241b8c3bfc3a8a930078f26ffc5a7e9763da6d0162ace2050b28d4c1d1fe"
+    },
+    {
+      "name": "eye",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/eye.svg",
+      "sha256": "5bf90197dd7629cad64a2e48d1186a71559deb6121207d10e3dc5b19ebaffdcf"
+    },
+    {
+      "name": "file-text",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/file-text.svg",
+      "sha256": "52ca55846c202335fb870c8aa23e9345630ec10489303756d62e750f7109605c"
+    },
+    {
+      "name": "file-up",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/file-up.svg",
+      "sha256": "0bd753699aed9b50bcbde59b12e1409329bb9291c0aa523dd4553497cd665c0b"
+    },
+    {
+      "name": "flask-conical",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/flask-conical.svg",
+      "sha256": "a2ce857c159bef4c128a6d9f0b6dcbd6504ecf1a2a670ee220efd14fd032b561"
+    },
+    {
+      "name": "folder-open",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/folder-open.svg",
+      "sha256": "ee57452b40e71df310214091dd9da1941a397c83197b8ff8d7ae66dd4242578b"
+    },
+    {
+      "name": "folder-plus",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/folder-plus.svg",
+      "sha256": "76d62eb7796ce6c7e303c437464923de2d1ae19a5c8d010f8b36dfc1d6180890"
+    },
+    {
+      "name": "folder",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/folder.svg",
+      "sha256": "f0d92b94b797a8ab7d4c4ae33c3236c47f64068351b4e14bdb5014ee42898a39"
+    },
+    {
+      "name": "highlighter",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/highlighter.svg",
+      "sha256": "8e6662b0c5bded9e68721e87592270c27af6e89321076e356eba8bb8b0d98a00"
+    },
+    {
+      "name": "house",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/house.svg",
+      "sha256": "28216c479005731ef5e382e7d8627eda2b129b019eb1f3d9de9f5915576d448e"
+    },
+    {
+      "name": "inbox",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/inbox.svg",
+      "sha256": "1838482c53d0846badef9be96fdcf7a167064241bd4891efa995c77ebec5f187"
+    },
+    {
+      "name": "languages",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/languages.svg",
+      "sha256": "ae9048feb2c7b19855da9a8f5414f68125573039777a89b9c253cceed5dc5075"
+    },
+    {
+      "name": "layers",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/layers.svg",
+      "sha256": "ce16d0a955e3581cda17f6b2fd5c5bc2034b405f9cecc31c8ebb8495b4afc1bb"
+    },
+    {
+      "name": "list",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/list.svg",
+      "sha256": "ff97a7379eb962ddc3863bb59f0f45875ac8da91aac8a38a67361e7118d2d627"
+    },
+    {
+      "name": "menu",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/menu.svg",
+      "sha256": "af6491988ac1ba30dc5414f485bc48713e957e1edb0fbef4a0dd8691c3c21598"
+    },
+    {
+      "name": "message-square",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/message-square.svg",
+      "sha256": "5812a3be783fdcd73efd2b6026e03131e4b8c6649e7d52aa2dc7bf2e2023a59d"
+    },
+    {
+      "name": "network",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/network.svg",
+      "sha256": "626be730feea1e5ea7539fbf78b4a3fcb927ce5d7dc43364f2216908672ac792"
+    },
+    {
+      "name": "newspaper",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/newspaper.svg",
+      "sha256": "f5147e2a92a0ca16edea01782b09afeea7f9ebcda029d3f38ae93a3058ed1b78"
+    },
+    {
+      "name": "pencil",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/pencil.svg",
+      "sha256": "7e1ca7a6f5c1eb949671df762f2baadd32f5bd841d43153c3a15279af7d78d0c"
+    },
+    {
+      "name": "plus",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/plus.svg",
+      "sha256": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17"
+    },
+    {
+      "name": "refresh-cw",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/refresh-cw.svg",
+      "sha256": "2e10dd403c85a24f163d59fc6151aa21147fe9402e1305dfc8979208caee8944"
+    },
+    {
+      "name": "search",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/search.svg",
+      "sha256": "283d371c2e433817bb9c0c8310caa6c77fa4177c0f4f1168d9c83b97af7389dc"
+    },
+    {
+      "name": "settings",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/settings.svg",
+      "sha256": "0ae27fd0f81999229e3127ac96c5b32edfea448e291d509e76212b917551d66b"
+    },
+    {
+      "name": "sparkles",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/sparkles.svg",
+      "sha256": "f5499f33f09d7158151e9bd2ec0faf79ff8fb57292f84fdd7286d96d0f0424d8"
+    },
+    {
+      "name": "square-pen",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/square-pen.svg",
+      "sha256": "09bdac7fdb94058246a5d3132eea0976e690d01694179ab6f474faa2c21de59a"
+    },
+    {
+      "name": "table",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/table.svg",
+      "sha256": "806e2810a1dc693e5dcc22298c6bab50ca5ba16f090d5c61e8ca4b22fdeaa4e3"
+    },
+    {
+      "name": "upload",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/upload.svg",
+      "sha256": "42816ee1fa0e9d3b82272a97615c1e562b0e9de64780ebf21963bc1db0ceffd1"
+    },
+    {
+      "name": "x",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/x.svg",
+      "sha256": "4a9cdab38fbb96162e7dace28e33f4ca0e49d8963a6162abc3d4691b7d675117"
+    },
+    {
+      "name": "sun",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/sun.svg",
+      "sha256": "a3955c8b0425fcc5c9ba12d2bdd77fe53b2cd5dd05e7742a56f342e996fb2ef8"
+    },
+    {
+      "name": "moon",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/moon.svg",
+      "sha256": "205b959e940d5841f0ce1d09c933153da9d9c94130a54d5cc0c68c2af1d403da"
+    },
+    {
+      "name": "monitor",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/monitor.svg",
+      "sha256": "d1a443233345724859de8e4fb48968ba91e885e12ddbd710701548bd91b39428"
+    },
+    {
+      "name": "paperclip",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/paperclip.svg",
+      "sha256": "28308381efeab2e711feffe560a8eea33b092d440711aec108058041e5879f9f"
+    },
+    {
+      "name": "files",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/files.svg",
+      "sha256": "97adf06fc0511e7a40be93ecda04466ed196718ab4a5e3a62b1148cc49697775"
+    },
+    {
+      "name": "info",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/info.svg",
+      "sha256": "bc977a64eb96f3e9c1041ffd09a3fceb70e3e65c02b571f76064062ed31f3cb9"
+    },
+    {
+      "name": "circle-check",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/circle-check.svg",
+      "sha256": "9711e045a5999f8a3b0782eb88e09b04e0559bc7b379dcc0a4ae645223e10345"
+    },
+    {
+      "name": "link",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/link.svg",
+      "sha256": "4f3237183dcaabfac92f4e94c776a9a9e45c3c5e77a921061a6b34b61eb5413f"
+    },
+    {
+      "name": "wrench",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/wrench.svg",
+      "sha256": "b5f3bf792743edb9e81b543dd1b13ccc26d3afe1d33500a1cd8dee2e052d6197"
+    },
+    {
+      "name": "list-checks",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/list-checks.svg",
+      "sha256": "08d26ab05aaf724222c4c0cd5a19d5eae753b2a5fff0eb2d81759dde11bac6b6"
+    },
+    {
+      "name": "unlink",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/unlink.svg",
+      "sha256": "1cdf08c7f396b292a2e8ad037a22a3a5098ab6a6ce38eaec4164f17e023c0884"
+    },
+    {
+      "name": "sliders-horizontal",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/sliders-horizontal.svg",
+      "sha256": "e43a00e5eb684e6cbb61083bed2528d7a3fa5f265693eb2b5f314cd432aa65f4"
+    },
+    {
+      "name": "lock",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/lock.svg",
+      "sha256": "d2cfe60cac8deaef36442b5c8218c1e61abe18222784b2a370ea090d13fca840"
+    },
+    {
+      "name": "lock-open",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/lock-open.svg",
+      "sha256": "f167153e8fec4008d6946f28035607636ed0b04dcfecdf58d7204db0b3d030f2"
+    },
+    {
+      "name": "bookmark-check",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/bookmark-check.svg",
+      "sha256": "2f60d065675fd43e336c4d99f2f22d19f33bc84b2333025525b51d2d5671c5c4"
+    },
+    {
+      "name": "book-plus",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/book-plus.svg",
+      "sha256": "8d801c4303d5952508f32fc2260bc5f30273bceb84fbbb2f658d81d0fa221616"
+    },
+    {
+      "name": "file-x",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/file-x.svg",
+      "sha256": "dd234d8b00858df8dbc3dc89849f961e89151bdb54576a0f54f5e9c823d25445"
+    },
+    {
+      "name": "panel-right",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/panel-right.svg",
+      "sha256": "327d197328f9feb1f88c36c9db04e9b00fe717d877459f92fcd892f5e4c349fa"
+    },
+    {
+      "name": "chevron-up",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/70562c1ee1c4fdcf736fe97bc893fb8511927934/icons/chevron-up.svg",
+      "sha256": "d09f13fcbef3c493ead7e4663b5ee91804fec38d5edb5e7cc3acfbd547641cf4"
+    },
+    {
+      "name": "trash-2",
+      "url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/trash-2.svg",
+      "sha256": "e63698acf757d3043fcb4a9ea6ffceff9dd84708707eafc879c86b34a6ff2786"
+    }
+  ],
+  "icons_sha256": "8e8ba9ed930e3417a254d5fdb1d1c2882471abe64a8e5d38ab6697301f0be198",
+  "remaining": [
+    "Final public release approval; project license selected as AGPL-3.0-or-later",
+    "Matching application and PyMuPDF/MuPDF source must accompany each AGPL binary release",
+    "Developer ID and notarization deferred for general Mac binary distribution; source installation can proceed"
+  ],
+  "pdf_sources": [
+    {
+      "file": "pymupdf-1.28.2.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/a3/fb/b6761fa2d5266f2cdb24c3b91f4023070ab7848381417678e7a289a1d52a/pymupdf-1.28.2.tar.gz",
+      "sha256": "5e0be7908a715aa20333caddd73f1d6f01e4cd0c26e869fa2dd0b7f344da2249"
+    },
+    {
+      "file": "mupdf-1.28.2-source.tar.gz",
+      "url": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz",
+      "sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156"
+    }
+  ]
+}

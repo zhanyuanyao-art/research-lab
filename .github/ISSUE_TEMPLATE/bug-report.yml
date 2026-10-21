@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible problem using an invented example.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Do not attach databases, private PDFs, conversations, environment files, API keys, or unredacted logs. Security issues follow SECURITY.md."
+  - type: input
+    id: version
+    attributes:
+      label: Version and platform
+      description: Source revision, macOS version, and browser or app mode.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Start with an empty workspace and an invented example where possible.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Optional sanitized screenshot or error
+      description: Remove names, research content, paths, credentials, and conversation text first.

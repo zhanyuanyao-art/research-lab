@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('method.css') }}">{% endblock %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">实证检验</span>{% endblock %}
+{% block content %}
+<header class="page-header"><div class="titles"><h1 class="page-title">实证检验</h1><p class="page-desc">{{ p.name }} · 看数据之前写下预测，跑完之后记录结果。统计分析在“数据”里完成。</p></div><div class="page-actions"><a class="btn secondary" href="/projects/{{ slug }}">Back to project</a></div></header>
+{% if error %}<div class="banner warning" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+
+<form class="row card" hx-post="/projects/{{ slug }}/checks/derive">
+  <select name="target" aria-label="主张">{% for cl in claims %}<option value="{{ cl.id }}">{{ cl.code or L.claim_kind[cl.kind] }} · {{ cl.statement[:70] }}</option>{% endfor %}</select>
+  <button class="btn" type="submit">Derive tests</button>
+  {% if jobs %}<span class="kicker">{{ jobs|length }} 个推导任务进行中 · <a href="/agent">队列</a></span>{% endif %}
+</form>
+{% if checks %}
+  {% for k in checks %}{% include "partials/_check_card.html" %}{% endfor %}
+{% else %}
+  <p class="muted">还没有检验。检验来自主张：在上方从一个主张推导检验，或自己写一个。</p>
+{% endif %}
+<details><summary class="kicker">New test</summary>
+<form class="stack" method="post" action="/projects/{{ slug }}/checks">
+  <input type="text" name="title" placeholder="标题" required>
+  <select name="claim_id" aria-label="主张"><option value="">不关联主张</option>{% for cl in claims %}<option value="{{ cl.id }}">{{ cl.code or L.claim_kind[cl.kind] }} · {{ cl.statement[:70] }}</option>{% endfor %}</select>
+  <textarea name="prediction" placeholder="预测（在查看数据之前写下）" required></textarea>
+  <input type="text" name="data_needed" placeholder="所需数据">
+  <input type="text" name="method" placeholder="方法">
+  <input type="text" name="would_weaken_if" placeholder="出现什么结果会削弱这个主张…">
+  <div><button class="btn small" type="submit">Add test</button></div>
+</form></details>
+{% endblock %}

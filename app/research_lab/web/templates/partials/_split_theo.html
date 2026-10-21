@@ -1,0 +1,30 @@
+{#- Split with Theo (card 0052): in an output's sub-issue block. Context: ref; s from ai/jobs/artifact_split.state():
+    {batch, rows} while Theo's suggestions wait, {job} while Theo reads (polled), else nothing; error; flash.
+    Only Add writes, and only the ticked rows as Leo renamed them; Dismiss writes nothing. -#}
+<div class="split-theo" id="split-theo" data-split-theo="{{ ref }}"{% if s.job %} hx-get="/issues/{{ ref }}/split" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  {% if s.batch %}
+  <form class="split-theo-form" method="post" action="/issues/{{ ref }}/split/{{ s.batch }}/add" hx-post="/issues/{{ ref }}/split/{{ s.batch }}/add" hx-target="#split-theo" hx-swap="outerHTML">
+    <p class="split-theo-head small"><strong>Theo 建议这样拆</strong><span class="muted">勾选、改名后点 Add；没勾的不会写入。</span></p>
+    <ul class="split-theo-rows">
+      {% for r in s.rows %}
+      <li class="split-theo-row{{ ' is-invalid' if r.problem else '' }}">
+        <input type="checkbox" name="ids" value="{{ r.id }}"{% if r.ticked is not defined or r.ticked %} checked{% endif %} aria-label="加入「{{ r.title }}」">
+        <input type="text" class="inline-edit" name="title-{{ r.id }}" value="{{ r.title }}" maxlength="120" aria-label="子议题标题"{% if r.problem %} aria-invalid="true" title="{{ r.problem }}"{% endif %}>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="split-theo-actions">
+      <button type="submit" class="btn small" data-split-add>Add</button>
+      <button type="submit" class="btn small secondary" formaction="/issues/{{ ref }}/split/{{ s.batch }}/dismiss" hx-post="/issues/{{ ref }}/split/{{ s.batch }}/dismiss" hx-target="#split-theo" hx-swap="outerHTML">Dismiss</button>
+    </div>
+  </form>
+  {% elif s.job %}
+  <p class="split-theo-wait muted small" role="status"><span class="chat-pulse" aria-hidden="true"></span>Theo 正在读这份产出…</p>
+  {% else %}
+  <form method="post" action="/issues/{{ ref }}/split" hx-post="/issues/{{ ref }}/split" hx-target="#split-theo" hx-swap="outerHTML">
+    <button type="submit" class="btn ghost small" title="让 Theo 读这份产出，建议 3 到 7 条子任务" data-split-start>Split with Theo</button>
+  </form>
+  {% endif %}
+  {% if error %}<p class="crit small" role="alert">{{ error }}</p>{% endif %}
+  {% if flash %}<p class="muted small" role="status">{{ flash }}</p>{% endif %}
+</div>

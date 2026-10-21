@@ -1,0 +1,12 @@
+{% import "partials/ui.html" as ui with context %}
+<div class="menu-panel issue-context-menu" data-issue-context-menu role="menu" aria-label="议题操作" hidden>
+  <button type="button" role="menuitem" class="danger-text" data-context-delete>{{ ui.icon('trash-2','sm') }}Delete<kbd>⌘⌫</kbd></button>
+</div>
+<dialog class="issue-shortcuts issue-delete-dialog" data-issue-delete-dialog aria-labelledby="issue-delete-title">
+  <form method="dialog" class="issue-shortcuts-body">
+    <header><h2 id="issue-delete-title">删除议题</h2></header>
+    <p data-delete-text></p><p class="muted small" data-delete-kids hidden></p>
+    <p class="muted small">附件文件留在课题文件夹里，不会删除；删除后可以马上撤销。</p>
+    <div class="form-actions"><button class="btn ghost" value="cancel" autofocus>Cancel</button><button class="btn danger" value="delete">Delete</button></div>
+  </form>
+</dialog>

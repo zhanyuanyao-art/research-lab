@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('feeds.css') }}">{% endblock %}
+{% block crumbs %}<a href="/">首页</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">推送</span>{% endblock %}
+{% block content %}
+<div class="feed-page">
+<header class="page-header">
+  <div class="titles"><h1 class="page-title">推送</h1></div>
+  <div class="page-actions"><a class="btn secondary small" href="/settings/interests?return_to=/feed" title="订阅">{{ ui.icon('sliders-horizontal', 'sm') }}Subscriptions</a>{% set primary = true %}{% include "partials/_feed_status.html" %}</div>
+</header>
+{#- Tabs and the edition pager share one rail (card 0106). -#}
+<div class="feed-bar">
+<nav class="tabs" aria-label="推送分栏">
+  {% for key, label in tabs.items() %}<a href="/feed?tab={{ key }}{% if day is defined and key != 'saved' %}&amp;day={{ day }}{% endif %}"{% if key == tab %} class="on" aria-current="page"{% endif %}>{{ label }}<span class="count">{{ tab_counts[key] }}</span></a>{% endfor %}
+</nav>
+{#- 论文: Articles · Book reviews (card 0154), each with its unread count. -#}
+{% if tab == 'papers' %}<nav class="segmented small kind-switch" aria-label="论文类型">{% for key, label in kinds.items() %}<a href="/feed?tab=papers{% if key == 'review' %}&amp;kind=review{% endif %}"{% if key == kind %} class="on" aria-current="page"{% endif %}>{{ label }}<span class="count">{{ kind_counts[key] }}</span></a>{% endfor %}</nav>{% endif %}
+{% if tab != 'saved' and kind != 'review' and f.pick == 'today' %}
+  <nav class="edition-nav" aria-label="推送日期">
+    {% if day_prev %}<a class="btn ghost icon small" href="/feed?tab={{ tab }}&amp;day={{ day_prev }}" aria-label="前一天" title="前一天">{{ ui.icon('chevron-left', 'sm') }}</a>{% else %}<button class="btn ghost icon small" disabled aria-label="前一天">{{ ui.icon('chevron-left', 'sm') }}</button>{% endif %}
+    <h2>{{ day | date_zh }} {{ weekday }}{% if digest.is_today %}<span class="when">今日</span>{% endif %}</h2>
+    {% if day_next %}<a class="btn ghost icon small" href="/feed?tab={{ tab }}&amp;day={{ day_next }}" aria-label="后一天" title="后一天">{{ ui.icon('chevron-right', 'sm') }}</a>{% else %}<button class="btn ghost icon small" disabled aria-label="后一天">{{ ui.icon('chevron-right', 'sm') }}</button>{% endif %}
+    <span class="sep"></span><a class="btn ghost small push" href="/feed?tab={{ tab }}&amp;pick=all">All items{{ ui.icon('arrow-right', 'sm') }}</a>
+  </nav>
+{% endif %}
+</div>
+{% include "partials/_direction_filter.html" %}
+{% if tab == 'saved' %}
+  {% for sec in saved_sections %}
+  <div class="section-head"><h3>{{ sec.label }}</h3><div class="aside">{{ sec.total }} {{ sec.unit }}</div></div>
+  {% if sec['items'] %}<div class="card flush feed-block"><div class="story-grid {{ 'papers' if sec.stream == 'papers' else 'saved-news' }}">{% for it in sec['items'] %}{% include "partials/_feed_item.html" %}{% endfor %}</div></div>
+  {% else %}{{ ui.empty('bookmark', sec.empty, '', '/feed?tab=' ~ sec.stream, 'View all', compact=true) }}{% endif %}
+  {% endfor %}
+{% elif kind == 'review' %}
+  {#- Book reviews (card 0154): newest first, the reviewed book as the title; no 今日精选 and no summary. -#}
+  <section id="reviews" aria-label="书评">
+  {% if reviews %}
+  <div class="section-head"><h3>书评</h3><div class="aside">{% if reviews_total > reviews | length %}最近 {{ reviews | length }} 篇，共 {{ reviews_total }} 篇{% else %}{{ reviews_total }} 篇{% endif %}</div></div>
+  <div class="card flush feed-block"><div class="story-grid papers reviews">{% for it in reviews %}{% include "partials/_feed_item.html" %}{% endfor %}</div></div>
+  {% else %}{{ ui.empty('book-open', '最近没有书评', '', '/feed?tab=papers', 'Articles') }}{% endif %}
+  </section>
+{% elif f.pick == 'today' %}
+  {% set d = digest %}
+  <section id="digest" aria-label="今日精选">
+    {% if tab == 'news' %}
+      {% if brief or d.world or d.research %}
+      <div class="feed-layout">
+        {% if brief or d.world %}
+        <div class="feed-main" role="region" aria-label="世界要闻">
+          <div class="section-head"><h3>世界要闻</h3><div class="aside">{% if brief %}{{ events | length }} 件 · 助手整理{% else %}{{ d.world | length }} 条{% endif %}</div></div>
+          <div class="card flush feed-block">
+          {% if brief %}
+            {% set event_day = day %}
+            <div class="story-grid world">{% for event in events[:6] %}{% include "partials/_feed_event.html" %}{% endfor %}</div>
+            {% if events | length > 6 %}
+            <details class="feed-overflow">
+              <summary class="feed-fold">另外 {{ events | length - 6 }} 件{{ ui.icon('chevron-down', 'sm') }}</summary>
+              <div class="story-grid world more">{% for event in events[6:] %}{% include "partials/_feed_event.html" %}{% endfor %}</div>
+            </details>
+            {% endif %}
+          {% else %}<div class="story-grid world plain">{% for it in d.world %}{% include "partials/_feed_item.html" %}{% endfor %}</div>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% if d.research %}
+        <div class="feed-rail{% if not (brief or d.world) %} alone{% endif %}" role="region" aria-label="研究相关">
+          <div class="section-head"><h3>研究相关</h3><div class="aside">{{ d.research | length }} 条</div></div>
+          <div class="card flush feed-block"><div class="story-grid research-wide">{% for it in d.research %}{% include "partials/_feed_item.html" %}{% endfor %}</div></div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% elif d.papers %}
+      <div class="section-head"><h3>论文</h3><div class="aside">{{ d.papers | length }} 篇</div></div>
+      <div class="card flush feed-block"><div class="story-grid papers">{% for it in d.papers %}{% include "partials/_feed_item.html" %}{% endfor %}</div></div>
+    {% endif %}
+    {% set hidden = (hidden_by_direction or {}).get(tab, 0) %}
+    {% if not ((brief or d.news) if tab == 'news' else d.papers) and hidden %}
+      {{ ui.empty('inbox', direction_name ~ ' 方向' ~ ('今天' if d.is_today else '这一天') ~ '没有' ~ tabs[tab], '全部方向有 ' ~ hidden ~ ' ' ~ unit, '/feed?tab=' ~ tab ~ '&direction=', 'View all') }}
+    {% elif not ((brief or d.news) if tab == 'news' else d.papers) %}
+      {{ ui.empty('inbox', ('今天' if d.is_today else '这一天') ~ '还没有' ~ tabs[tab], '', '/feed?tab=' ~ tab ~ '&pick=all', 'All items') }}
+    {% else %}
+      <div class="feed-foot"><a class="btn ghost small" href="/feed?tab={{ tab }}&amp;pick=all">View all{% if unread_count %} · {{ unread_count }} {{ unit }}未读{% endif %}{{ ui.icon('arrow-right', 'sm') }}</a></div>
+    {% endif %}
+  </section>
+{% else %}
+  {% set layout = 'stream' %}
+  <div class="stream-head"><a class="btn ghost small" href="/feed?tab={{ tab }}">{{ ui.icon('chevron-left', 'sm') }}Today's picks</a><h2>全部{{ tabs[tab] }}</h2><span class="count muted small">{{ unread_count }} {{ unit }}未读</span></div>
+  <form class="stream-tools" method="get" action="/feed" id="feed-filters">
+    <input type="hidden" name="tab" value="{{ tab }}"><input type="hidden" name="pick" value="all">{% if f.direction %}<input type="hidden" name="direction" value="{{ f.direction }}">{% endif %}
+    <input type="search" name="q" value="{{ f.q }}" placeholder="搜索标题、摘要、来源" aria-label="搜索">
+    <span class="spacer"></span>
+    <details class="menu"><summary class="btn secondary small">{{ ui.icon('sliders-horizontal', 'sm') }}Filter{% if f.source or f.lane or f.region %}<span class="badge">{{ [f.source, f.lane, f.region] | select | list | length }}</span>{% endif %}</summary>
+      <div class="menu-panel">
+        {% if tab == 'news' %}
+        <select name="lane" aria-label="哪条线">{% for key, label in [('', '世界要闻和研究相关'), ('world', '世界要闻'), ('research', '研究相关')] %}<option value="{{ key }}"{% if (f.lane or '') == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <select name="region" aria-label="地区"><option value="">全部地区</option>{% for r in regions %}<option value="{{ r }}"{% if f.region == r %} selected{% endif %}>{{ r }}</option>{% endfor %}</select>
+        {% endif %}
+        <select name="source" aria-label="{{ '期刊' if tab == 'papers' else '来源' }}"><option value="">{{ '全部期刊' if tab == 'papers' else '全部来源' }}</option>{% for s in source_options %}<option value="{{ s.key }}"{% if f.source == s.key %} selected{% endif %}>{{ s.label }}</option>{% endfor %}</select>
+      </div>
+    </details>
+    <div class="segmented" role="radiogroup" aria-label="范围">{% for key, label in views.items() %}<label><input type="radio" name="view" value="{{ key }}"{% if f.view == key %} checked{% endif %}>{{ label }}</label>{% endfor %}</div>
+  </form>
+  {% if f.q or f.direction or f.source or f.lane or f.region %}<p class="small muted">找到 {{ total }} {{ unit }}</p>{% endif %}
+  {% if items %}
+    <div class="card flush"><ul class="stream-list" id="feed-list">
+    {% set ns = namespace(day='') %}
+    {% for it in items %}{% if tab == 'news' and it.date != ns.day %}<li class="stream-day" role="heading" aria-level="3">{{ it.date | date_zh }}</li>{% set ns.day = it.date %}{% endif %}{% include "partials/_feed_item.html" %}{% endfor %}
+    {% include "partials/_feed_more.html" %}
+    </ul></div>
+  {% elif f.view == 'unread' and not (f.q or f.direction or f.source or f.lane or f.region) %}
+    {{ ui.empty('inbox', tabs[tab] ~ '都看过了', '', '/feed?tab=' ~ tab ~ '&pick=all&view=all', 'View all') }}
+  {% else %}{{ ui.empty('search', '没有符合条件的条目', '', '/feed?tab=' ~ tab ~ '&pick=all' ~ ('&direction=' if f.direction else ''), 'Clear filters') }}{% endif %}
+{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById('feed-filters');
+  if (!form) return;
+  form.addEventListener('change', function (e) { if (e.target.name !== 'q') form.requestSubmit(); });
+})();
+// A tap opens a mark's tooltip on touch screens (no hover there); a tap elsewhere closes it.
+document.addEventListener('click', function (e) {
+  var tip = e.target.closest('.feed-page .tip');
+  document.querySelectorAll('.feed-page .tip.is-open').forEach(function (t) { if (t !== tip) t.classList.remove('is-open'); });
+  if (tip && tip.tagName !== 'SUMMARY') tip.classList.toggle('is-open');
+});
+</script>
+{% endblock %}

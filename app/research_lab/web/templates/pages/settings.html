@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block crumbs %}<span class="current">设置</span>{% endblock %}
+{% block content %}
+{#- docs/design/SETTINGS-AGENT.md §2: seven blocks, every control applies on click. 复现环境 (card 0204) loads itself. -#}
+<header class="page-header">
+  <div class="titles"><h1 class="page-title">设置</h1><p class="page-desc">常用的几项在这里，别的跟助手说。</p></div>
+</header>
+{% if note %}{% if note_bad %}<div class="banner danger" role="alert"><span class="text">{{ note }}</span></div>{% else %}<div class="flash">{{ ui.icon('check', 'sm') }}{{ note }}</div>{% endif %}{% endif %}
+
+<div class="stack" style="max-width: 760px">
+  <section class="card" id="appearance">
+    <div class="card-head"><h3>外观</h3></div>
+    <form method="post" action="/settings/theme" class="segmented" role="radiogroup" aria-label="外观" data-theme-form>
+      {%- for v, label in theme_choices %}<button type="submit" name="theme" value="{{ v }}" role="radio" aria-checked="{{ 'true' if theme == v else 'false' }}"{% if theme == v %} class="on"{% endif %}>{{ ui.icon({'system': 'monitor', 'light': 'sun', 'dark': 'moon'}[v], 'sm') }}{{ label }}</button>{% endfor -%}
+    </form>
+  </section>
+
+  <section class="card" id="ai">
+    <div class="card-head"><h3>AI</h3></div>
+    <p class="row" style="margin: 0">
+      {%- if ai_paused %}<span class="dot queue"></span>全部 AI 已暂停
+      {%- elif route == 'claude' %}<span class="dot on"></span>在线 · 由本机 Claude Code 处理
+      {%- elif route == 'deepseek' %}<span class="dot on"></span>在线 · 由 DeepSeek 处理
+      {%- else %}<span class="dot queue"></span>排队{% if route_why %} · {{ route_why }}{% endif %}{% endif -%}
+    </p>
+    <form method="post" action="/settings/ai-mode" class="segmented" role="radiogroup" aria-label="运行方式" style="margin-top: 10px">
+      {%- for v, label in mode_choices %}<button type="submit" name="mode" value="{{ v }}" role="radio" aria-checked="{{ 'true' if mode_setting == v else 'false' }}"{% if mode_setting == v %} class="on"{% endif %}>{{ label }}</button>{% endfor -%}
+    </form>
+    {% if mode_setting == 'auto' %}<p class="muted small" style="margin: 6px 0 0">自动：有 DeepSeek 密钥就用 DeepSeek，否则用本机 Claude Code · 现在是 {{ L.ai_mode[mode_effective] }}</p>{% endif %}
+    {% set today = [] %}
+    {% if claude_cli or claude_runs_today %}{% set _ = today.append('Claude Code 今天运行 %d 次' | format(claude_runs_today)) %}{% endif %}
+    {% if has_key or spent %}{% set _ = today.append('DeepSeek 今天花了 $%.2f' | format(spent)) %}{% endif %}
+    {% if today or ai_counts.queued %}<p class="muted small" style="margin: 6px 0 0">{{ today | join(' · ') }}{% if ai_counts.queued %}{{ ' · ' if today }}<a href="/agent">队列里 {{ ai_counts.queued }} 个</a>{% endif %}</p>{% endif %}
+    {#- Card 0069 adds 每天最多 ¥[ ] and, when DeepSeek is resting, the reason with 现在重试, here. -#}
+    <form method="post" action="/settings/ai-pause" class="row" style="margin-top: 14px">
+      {% if ai_paused %}
+      <button class="btn small" type="submit" name="paused" value="0">恢复 AI</button>
+      {% else %}
+      <button class="btn secondary small" type="submit" name="paused" value="1">暂停全部 AI</button>
+      {% endif %}
+    </form>
+  </section>
+
+  <section class="card" id="feeds">
+    <div class="card-head"><h3>推送</h3><a class="btn secondary small" href="/settings/interests">学科与兴趣</a></div>
+    <p style="margin: 0">每天 {{ feeds.news_n }} 条新闻、{{ feeds.papers_n }} 篇论文{% if feeds.sources is not none %} · 来源 {{ feeds.sources }} 个{% endif %}</p>
+    <form method="post" action="/settings/autoimport" class="row" style="justify-content: space-between; margin-top: 12px">
+      <span>开放获取的论文自动入库</span>
+      <span class="segmented small" role="radiogroup" aria-label="开放获取的论文自动入库">
+        {%- for v, label in (('1', '开'), ('0', '关')) %}{% set on = (v == '1') == feeds.autoimport %}<button type="submit" name="on" value="{{ v }}" role="radio" aria-checked="{{ 'true' if on else 'false' }}"{% if on %} class="on"{% endif %}>{{ label }}</button>{% endfor -%}
+      </span>
+    </form>
+  </section>
+
+  <section class="card" id="connections">
+    <div class="card-head"><h3>连接</h3></div>
+    <dl class="kv">
+      <dt>Claude Code</dt><dd>{% if claude_cli %}<span class="badge success">已找到</span>{% else %}<span class="badge outline">没找到</span>{% endif %}</dd>
+      <dt>DeepSeek 密钥</dt><dd>{% if has_key %}<span class="badge success">已配置</span>{% else %}<span class="badge outline">未配置</span>{% endif %}</dd>
+      <dt>联系邮箱</dt><dd>{% if has_contact %}<span class="badge success">已配置</span>{% else %}<span class="badge outline">未配置</span>{% endif %}</dd>
+    </dl>
+    <p class="muted small" style="margin: 12px 0 0">要改：在研究仓库的 <code>app/.env</code> 里填写，然后重启应用。</p>
+  </section>
+
+  <section class="card" id="r-env" hx-get="/settings/r-env" hx-trigger="load" hx-swap="outerHTML">
+    <div class="card-head"><h3>复现环境</h3></div>
+    <p class="muted small" style="margin: 0">正在检查 R 和编译工具…</p>
+  </section>
+
+  <section class="card" id="tweaks">
+    <div class="card-head"><h3>当前微调</h3></div>
+    {% if not tweaks and not file_changes %}
+    <p class="muted" style="margin: 0">都是默认设置。想调什么，直接跟助手说。</p>
+    {% else %}
+    {% for d in tweaks %}
+    <div class="row-item">
+      <div class="main-col">
+        <span class="title">{{ d.name }}：{% if d.broken %}存的值无效，按默认{% else %}{{ d.value_label }}{% endif %}</span>
+        <div class="sub"><span>默认 {{ d.default_label }}</span><span>{{ '助手改的' if d.by_assistant else '在设置页改的' }}{% if d.at %} · {{ d.at | local_time('%m-%d') }}{% endif %}</span></div>
+      </div>
+      <form method="post" action="/settings/reset" class="trail"><input type="hidden" name="key" value="{{ d.key }}"><button class="btn secondary small" type="submit">恢复默认</button></form>
+    </div>
+    {% endfor %}
+    {% if file_changes %}
+    <h4 class="muted small" style="margin: 18px 0 0; font-weight: 500">助手改过的推送来源和方向</h4>
+    {% for b in file_changes %}
+    <div class="row-item">
+      <div class="main-col">
+        {% for r in b.rows %}<span class="title">{{ r.name }}：{{ r.change }}</span>{% if r.note %}<div class="sub">{{ r.note }}</div>{% endif %}{% endfor %}
+        <div class="sub">助手改的{% if b.at %} · {{ b.at | local_time('%m-%d') }}{% endif %}</div>
+      </div>
+      {% if b.undoable %}<form method="post" action="/settings/undo" class="trail"><input type="hidden" name="batch" value="{{ b.batch_id }}"><button class="btn secondary small" type="submit">撤销</button></form>{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+    <p class="muted small" style="margin: 14px 0 0">想调别的，直接<a href="/chat">跟助手说</a>，比如「论文每天 5 篇就够了」</p>
+    {% endif %}
+  </section>
+
+  <section class="card" id="about">
+    <div class="card-head"><h3>关于</h3></div>
+    <form method="post" action="/guide/start" class="row" id="guide">
+      <button class="btn secondary small" type="submit">打开上手引导</button>
+      <span class="muted small">从一篇文献开始，把阅读接到课题的下一步。</span>
+    </form>
+    <form method="post" action="/settings/reveal" class="row">
+      <span class="muted" style="margin-right: 6px">版本 {{ BUILD_LABEL }}</span>
+      <button class="btn secondary small" type="submit" name="what" value="repo">{{ ui.icon('folder-open', 'sm') }}在访达中显示研究仓库</button>
+      {% if desktop %}<button class="btn secondary small" type="submit" name="what" value="logs">{{ ui.icon('file-text', 'sm') }}查看日志</button>{% endif %}
+      {% if maintainer %}<a class="btn secondary small" href="/dev">{{ ui.icon('wrench', 'sm') }}开发</a>{% endif %}
+    </form>
+  </section>
+</div>
+
+<script>
+// 外观 applies at once (shared rlTheme in app.js) and persists through the form's own route; the top-bar toggle
+// moves the selection here too.
+(function () {
+  var form = document.querySelector('[data-theme-form]'); if (!form) return;
+  function mark(pref) {
+    form.querySelectorAll('button').forEach(function (b) { var on = b.value === pref; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  }
+  form.addEventListener('submit', function (e) {
+    var b = e.submitter; if (!b || !window.rlTheme) return;
+    e.preventDefault();
+    window.rlTheme.apply(b.value, false);
+    var data = new FormData(); data.append('theme', b.value);
+    fetch(form.action, { method: 'POST', body: data, credentials: 'same-origin', redirect: 'manual', headers: { 'HX-Request': 'true' } }).catch(function () {});
+  });
+  window.addEventListener('rl:theme', function (e) { mark(e.detail.theme); });
+})();
+</script>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('replication.js') }}" defer></script>{% endblock %}

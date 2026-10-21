@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% import "partials/ui.html" as ui with context %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('papers.css') }}"><link rel="stylesheet" href="{{ asset('search.css') }}">{% endblock %}
+{% block crumbs %}<span class="current">搜索</span>{% endblock %}
+
+{#- One paper hit: the library's own row (card 0128's partials/_paper_line.html) with the snippet line under it,
+    both on the 文献 tracks, so search results line up with the 文献 list. -#}
+{% macro paper_hit(line, snippet=none) -%}
+<li class="srch-hit{% if snippet %} has-snip{% endif %}">
+  <ul class="paper-lines">{% with paper = line %}{% include "partials/_paper_line.html" %}{% endwith %}</ul>
+  {%- if snippet %}<p class="srch-snip">{{ snippet }}</p>{% endif %}
+</li>
+{%- endmacro %}
+
+{% macro see_all(kind, n) -%}
+{%- if tab == 'all' and n > limit %}<a class="srch-all" href="/search?q={{ q | urlencode }}&amp;tab={{ kind }}">See all {{ n }}</a>{% endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="search-page">
+  <form class="srch-field" method="get" action="/search" role="search">
+    {{ ui.icon('search') }}
+    <input type="search" name="q" value="{{ q }}" placeholder="搜索文献、正文、议题、产出、划线" aria-label="搜索" autofocus>
+    {% if tab != 'all' %}<input type="hidden" name="tab" value="{{ tab }}">{% endif %}
+  </form>
+
+  {% if results is none %}
+  <p class="srch-hint">多个词之间是「且」；英文最后一个词按前缀匹配，中文按字串匹配。输入议题编号，比如 APUS-0012，直接打开那个议题。</p>
+  {% else %}
+  {% set c = results.counts %}
+  <nav class="tabs srch-tabs" aria-label="结果类型">
+    {%- for key, name in tabs %}<a href="/search?q={{ q | urlencode }}{% if key != 'all' %}&amp;tab={{ key }}{% endif %}"{% if key == tab %} class="on" aria-current="page"{% endif %}>{{ name }} <span class="count">{{ c[key] }}</span></a>{% endfor -%}
+  </nav>
+
+  {% if not c.all %}
+  <p class="srch-hint">没有找到「{{ q }}」。</p>
+  {% elif tab != 'all' and not c[tab] %}
+  <p class="srch-hint">{{ dict(tabs)[tab] }}里没有找到「{{ q }}」，别的类型里有 {{ c.all }} 条。</p>
+  {% endif %}
+
+  {% if tab in ('all', 'papers') and results.papers %}
+  <section class="hit-group">
+    <header><h2>文献</h2> <span class="n">{{ c.papers }}</span><span class="aside">标题、作者、摘要</span></header>
+    <ul class="srch-lines">{% for p in results.papers[:limit] %}{{ paper_hit(p.line, p.snippet) }}{% endfor %}</ul>
+    {{ see_all('papers', c.papers) }}
+  </section>
+  {% endif %}
+
+  {% if tab in ('all', 'pages') and results.pages %}
+  <section class="hit-group">
+    <header><h2>正文</h2> <span class="n">{{ c.pages }} 处 · {{ c.page_papers }} 篇</span><span class="aside">点页码直接翻到那一页</span></header>
+    {% for g in results.pages[:limit] %}
+    <div class="page-group">
+      <ul class="srch-lines">{{ paper_hit(g.line) }}</ul>
+      {% for h in g.hits %}<a class="page-hit" href="/papers/{{ g.paper_id }}/read?page={{ h.page_label | urlencode }}&amp;find={{ q | urlencode }}#p-{{ h.page_index }}"><span class="t"><span class="pg">p. {{ h.page_label }}</span>{{ h.snippet }}</span></a>{% endfor %}
+      {% if g.more %}<a class="page-more" href="/papers/{{ g.paper_id }}/read?find={{ q | urlencode }}">还有 {{ g.more }} 处</a>{% endif %}
+    </div>
+    {% endfor %}
+    {{ see_all('pages', c.page_papers) }}
+  </section>
+  {% endif %}
+
+  {% if tab in ('all', 'issues') and results.issues %}
+  <section class="hit-group">
+    <header><h2>议题</h2> <span class="n">{{ c.issues }}</span><span class="aside">编号、标题、描述</span></header>
+    <ul class="srch-lines">{% for i in results.issues[:limit] %}
+      <li class="srch-line{% if i.snippet %} has-snip{% endif %}">
+        <span class="issue-state {{ i.status }}" role="img" aria-label="{{ {'todo': '待办', 'doing': '进行中', 'done': '已完成', 'parked': '搁置'}[i.status] }}">{% if i.status == 'done' %}{{ ui.icon('check', 'sm') }}{% elif i.status == 'parked' %}{{ ui.icon('x', 'sm') }}{% endif %}</span>
+        <a class="srch-title" href="{{ i.url }}">{% if i.key %}<span class="key">{{ i.key }}</span>{% endif %}{{ i.title }}</a>
+        <span class="srch-tail"><span class="srch-marks"></span><span class="srch-by">{{ '课题' if i.project_root else (project_names.get(i.project) or '') }}</span><span class="srch-date">{{ i.due | date_zh }}</span></span>
+        {%- if i.snippet %}<p class="srch-snip">{{ i.snippet }}</p>{% endif %}
+      </li>{% endfor %}
+    </ul>
+    {{ see_all('issues', c.issues) }}
+  </section>
+  {% endif %}
+
+  {% if tab in ('all', 'artifacts') and results.artifacts %}
+  <section class="hit-group">
+    <header><h2>产出</h2> <span class="n">{{ c.artifacts }}</span><span class="aside">标题、正文</span></header>
+    <ul class="srch-lines">{% for a in results.artifacts[:limit] %}
+      <li class="srch-line has-snip">
+        <span class="srch-kind">{{ ui.icon('file-text', 'sm') }}</span>
+        <a class="srch-title" href="/artifacts/{{ a.ref }}">{{ a.title }}</a>
+        <span class="srch-tail"><span class="srch-marks"></span><span class="srch-by">{{ L.kind[L.type_kind[a.type]] or '产出' }}{% if project_names.get(a.project) %} · {{ project_names[a.project] }}{% endif %}</span><span class="srch-date">{{ a.week | week_short_zh if a.week else '' }}</span></span>
+        <p class="srch-snip">{{ a.snippet }}</p>
+      </li>{% endfor %}
+    </ul>
+    {{ see_all('artifacts', c.artifacts) }}
+  </section>
+  {% endif %}
+
+  {% if tab in ('all', 'excerpts') and results.excerpts %}
+  <section class="hit-group">
+    <header><h2>划线</h2> <span class="n">{{ c.excerpts }}</span><span class="aside">划线和笔记</span></header>
+    <ul class="srch-lines">{% for e in results.excerpts[:limit] %}
+      <li class="srch-line has-snip">
+        <span class="srch-kind">{{ ui.icon('highlighter', 'sm') }}</span>
+        <a class="srch-title" href="/excerpts/{{ e.id }}">{{ e.paper_title or '未命名文献' }}{% if e.locator %}<span class="loc"> · p. {{ e.locator }}</span>{% endif %}</a>
+        <span class="srch-tail"><span class="srch-marks"></span><span class="srch-by">{% if e.private %}私密{% endif %}</span><span class="srch-date"></span></span>
+        <p class="srch-snip">{{ e.snippet }}</p>
+      </li>{% endfor %}
+    </ul>
+    {{ see_all('excerpts', c.excerpts) }}
+  </section>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

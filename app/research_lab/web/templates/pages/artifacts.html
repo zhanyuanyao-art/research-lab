@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% macro rows(items, show_dir=false) %}
+  <div class="card flush arch-card">
+    <table class="data arch-table">
+      <thead><tr><th class="c-title">产出</th><th>类别</th><th>截止</th><th class="num">子任务</th><th class="num">评论</th><th>最近更新</th><th class="c-menu"><span class="sr-only">管理</span></th></tr></thead>
+      <tbody>
+      {% for a in items %}
+      <tr class="arch-row{% if a.status in ('superseded', 'absorbed-into-paper') %} is-archived{% endif %}">
+        <td class="c-title">
+          <a class="title serif" href="/artifacts/{{ a.ref }}">{{ a.title }}</a>
+          <div class="sub">{% if show_dir and a.direction %}{{ ui.dir_tag(a.direction, link=false) }}{% else %}{{ ui.maturity(a.level) }}{% endif %}{% if projects.get(a.project) %}<a class="arch-project" href="/projects/{{ a.project }}">{{ projects[a.project].name }}</a>{% endif %}{% if not a.counts %}<span class="badge warning">结论待写</span>{% endif %}{% if a.status in ('superseded', 'absorbed-into-paper') %}<span class="badge">{{ L.status[a.status] }}</span>{% endif %}</div>
+        </td>
+        <td class="nowrap">{{ L.kind[L.type_kind[a.type]] }}</td>
+        <td class="nowrap">{% if a.due %}{{ i18n_due(a.due) }}{% else %}<span class="faint">—</span>{% endif %}</td>
+        <td class="num nowrap">{% if a.progress.total %}{{ a.progress.done }}/{{ a.progress.total }}{% else %}<span class="faint">—</span>{% endif %}</td>
+        <td class="num nowrap">{% if a.comments %}{{ a.comments }}{% else %}<span class="faint">—</span>{% endif %}</td>
+        <td class="nowrap muted">{% if a.latest %}{{ a.latest[5:7] | int }}月{{ a.latest[8:10] | int }}日{% else %}{{ a.week | week_short_zh }}{% endif %}</td>
+        <td class="c-menu">{% if a.sha256 %}{{ ui.row_menu(a) }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endmacro %}
+{% block crumbs %}<span class="current">研究档案</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title">研究档案</h1>
+    <p class="page-desc">每一份产出是一个 issue：描述、拆出来的子任务和评论。点一行打开。</p>
+  </div>
+  <div class="page-actions">
+    <details class="menu">
+      <summary class="btn secondary icon" aria-label="更多">{{ ui.icon('ellipsis') }}</summary>
+      <div class="menu-panel">
+        <a href="/artifacts/directions">{{ ui.icon('settings') }}Manage directions</a>
+        <a href="/artifacts/review">{{ ui.icon('chart-column') }}Review</a>
+        <a href="/week">{{ ui.icon('calendar') }}This week</a>
+      </div>
+    </details>
+    <a class="btn" href="/artifacts/new">{{ ui.icon('plus') }}New output</a>
+  </div>
+</header>
+{% include "partials/_direction_filter.html" %}
+{% if request.query_params.get('deleted') %}<div class="flash">{{ ui.icon('check', 'sm') }}已把「{{ request.query_params.get('deleted') }}」移到回收站（app/data/trash）。</div>{% endif %}
+{% if request.query_params.get('saved') == 'title' %}<div class="flash">{{ ui.icon('check', 'sm') }}已改名。</div>{% elif request.query_params.get('saved') == 'project' %}<div class="flash">{{ ui.icon('check', 'sm') }}已移到课题。</div>{% endif %}
+{% if error %}<div class="banner warning"><span class="text">{{ error }}</span></div>{% endif %}
+
+{% macro qs(changes) -%}
+{%- set base = {'view': view, 'kind': filter_kind, 'project': filter_project, 'group': group, 'direction': dir_filter} -%}
+/artifacts?{{ dict(base, **changes) | dictsort | selectattr(1) | map('join', '=') | join('&') }}
+{%- endmacro %}
+<div class="toolbar arch-toolbar">
+  <div class="segmented" role="tablist" aria-label="看哪些">
+    {% for v, label in [('week', '本周'), ('all', '全部'), ('archived', '已归档')] %}<a href="{{ qs({'view': v}) }}"{% if view == v %} aria-current="page"{% endif %}>{{ label }} <span class="count">{{ view_counts[v] }}</span></a>{% endfor %}
+  </div>
+  <div class="segmented" aria-label="分组">
+    {% for gk, label in [('status', '按状态'), ('direction', '按方向')] %}<a href="{{ qs({'group': gk}) }}"{% if group == gk %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </div>
+  <form method="get" action="/artifacts" class="row">
+    <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="group" value="{{ group }}">{% if dir_filter %}<input type="hidden" name="direction" value="{{ dir_filter }}">{% endif %}
+    <select name="kind" onchange="this.form.submit()" aria-label="类别"><option value="">全部类别</option>{% for k in ['question', 'literature', 'data', 'conclusion'] %}<option value="{{ k }}"{% if k == filter_kind %} selected{% endif %}>{{ L.kind[k] }}</option>{% endfor %}</select>
+    <select name="project" onchange="this.form.submit()" aria-label="课题"><option value="">全部课题</option>{% for slug, p in projects.items() if not dir_filter or p.direction == dir_filter or slug == filter_project %}<option value="{{ slug }}"{% if slug == filter_project %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+  </form>
+  <span class="spacer"></span>
+  {% if unsorted.count %}<span class="badge warning">{{ unsorted.count }} 个未归类</span>{% endif %}
+  <span class="muted small">{{ shown }} 份</span>
+</div>
+
+{% if not total %}
+{{ ui.empty('square-pen', '还没有产出', '从一个研究问题开始，写下你想弄明白的事。', '/artifacts/new', 'New output') }}
+{% else %}
+{% for g in groups %}
+{% if g.status %}
+{% if g['items'] %}
+<section class="arch-group arch-status">
+  <h2 class="arch-status-head">{% if g.slug %}{{ ui.maturity(g.slug) }}{% else %}<span class="muted">{{ g.name }}</span>{% endif %} <span class="count">{{ g['items'] | length }}</span></h2>
+  {{ rows(g['items'], show_dir=true) }}
+</section>
+{% endif %}
+{% elif not g.unsorted or g['items'] %}
+<section class="arch-group" style="--dc: {{ direction_color(g.slug) }}">
+  {#- The group head keeps the old folder card's markup (class, link, kind counts) so 方向 stays the frame. -#}
+  <a class="card folder arch-head{% if g.unsorted %} is-unsorted{% endif %}" href="{{ '/artifacts/d/' ~ g.slug if not g.unsorted else qs({}) }}">
+    <span class="icon">{{ ui.icon('folder') }}</span>
+    <span class="name">{{ g.name }}</span>
+    <div class="kinds">{% for k in ['question', 'literature', 'data', 'conclusion'] %}<div><b>{{ g.kinds[k] }}</b><span>{{ L.kind[k] }}</span></div>{% endfor %}</div>
+    <span class="muted small arch-latest">{% if g.count %}最近 {{ g.latest_week | week_short_zh }}{% else %}还是空文件夹{% endif %}</span>
+    {% if not g.unsorted %}{{ ui.icon('chevron-right', 'sm') }}{% endif %}
+  </a>
+  {% if g['items'] %}
+  {{ rows(g['items']) }}
+  {% elif view == 'all' and not filter_kind and not filter_project %}
+  <p class="muted small arch-empty">这个方向还没有产出。<a href="/artifacts/new?direction={{ g.slug }}">新建一份</a></p>
+  {% endif %}
+</section>
+{% endif %}
+{% endfor %}
+{% if not shown %}{{ ui.empty('search', '没有符合条件的产出', '换一个筛选试试。', '/artifacts?direction=', 'View all', compact=true) }}{% endif %}
+<a class="arch-new-dir" href="/artifacts/directions#new">{{ ui.icon('folder-plus', 'sm') }}新建方向</a>
+{% endif %}
+{% endblock %}

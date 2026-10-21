@@ -1,0 +1,59 @@
+{#- Under the description (card 0099, ISSUES-LINEAR §2.9): two icon-only entries, 添加附件 and 关联文献或数据, and a strip
+    of chips for what is attached and linked. The paperclip sends a PDF through the description drop (card 0178,
+    data-library-drop); a linked paper's Replicate (routes/issues._materials) opens its plan or the new-plan page. Rendered alone by GET /issues/<ref>/materials/search for the picker's
+    results (picker = files/issues.search_materials). Expects issue, revision, attachments, materials. -#}
+{% import "partials/ui.html" as ui with context %}
+{% macro hit(h) -%}
+<button type="submit" name="toggle" value="{{ h.item }}" class="issue-pick" role="option" aria-selected="{{ 'true' if h.linked else 'false' }}">
+  {{ ui.icon('table' if h.kind == 'dataset' else 'file-text', 'sm') }}<span class="issue-pick-text"><span class="t">{{ h.label }}</span>{% if h.meta or h.linked %}<span class="m">{{ h.meta }}{% if h.linked %}{{ ' · ' if h.meta }}已关联{% endif %}</span>{% endif %}</span>
+  {% if h.linked %}{{ ui.icon('check', 'sm') }}{% endif %}
+</button>
+{%- endmacro %}
+{% if picker is defined %}
+  {% set groups = [('本课题的文献', picker.here), ('文献库里的其他文献', picker.other), ('数据集', picker.datasets)] %}
+  {% for title, hits in groups if hits %}
+  <div class="issue-pick-group" role="group" aria-label="{{ title }}"><p class="issue-pick-head">{{ title }}</p>{% for h in hits %}{{ hit(h) }}{% endfor %}</div>
+  {% else %}
+  <p class="issue-pick-empty">{{ '没有找到「' ~ picker.q ~ '」' if picker.q else '文献库里还没有文献或数据集' }}</p>
+  {% endfor %}
+{% else %}
+<div class="issue-mats" data-issue-materials>
+  <div class="issue-mats-tools">
+    <form action="/issues/{{ issue.id }}/attachments" method="post" enctype="multipart/form-data" data-issue-form class="issue-attach-form" data-library-drop="/issues/{{ issue.id }}/drop">
+      <input type="hidden" name="revision" value="{{ revision }}">
+      <input type="file" name="file" hidden data-attach-input accept=".pdf,.docx,.doc,.pages,.odt,.rtf,.txt,.md,.tex,.html,.htm,.csv,.xlsx,.xls,.pptx,.key,.png,.jpg,.jpeg,.gif,.webp,.heic,.epub,.mobi,.azw3,.azw,.djvu,.fb2">
+      <button type="button" class="btn ghost icon small" data-attach title="添加附件：PDF 先过文献库，其他文件放进课题的私有文件夹" aria-label="添加附件">{{ ui.icon('paperclip', 'sm') }}</button>
+    </form>
+    <details class="issue-popover issue-mats-picker" data-materials>
+      <summary class="btn ghost icon small" title="关联文献或数据" aria-label="关联文献或数据">{{ ui.icon('book-plus', 'sm') }}</summary>
+      <div class="issue-popover-panel issue-pick-panel">
+        <form action="/issues/{{ issue.id }}/materials" method="post" data-issue-form class="issue-materials-form">
+          <input type="hidden" name="revision" value="{{ revision }}">
+          <label class="issue-pick-search">{{ ui.icon('search', 'sm') }}<input type="search" placeholder="搜索文献或数据集" autocomplete="off" aria-label="搜索文献或数据集" data-materials-search data-url="/issues/{{ issue.id }}/materials/search"></label>
+          <div class="issue-pick-results" role="listbox" aria-label="搜索结果" data-materials-results></div>
+          <p class="issue-pick-foot">↵ 关联 · 已关联的再按一次取消 · Esc 关闭</p>
+        </form>
+      </div>
+    </details>
+  </div>
+  {% if materials or attachments %}
+  <div class="issue-mats-strip">
+    {% for m in materials %}
+    <span class="issue-mat">
+      {% if m.url %}<a class="issue-mat-main" href="{{ m.url }}">{% else %}<span class="issue-mat-main">{% endif %}{{ ui.icon('table' if m.kind == 'dataset' else 'file-text', 'sm') }}<span class="t">{{ m.label }}</span>{% if m.meta %}<span class="m">{{ m.meta }}</span>{% endif %}{% if m.url %}</a>{% else %}</span>{% endif %}
+      {% if m.replicate %}<a class="issue-mat-folder" href="{{ m.replicate }}" title="{{ '打开这篇文献最新的复现方案' if m.plan else '去新建复现方案，到那一页点生成才开始' }}">Replicate</a>{% endif %}
+      <form action="/issues/{{ issue.id }}/materials" method="post" data-issue-form><input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="item" value="{{ m.item }}"><input type="hidden" name="on" value="0"><button class="btn ghost icon small issue-mat-x" type="submit" title="取消关联" aria-label="取消关联">{{ ui.icon('x', 'sm') }}</button></form>
+    </span>
+    {% endfor %}
+    {% for f in attachments %}
+    <span class="issue-mat{% if not f.exists %} is-missing{% endif %}">
+      <button type="button" class="issue-mat-main" data-open-attachment="/issues/{{ issue.id }}/attachments/open" data-rel="{{ f.rel }}" title="{{ '用默认程序打开' if f.exists else '找不到这个文件，可能已被移动或删除' }}"{% if not f.exists %} disabled{% endif %}>{{ ui.icon('paperclip', 'sm') }}<span class="t">{{ f.name }}</span></button>
+      {% set other = 'drafts' if f.folder == 'private' else 'private' %}
+      <form action="/issues/{{ issue.id }}/attachments/move" method="post" data-issue-form><input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="rel" value="{{ f.rel }}"><input type="hidden" name="to" value="{{ other }}"><button class="issue-mat-folder" type="submit" title="{{ '只在本机；点一下挪到草稿，跟着 git 走' if f.folder == 'private' else '在草稿里，跟着 git 走；点一下挪回私有' }}"{% if not f.exists %} disabled{% endif %}>{{ f.folder_label }}</button></form>
+      <form action="/issues/{{ issue.id }}/attachments/remove" method="post" data-issue-form><input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="rel" value="{{ f.rel }}"><button class="btn ghost icon small issue-mat-x" type="submit" title="从议题上移除（文件留在课题文件夹）" aria-label="移除附件">{{ ui.icon('x', 'sm') }}</button></form>
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}

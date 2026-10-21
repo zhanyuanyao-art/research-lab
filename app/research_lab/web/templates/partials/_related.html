@@ -1,0 +1,25 @@
+{# Ranked related excerpts/artifacts. Context: items (search.related.Candidate), query, explain, src. #}
+<div class="related-list" id="related">
+  {% if explain and query and query.match %}
+  <p class="kicker">查询词：
+    {% for ph in query.phrases %}<code>"{{ ph }}"</code> {% endfor %}
+    {% for t, w in query.terms %}<code>{{ t }}</code> <span class="muted">{{ '%.2f' | format(w) }}</span> {% endfor %}</p>
+  {% endif %}
+  {% if items %}
+  <ol class="related-items">
+    {% for c in items %}
+    <li class="related-item">
+      <a href="{{ '/excerpts/' ~ c.id if c.type == 'excerpt' else '/artifacts/' ~ c.id }}">{{ c.title if c.type == 'artifact' else c.id ~ ' · ' ~ c.title }}</a>
+      <span class="mono muted">{{ '%.2f' | format(c.score) }}</span>
+      <p class="snippet">{{ c.snippet | truncate(260) }}</p>
+      {% if explain and c.explain %}
+      <p class="mono muted small-text">T {{ c.explain.T }} · G {{ c.explain.G }} · L {{ c.explain.L }} · R {{ c.explain.R }} · bm25 {{ c.explain.bm25 }}{% if c.shared %} · 共有 {{ c.shared | join(', ') }}{% endif %}</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="muted">还没有相关内容。划线越多，关联越准。</p>
+  {% endif %}
+  {% if src and not explain %}<button class="linklike muted small-text" hx-get="/_p/related?src={{ src | urlencode }}&explain=1" hx-target="#related" hx-swap="outerHTML">Explain score</button>{% endif %}
+</div>

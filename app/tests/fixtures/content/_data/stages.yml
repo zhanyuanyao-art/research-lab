@@ -1,0 +1,16 @@
+- key: idea
+  label: 想法
+- key: exploring
+  label: 探索
+- key: puzzle
+  label: 谜题
+- key: evidence
+  label: 证据
+- key: argument
+  label: 论证
+- key: draft
+  label: 成稿
+- key: submitted
+  label: 已投稿
+- key: published
+  label: 已发表

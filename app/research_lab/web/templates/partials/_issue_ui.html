@@ -1,0 +1,11 @@
+{% import "partials/ui.html" as ui with context %}
+{% macro label(value) %}<span class="issue-label" data-tone="{{ L.issue_label_color[value] }}"><span></span>{{ L.issue_label[value] }}</span>{% endmacro %}
+{% macro select(field, title, options, value, icon='chevron-down') %}
+<details class="issue-popover choice-picker" data-choice-picker>
+  <summary aria-label="{{ title }}：{{ options.get(value, title) }}">{{ ui.icon(icon,'sm') }}<span data-choice-caption>{{ options.get(value, title) }}</span>{{ ui.icon('chevron-down','sm') }}</summary>
+  <input type="hidden" name="{{ field }}" value="{{ value }}">
+  <div class="issue-popover-panel" role="group" aria-label="{{ title }}"><div class="issue-menu-heading">{{ title }}</div>
+    {% for key,text in options.items() %}<button type="button" class="issue-menu-option{% if key == value %} selected{% endif %}" data-choice="{{ key }}" data-caption="{{ text }}" aria-pressed="{{ 'true' if key == value else 'false' }}">{% if field == 'label' and key %}{{ label(key) }}{% else %}<span>{% if field in ('state','status') and key %}<span class="issue-state {{ key }}"></span>{% endif %}{{ text }}</span>{% endif %}{{ ui.icon('check','sm') }}</button>{% endfor %}
+  </div>
+</details>
+{% endmacro %}

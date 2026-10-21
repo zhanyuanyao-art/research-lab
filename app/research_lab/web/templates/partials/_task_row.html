@@ -1,0 +1,50 @@
+{#- One 待办 row, top level or sub-task. Expects: t (task dict), f (flags from files.tasks.flags), node
+    (the tree node when t is top level: subs, progress, optional sentence), level (0 | 1), view,
+    filter_project, L, ui, projects. Row actions post and swap #task-board
+    back (see routes/tasks.py); every form carries `view` and `filter` so the board comes back as it was. -#}
+{% set p = projects.get(t.project) %}
+{% set hx = 'hx-select="#task-board" hx-target="#task-board" hx-swap="outerHTML"' %}
+{% set is_parent = level == 0 and node and node.subs %}
+{% set open_ = t.status not in ('done', 'parked') %}
+<li class="list-item task-row{% if is_parent %} is-parent{% endif %}" data-status="{{ t.status }}" data-id="{{ t.id }}" data-level="{{ level }}" tabindex="0"
+    {% if level == 0 %}data-can-sub="1"{% endif %}>
+  {% if open_ %}<span class="task-handle" draggable="true" title="拖动调整顺序" aria-hidden="true">{{ ui.icon('menu', 'sm') }}</span>{% else %}<span class="task-handle is-off" aria-hidden="true"></span>{% endif %}
+  <form hx-post="/tasks/{{ t.id }}/status" {{ hx | safe }} class="task-check">
+    <input type="hidden" name="filter" value="{{ filter_project }}"><input type="hidden" name="view" value="{{ view }}">
+    <button class="btn ghost icon small" type="submit" name="status" value="{{ 'todo' if t.status == 'done' else 'done' }}" title="{{ '改回待办' if t.status == 'done' else '标记完成' }}" aria-label="{{ '改回待办' if t.status == 'done' else '标记完成' }}">{{ ui.icon('circle-check' if t.status == 'done' else 'circle-dot') }}</button>
+  </form>
+  <div class="body">
+    <span class="title serif">{{ t.title }}</span>
+    {% if is_parent %}<button type="button" class="btn ghost icon small task-toggle" data-toggle aria-expanded="true" title="收起或展开子任务" aria-label="收起或展开子任务">{{ ui.icon('chevron-down', 'sm') }}</button>{% endif %}
+    <div class="sub">
+      {% if p and not filter_project and level == 0 %}<a href="/projects/{{ t.project }}">{{ p.name }}</a>{% endif %}
+      {#- As on the issue page (files/dates.py tone, label): 10月16日, red today or overdue, orange within 7 days. -#}
+      {% if t.due %}{% set days = f.due_days %}{% set tn = '' if not open_ or days is none else ('overdue' if days <= 0 else ('soon' if days <= 7 else '')) %}<span class="task-due{% if tn %} due-{{ tn }}{% endif %}" data-due="{{ t.due }}" title="{% if days is not none and days < 0 %}已过期 {{ -days }} 天{% elif days == 0 %}今天截止{% elif days is not none %}距截止 {{ days }} 天{% endif %}，点击修改截止日期">
+        {%- if days is not none and (days > 300 or days < -300) %}{{ t.due[:4] }}年{% endif %}{{ t.due[5:7] | int }}月{{ t.due[8:10] | int }}日</span>{% elif open_ %}<span class="task-due is-empty" data-due="" title="设置截止日期">设截止</span>{% endif %}
+      {% if is_parent %}<span class="task-progress">{% if node.sentence %}{{ node.sentence }}{% else %}{{ node.progress.done }}/{{ node.progress.total }} {{ '节' if t.file else '项' }}{% endif %}</span>{% endif %}
+      {% if t.status == 'doing' %}<span class="chip ok">{{ L.task_status[t.status] }}</span>{% endif %}
+      {% if t.status == 'parked' %}<span class="chip">{{ L.task_status[t.status] }}</span>{% endif %}
+      {% if t.postponed %}<span class="chip warn">截止推迟 {{ t.postponed }} 次</span>{% endif %}
+      {%- set src_title = source_titles.get(t.source) if source_titles is defined else none %}
+      {% if level == 0 and L.task_source(t.source) %}{% if t.source.startswith('ART-') %}<a class="muted" href="/artifacts/{{ t.source }}">{{ L.task_source(t.source, src_title) }}</a>{% else %}<span class="muted">{{ L.task_source(t.source) }}</span>{% endif %}{% endif %}
+      {% if t.status == 'done' and t.done %}<span>完成于 {{ t.done }}</span>{% endif %}
+      {% if t.note %}<span class="task-note">{{ t.note }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="trail">
+    {% if t.status != 'done' %}
+    <form hx-post="/tasks/{{ t.id }}/status" {{ hx | safe }} class="segmented small">
+      <input type="hidden" name="filter" value="{{ filter_project }}"><input type="hidden" name="view" value="{{ view }}">
+      {% for s in ['todo', 'doing', 'parked'] %}<button type="submit" name="status" value="{{ s }}"{% if t.status == s %} class="on"{% endif %} data-status-btn="{{ s }}">{{ L.task_status[s] }}</button>{% endfor %}
+    </form>
+    {% if not is_parent %}
+    <form hx-post="/tasks/{{ t.id }}/postpone" {{ hx | safe }} class="task-carry">
+      <input type="hidden" name="filter" value="{{ filter_project }}"><input type="hidden" name="view" value="{{ view }}">
+      {% if f.week_due %}<button class="btn ghost small" type="submit" name="to" value="next_friday" data-carry="next">{{ ui.icon('arrow-right', 'sm') }}Next Fri</button>
+      {% else %}<button class="btn ghost small" type="submit" name="to" value="this_friday" data-carry="this">{{ ui.icon('arrow-right', 'sm') }}This Fri</button>{% endif %}
+    </form>
+    {% endif %}
+    {% endif %}
+    <a class="btn ghost icon small" href="/tasks/{{ t.id }}/edit" title="编辑" aria-label="编辑">{{ ui.icon('pencil', 'sm') }}</a>
+  </div>
+</li>

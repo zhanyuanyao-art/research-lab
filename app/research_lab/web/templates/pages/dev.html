@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block crumbs %}<a href="/settings">设置</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">开发</span>{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title">开发</h1>
+    <p class="page-desc">卡片、版本和接口用量的只读视图。需求和反馈写在研究仓库的 <code>dev/INBOX.md</code>，流程见 <code>dev/README.md</code>，操作用 <code>rl dev</code>。</p>
+  </div>
+</header>
+
+{% set v = o.versions or {} %}
+{% set inst = v.installed or {} %}
+<section class="card">
+  <div class="card-head"><h3>版本</h3>{% if o.lock %}<span class="badge warning">集成中：{{ o.lock.holder }} · {{ o.lock.purpose }}</span>{% endif %}</div>
+  <dl class="kv">
+    <dt>代码</dt><dd>v{{ v.version }} · main {{ v.head }}{% if v.ahead_of_origin %} · 有 {{ v.ahead_of_origin }} 个提交未推送{% endif %}{% if v.tag %} · 最新标签 {{ v.tag }}{% endif %}</dd>
+    <dt>已安装</dt><dd>{% if inst %}v{{ inst.version }} · {{ inst.commit }}{% if inst.dirty %} · 开发版{% endif %} {% if v.installed_current %}<span class="badge success">最新</span>{% else %}<span class="badge warning">落后于 main</span>{% endif %}{% else %}还没有安装{% endif %}</dd>
+    <dt>可启动的程序</dt><dd>{% if o.copies is none %}<span class="muted">正在查找，稍后刷新</span>{% else %}{{ o.copies | length }} 个{% endif %}{% set extra = (o.copies or []) | reject('equalto', installed) | list %}{% if extra %} · <span class="warn">多余：{{ extra | join('、') }}</span>，运行 <code>scripts/app-copies.sh clean</code>{% endif %}</dd>
+    <dt>需求收件箱</dt><dd>{{ inbox_items }} 条</dd>
+  </dl>
+</section>
+
+<section class="card">
+  <div class="card-head"><h3>看板</h3></div>
+  <div class="dev-board">
+    {% for st in ('planned', 'coding', 'testing', 'review', 'blocked') %}
+    <div class="dev-col">
+      <h4>{{ labels[st] }} <span class="muted">{{ board[st] | length }}</span></h4>
+      {% for c in board[st] %}
+      <div class="dev-card">
+        <div class="dev-card-title">{{ c.get('title') }}</div>
+        <div class="muted small">{{ c.id }} · {{ c.get('priority') }}{% if c.get('owner') %} · {{ c.get('owner') }}{% endif %}{% if (c.get('test') or {}).get('result') %} · 测试{{ '通过' if c.get('test').result == 'pass' else '未通过' }}{% endif %}{% if (c.get('review') or {}).get('verdict') %} · 评审{{ '通过' if c.get('review').verdict == 'pass' else '需修改' }}{% endif %}</div>
+      </div>
+      {% else %}<p class="faint small">—</p>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% if board['done'] %}<p class="muted small">已完成 {{ board['done'] | length }} 张：{{ board['done'][-5:] | map(attribute='meta') | map(attribute='title') | join('、') }}</p>{% endif %}
+</section>
+
+<section class="card">
+  <div class="card-head"><h3>工作区和进程</h3></div>
+  <table class="data">
+    <thead><tr><th>工作区</th><th>分支</th><th>端口</th><th>与 main</th><th>未提交</th></tr></thead>
+    <tbody>
+    {% for w in o.worktrees %}
+    <tr><td>{{ w.name }}{% if w.is_main %} <span class="muted small">主仓库 · 集成</span>{% endif %}</td><td class="mono small">{{ w.branch }}</td><td>{{ w.port }}</td>
+      <td>{% if not w.is_main %}领先 {{ w.ahead }} · 落后 {{ w.behind }}{% endif %}</td>
+      <td>{% if w.dirty.unknown %}<span class="muted">没查到</span>{% endif %}{% if w.dirty.code %}代码 {{ w.dirty.code | length }}{% endif %}{% if w.dirty.content %} 内容 {{ w.dirty.content | length }}{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small" style="margin-top: 10px">运行中：{% for s in o.servers %}{{ s.port }}（{{ '应用' if s.kind == 'app' else '开发服务' }}，{{ s.cwd | replace(o.code_root, '本工作区') }}）{% if not loop.last %}、{% endif %}{% else %}无{% endfor %}</p>
+</section>
+
+<section class="card">
+  <div class="card-head"><h3>接口用量</h3><span class="muted small">近 7 天</span></div>
+  <dl class="kv">
+    <dt>谁在运行</dt><dd>{% if paused %}<span class="badge warning">已暂停</span> 设置里暂停了全部 AI{% elif lease and lease.live %}进程 {{ lease.pid }}{% if lease.port %}（端口 {{ lease.port }}）{% endif %}{% if lease.mine %} · 就是这个页面所在的进程{% endif %} · {{ lease.acquired_at | local_time }} 起，{{ lease.renewed_at | local_time('%H:%M') }} 续约{% elif lease %}<span class="warn">没有进程在运行</span>（上次由进程 {{ lease.pid }} 持有，{{ lease.renewed_at | local_time }} 后没续约）{% else %}还没有进程运行过{% endif %}</dd>
+    <dt>引擎</dt><dd>{{ L.ai_mode[mode] }} · Claude Code 今天 {{ claude_runs }} / {{ claude_cap }} 次{% if rate %} · 订阅 5 小时 {{ ((rate.five_hour or 0) * 100) | round | int }}%、7 天 {{ ((rate.seven_day or 0) * 100) | round | int }}%{% if rate.at %}（{{ rate.at | local_time('%H:%M') }} 更新）{% endif %}{% endif %} · DeepSeek 今天 ${{ '%.4f' | format(spent) }} / ${{ '%.2f' | format(daily_cap) }}{% if claude_blocked %}<br><span class="warn">{{ claude_blocked.why }}</span>{% endif %}</dd>
+    <dt>DeepSeek 模型</dt><dd class="mono">{{ model }}</dd>
+  </dl>
+  <table class="data skills-table"><thead><tr><th>技能</th><th>档位</th><th class="num">次数</th><th class="num">输入</th><th class="num">其中缓存</th><th class="num">输出</th><th>引擎</th></tr></thead><tbody>
+  {% for k in skills %}<tr><td>{{ k.title }}</td>
+    <td class="small">{% if k.mode == 'both' %}后台 {{ tier_label[k.tier] }} · 对话 {{ tier_label[k.task_tier] }}{% elif k.tier %}{{ tier_label[k.tier] }}{% endif %}</td>
+    <td class="num">{{ k.runs or '' }}</td><td class="num">{{ '{:,}'.format(k.input) if k.input else '' }}</td><td class="num">{{ '{:,}'.format(k.cached) if k.cached else '' }}</td><td class="num">{{ '{:,}'.format(k.output) if k.output else '' }}</td><td class="small">{{ k.engines }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% if runs %}<details style="margin-top: 12px"><summary>最近的调用（后台任务和对话任务）</summary>
+    <table class="data"><thead><tr><th>为了什么</th><th>引擎 · 模型</th><th class="num">输入</th><th class="num">其中缓存</th><th class="num">输出</th><th class="num">用时</th><th>结果</th><th>进程</th><th>时间</th></tr></thead><tbody>
+    {% for r in runs %}<tr><td>{{ skill_titles.get(r.what, r.what) if r.kind == 'task' else L.job_kind[r.what] }}<span class="muted small"> · {{ '对话' if r.kind == 'task' else '后台' }}</span></td><td class="small">{{ r.engine }} · {{ r.model }}</td><td class="num">{{ '{:,}'.format(r.input_tokens) if r.input_tokens else '' }}</td><td class="num">{{ '{:,}'.format(r.cache_tokens) if r.cache_tokens else '' }}</td><td class="num">{{ '{:,}'.format(r.output_tokens) if r.output_tokens else '' }}</td><td class="num">{{ '%.1f s' | format(r.duration_ms / 1000) if r.duration_ms else '' }}</td><td>{{ {'ok': '成功', 'error': '失败', 'cancelled': '已停止', 'running': '进行中'}[r.result] }}</td><td class="muted small">{{ r.pid or '' }}</td><td class="muted small">{{ r.at | local_time }}</td></tr>{% endfor %}
+    </tbody></table></details>{% endif %}
+</section>
+
+<section class="card">
+  <div class="card-head"><h3>档位和价格</h3></div>
+  <table class="data"><thead><tr><th>档位</th>{% for e, name in engines %}<th>{{ name }}</th>{% endfor %}</tr></thead><tbody>
+  {% for t in tiers %}<tr><td>{{ tier_label[t] }}</td>{% for e, _ in engines %}<td class="mono small">{{ engine_tiers[e][t] }}</td>{% endfor %}</tr>{% endfor %}
+  </tbody></table>
+  <p class="muted small" style="margin: 16px 0 8px">DeepSeek 每百万 token 的美元价格，高峰 / 低谷。{#- DeepSeek publishes peak hours in UTC; shown on a Monday in this Mac's zone (the weekday is not shifted). -#}{% macro peak(hm) %}{{ ('2026-01-05T' ~ hm ~ ':00+00:00') | local_time('%H:%M') }}{% endmacro %}高峰为周一至周五 {{ peak('01:00') }}–{{ peak('04:00') }} 和 {{ peak('06:00') }}–{{ peak('10:00') }}（本机时间）。核对于 {{ prices_checked }}。</p>
+  <table class="data"><thead><tr><th>模型</th><th>输入 · 命中缓存</th><th>输入 · 未命中</th><th>输出</th></tr></thead><tbody>
+    {% for m, p in prices.items() %}<tr><td class="mono">{{ m }}</td><td>{{ p.peak.cache_hit }} / {{ p.off_peak.cache_hit }}</td><td>{{ p.peak.cache_miss }} / {{ p.off_peak.cache_miss }}</td><td>{{ p.peak.output }} / {{ p.off_peak.output }}</td></tr>{% endfor %}
+  </tbody></table>
+</section>
+
+{% if feeds %}
+<section class="card">
+  <div class="card-head"><h3>推送来源</h3><a class="btn secondary small" href="/feed">{{ ui.icon('newspaper', 'sm') }}Open feed</a></div>
+  <dl class="kv">
+    <dt>论文</dt><dd>{{ feeds.journals }} 本期刊，每 {{ feeds.refresh_hours }} 小时从 Crossref / OpenAlex 更新</dd>
+    <dt>新闻</dt><dd>{{ feeds.news }} 个来源（RSS）{% if feeds.news_off %}<div class="muted small">已停用：{% for name, why in feeds.news_off %}{{ name }}{% if why %}（{{ why }}）{% endif %}{{ '；' if not loop.last }}{% endfor %}</div>{% endif %}</dd>
+    <dt>上次更新</dt><dd>{% if feeds.running %}正在更新…{% elif feeds.label %}{{ feeds.label }}{% if feeds.papers_new is not none %}，新增论文 {{ feeds.papers_new }} 篇、新闻 {{ feeds.news_new or 0 }} 条{% endif %}{% else %}还没有更新过{% endif %}{% if feeds.failed %}<div class="muted small">没取到：{{ feeds.failed | join('、') }}</div>{% endif %}</dd>
+    <dt>来源清单</dt><dd>研究仓库的 <code>_data/feeds.yml</code></dd>
+  </dl>
+</section>
+{% endif %}
+{% endblock %}

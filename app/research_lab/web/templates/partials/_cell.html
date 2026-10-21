@@ -1,0 +1,8 @@
+<button type="button" class="mcell s-{{ c.status }}{% if c.is_own %} own{% endif %}" id="cell-{{ c.id }}"
+        hx-get="/projects/{{ slug }}/cells/{{ c.id }}" hx-target="#cell-panel"
+        hx-trigger="click" title="{{ L.cell_status[c.status] }}{% if c.test_type %} · {{ L.test_type[c.test_type] }}{% endif %}">
+  <span class="glyph" aria-hidden="true">{{ c.glyph }}</span>
+  <span class="lbl">{{ L.cell_status[c.status] }}</span>
+  {% if c.test_type %}<span class="tt" data-test-type="{{ c.test_type }}">{{ L.test_type[c.test_type] }}</span>{% endif %}
+  {% if c.n_excerpts %}<span class="nx">{{ c.n_excerpts }} 条划线</span>{% endif %}
+</button>

@@ -1,0 +1,72 @@
+;; The install step's sandbox (card 0186, replication/rrun.py): `Rscript <generated install script>` runs under this profile,
+;; through /usr/bin/sandbox-exec -f sandbox_r_install.sb -D NAME=value ... The sibling of sandbox_r.sb: the same walls, with
+;; the network open and the compilers allowed. Installing a CRAN package runs third-party code (configure scripts, the
+;; top-level R code of the package's own files, test loads), so the step is held to a sandbox of its own (review of card
+;; 0186) and not only to the rule that the authors' code is never run by it.
+;;
+;; Parameters, all real paths:
+;;   WORKSPACE   the plan's workspace
+;;   R_HOME      the R installation
+;;   PREFIX      the prefix R's libraries and tools live under (Homebrew: /opt/homebrew)
+;;   DEV_DIR     the developer folder (xcode-select -p: the Command Line Tools or Xcode): compilers, linker, SDK
+;;   SHARED_LIB  the lab's shared library (card 0204): read so that a plan's install skips what it holds, never written
+;;               here; the preinstall fills it as its own WORKSPACE/rlib and passes /nonexistent/rlib-shared
+;;
+;; CRAN's official R builds the few packages it has no binary for with CRAN's own toolchain: /opt/gfortran (read and run)
+;; and the static libraries in /opt/R (read only: the linker reads them, nothing maps or runs them). Neither is written.
+;;
+;; Reads: system paths (system.sb), the workspace, R, the prefix, the developer folder, the system programs, the CA
+;; certificate store. Not $HOME, not /private/tmp or the user's temp folder, not the app's data folder outside the
+;; workspace. Writes: <workspace>/rlib (the plan's library) and <workspace>/tmp (R's tempdir, the build folders, downloads)
+;; and nothing else; not even the xcrun cache in the user's temp folder, which is why the compilers are called directly
+;; (rrun.py puts the developer folder first on PATH) and why no program ever writes there. Network: open to outbound
+;; connections (CRAN and the mirrors it redirects to). Processes: fork and exec of the system's programs, the prefix, the
+;; developer folder and R, and of what a configure script compiles in tmp. Mach services: system.sb's, plus the network
+;; ones (DNS, reachability); no LaunchServices, no pasteboard, no window server or screen capture, no cfprefsd.
+
+(version 1)
+(deny default)
+(import "system.sb")
+(system-network)
+(allow network-outbound)
+(allow file-read-metadata)
+
+(allow file-read* (subpath (param "WORKSPACE")) (subpath (param "R_HOME")) (subpath (param "PREFIX"))
+                  (subpath (param "SHARED_LIB")) (subpath "/opt/gfortran") (subpath "/opt/R")
+                  (subpath (param "DEV_DIR")) (subpath "/Library/Developer/CommandLineTools")
+                  (subpath "/usr/bin") (subpath "/bin") (subpath "/usr/sbin") (subpath "/sbin") (subpath "/usr/libexec")
+                  (subpath "/private/etc/ssl") (literal "/private/etc/hosts") (literal "/private/etc/resolv.conf")
+                  (literal "/private/etc/shells") (literal "/private/etc/nsswitch.conf")
+                  (subpath "/Library/Keychains") (subpath "/private/var/db/mds") (subpath "/System/Library/Keychains"))
+(allow file-map-executable (subpath (param "WORKSPACE")) (subpath (param "R_HOME")) (subpath (param "PREFIX"))
+                           (subpath (param "SHARED_LIB")) (subpath "/opt/gfortran")
+                           (subpath (param "DEV_DIR")) (subpath "/usr/bin") (subpath "/usr/libexec"))
+
+(allow process-fork)
+(allow process-exec* (subpath (param "R_HOME")) (subpath (param "PREFIX")) (subpath (param "DEV_DIR")) (subpath "/opt/gfortran")
+                     (subpath "/usr/bin") (subpath "/bin") (subpath "/usr/sbin") (subpath "/sbin") (subpath "/usr/libexec")
+                     (subpath (string-append (param "WORKSPACE") "/tmp")))
+(allow signal (target self) (target same-sandbox))
+(allow process-info-pidinfo (target self) (target same-sandbox))
+(allow process-info-setcontrol (target self))
+
+(allow file-write* (subpath (string-append (param "WORKSPACE") "/rlib"))
+                   (subpath (string-append (param "WORKSPACE") "/tmp")))
+(deny file-write* (subpath (string-append (param "WORKSPACE") "/author"))
+                  (subpath (string-append (param "WORKSPACE") "/data"))
+                  (subpath (string-append (param "WORKSPACE") "/rrun"))
+                  (subpath (string-append (param "WORKSPACE") "/outputs"))
+                  (subpath (string-append (param "WORKSPACE") "/rfix"))
+                  (subpath (string-append (param "WORKSPACE") "/logs"))
+                  (subpath (param "SHARED_LIB")))
+(deny process-exec* (subpath (param "SHARED_LIB")))
+(deny mach-lookup (global-name "com.apple.cfprefsd.agent") (global-name "com.apple.cfprefsd.daemon")
+                  (local-name "com.apple.cfprefsd.agent")
+                  (global-name-prefix "com.apple.lsd") (global-name-prefix "com.apple.coreservices")
+                  (global-name-prefix "com.apple.pasteboard") (global-name-prefix "com.apple.windowserver")
+                  (global-name-prefix "com.apple.screencapture") (global-name-prefix "com.apple.replayd")
+                  (global-name-prefix "com.apple.CoreDisplay") (global-name-prefix "com.apple.iohideventsystem")
+                  (global-name-prefix "com.apple.tccd") (global-name-prefix "com.apple.dock"))
+(deny user-preference-write)
+(deny appleevent-send)
+(deny file-read* (regex #"/\.env[^/]*$"))

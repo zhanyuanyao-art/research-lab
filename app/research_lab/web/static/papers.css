@@ -1,0 +1,261 @@
+/* 文献: layout; buttons, badges, cards, tabs and forms come from app.css, except the four list components
+   below that wait to move there. */
+/* ================================================================ library list (card 0128)
+   docs/design/LIBRARY-UI.md §3.1, §五 and §六; layout from library-mock/mock/static/library-next.css. */
+
+/* Components the design adds to app.css (app-next.css). They live here while card 0121 holds app.css; move
+   them into app.css later, unchanged. */
+/* Row signal: one fixed 16px slot per signal (概要 · 课题 · 议题); an empty slot keeps its width so signals line
+   up down the list, and the text is the tooltip (.tip). Not .mark: app.css gives mark the highlighter. */
+.sig { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex: none; color: var(--faint); }
+.sig .i { width: 13px; height: 13px; }
+.sig.on { color: var(--fg-2); }
+.sig.light { color: var(--faint); }
+/* A tooltip anchored at the right edge of a row or a header opens to the left, so it never leaves the window. */
+.tip.end[data-tip]::after { left: auto; right: -6px; }
+/* Borderless filter field: an icon and the text, no frame until focus. For list toolbars. */
+.filter-input { position: relative; display: inline-flex; align-items: center; min-width: 0; }
+.filter-input > .i { position: absolute; left: 8px; color: var(--faint); pointer-events: none; }
+.filter-input input[type=search] { height: var(--control-h-sm); padding: 0 8px 0 28px; border-color: transparent; background: transparent; font-size: var(--text-ui); }
+.filter-input input[type=search]:hover:not(:focus) { border-color: transparent; background: var(--hover); }
+.filter-input input[type=search]:focus { background: var(--surface); }
+/* Quiet select-like menu button for toolbars: text, chevron, no frame. Opens a details.menu. */
+.btn.ghost.pick { gap: 4px; padding: 0 8px; color: var(--muted); font-weight: 400; }
+.btn.ghost.pick:hover, details[open] > .btn.ghost.pick { color: var(--fg); }
+.btn.ghost.pick.set { color: var(--fg); font-weight: 500; }
+.btn.ghost.pick .i { width: 13px; height: 13px; }
+
+/* Same frame as 推送 (FEED-LAYOUT.md): the column widens to 1440px. */
+.content:has(> .lib-page) { max-width: calc(1440px + 64px); }
+.lib-page .page-header { align-items: center; margin-bottom: 10px; }
+.lib-page .page-desc { margin-top: 2px; font-size: var(--text-ui); }
+.lib-page .page-actions { flex-wrap: nowrap; }
+.lib-page .dir-filter { margin: 0; }
+
+/* One toolbar row: the filter field on the left; 状态 · 类型 · 文件夹 · 显示 and the count on the right. */
+.lib-bar { display: flex; align-items: center; gap: 2px; min-height: 44px; margin: 0 0 4px; }
+.lib-bar .filter-input { flex: 0 1 300px; margin-left: -8px; }
+.lib-bar .filter-input input[type=search] { width: 100%; }
+.lib-bar .spacer { flex: 1; }
+.lib-bar .total { margin-left: 10px; font-size: var(--text-meta); color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lib-bar .sep { width: 1px; height: 16px; margin: 0 6px; background: var(--border); }
+.lib-bar .menu-panel a[aria-current] { font-weight: 500; }
+.lib-bar .menu-panel .count { margin-left: auto; color: var(--faint); font-size: var(--text-meta); }
+
+/* List + preview. The preview column only exists from 1600px. */
+.lib-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
+.lib-peek { display: none; }
+@media (min-width: 1600px) {
+  .lib-split { grid-template-columns: minmax(0, 1fr) 380px; }
+  .lib-peek { display: block; position: sticky; top: 76px; }
+  .lib-peek:empty { visibility: hidden; }
+}
+
+/* Group = one 方向. Header in the 研究档案 style: square, name, count, then 未读. */
+.lib-group + .lib-group { margin-top: 14px; }
+.lib-group > header { display: flex; align-items: center; gap: 8px; height: 38px; }
+.lib-group > header .dir-tag { font-size: 14px; font-weight: 600; color: var(--fg); gap: 8px; }
+.lib-group > header a.dir-tag:hover { text-decoration: none; color: var(--fg); }
+.lib-group > header .dir-tag::before { width: 10px; height: 10px; border-radius: 3px; }
+.lib-group > header .n { font-size: 14px; font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; }
+.lib-group > header .unread { font-size: var(--text-meta); color: var(--muted); }
+.lib-group[hidden] { display: none; }
+
+/* Paper row: fixed tracks, 40px. state | title | marks (方向 · 概要 · 课题 · 议题) | 作者 · 年份 | 日期 | ⋯
+   An empty mark keeps its slot; the date is right-aligned; hover is a rounded block like 研究档案. */
+.paper-lines { list-style: none; margin: 0; padding: 0; }
+.paper-line { display: grid; grid-template-columns: [state] 16px [title] minmax(0, 1fr) [marks] 76px [by] 168px [date] 60px [acts] 28px;
+  column-gap: 12px; align-items: center; height: 40px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r); }
+.paper-line[hidden] { display: none; }
+.paper-line:hover { background: var(--hover); }
+.paper-line.is-selected { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.paper-line.is-selected:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.paper-line.dragging { opacity: 0.5; }
+.paper-line > .issue-state { grid-column: state; }
+.pl-title { grid-column: title; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--fg); font-family: var(--serif); font-size: 14.5px; }
+.pl-title:hover { color: var(--fg); text-decoration: underline; text-decoration-color: var(--border-2); }
+.pl-tail { display: contents; }
+.pl-marks { grid-column: marks; display: flex; align-items: center; gap: 4px; }
+.pl-marks .dir-dot { margin-left: 0; }
+.pl-by { grid-column: by; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--text-meta); color: var(--muted); }
+.pl-date { grid-column: date; justify-self: end; font-size: var(--text-meta); color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.paper-line > .hover-acts { grid-column: acts; justify-self: end; }
+.paper-line .hover-acts .btn { margin-right: -6px; opacity: 0; }
+.paper-line:is(:hover, :focus-within, .is-selected) .hover-acts .btn, .paper-line .line-menu[open] > .btn { opacity: 1; }
+@media (hover: none) { .paper-line .hover-acts .btn { opacity: 1; } }
+.line-menu > .menu-panel { max-height: min(70vh, 540px); overflow-y: auto; }
+.line-menu > .menu-panel form { margin: 0; }
+.line-menu .dir-dot { margin-left: 0; }
+.lib-none { padding: 18px 0 0 28px; font-size: var(--text-meta); color: var(--muted); }
+
+/* Preview pane */
+.lib-peek { padding: 20px 22px 18px; }
+.peek-kicker { display: flex; align-items: center; gap: 10px; font-size: var(--text-meta); color: var(--muted); }
+.peek-kicker .dir-tag { font-size: var(--text-meta); }
+.lib-peek h2 { margin: 10px 0 6px; font-family: var(--serif); font-size: 18px; font-weight: 600; line-height: 1.4; }
+.peek-by { margin: 0 0 4px; font-size: var(--text-meta); color: var(--muted); }
+.peek-sum { margin: 0; }
+.peek-sum dt { display: flex; align-items: baseline; justify-content: space-between; margin: 16px 0 4px; font-size: var(--text-meta); color: var(--muted); }
+.peek-sum dd { margin: 0; max-width: none; font-size: 13.5px; line-height: 1.75; color: var(--fg); }
+.peek-sum .refs a { margin-left: 6px; font-size: var(--text-meta); }
+.peek-note { margin: 14px 0 0; font-size: var(--text-meta); color: var(--muted); }
+.peek-acts { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.peek-acts .hint { margin-left: auto; font-size: var(--text-meta); color: var(--faint); }
+/* Property rows (app-next.css .prop-list, which card 0129 brings to app.css for the reader); scoped to the
+   preview until then. */
+.lib-peek .prop-list { display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 12px; align-items: center; margin: 14px 0 0;
+  padding-top: 10px; border-top: 1px solid var(--border); font-size: var(--text-ui); }
+.lib-peek .prop-list > dt { color: var(--muted); font-size: var(--text-meta); line-height: 32px; }
+.lib-peek .prop-list > dd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-height: 32px; margin: 0; max-width: none; padding: 4px 0; }
+.lib-peek .prop-val { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 6px; margin-left: -6px; border-radius: var(--r-sm); color: var(--fg); }
+.lib-peek a.prop-val:hover { background: var(--hover); text-decoration: none; }
+.lib-peek .prop-val.unset { color: var(--faint); }
+
+/* 集合 page (card 0132, LIBRARY-UI §3.4): the library rows' columns; ⋯ on hover; rename opens under the name; rows
+   drag to reorder; New collection is the last row. */
+.coll-lines { list-style: none; margin: 0; padding: 0; }
+.coll-line { display: grid; grid-template-columns: [state] 16px [title] minmax(0, 1fr) [marks] 76px [by] 168px [date] 60px [acts] 28px;
+  column-gap: 12px; align-items: center; height: 44px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r); }
+.coll-line:hover { background: var(--hover); }
+.coll-line > .i { color: var(--muted); }
+.coll-line .name { grid-column: title; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--fg); font-size: var(--text-ui); font-weight: 500; }
+.coll-line .dots { grid-column: marks; display: flex; gap: 4px; }
+.coll-line .dots .dir-dot { margin-left: 0; }
+.coll-line .n { grid-column: by; font-size: var(--text-meta); color: var(--muted); font-variant-numeric: tabular-nums; }
+.coll-line .when { grid-column: date; justify-self: end; font-size: var(--text-meta); color: var(--faint); white-space: nowrap; }
+.coll-line > .hover-acts { grid-column: acts; justify-self: end; }
+.coll-line .hover-acts .btn { margin-right: -6px; opacity: 0; }
+.coll-line:is(:hover, :focus-within) .hover-acts .btn, .coll-line .menu[open] > .btn { opacity: 1; }
+@media (hover: none) { .coll-line .hover-acts .btn { opacity: 1; } }
+.coll-line.dragging { opacity: 0.5; }
+.coll-line.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.coll-line.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.coll-line:has(> .folder-name-form:not([hidden])) { height: auto; padding-top: 6px; padding-bottom: 6px; row-gap: 6px; }
+.coll-line > .folder-name-form { grid-column: title / -1; grid-row: 2; display: flex; gap: 8px; align-items: center; }
+.coll-line.add > .i { color: var(--faint); }
+.coll-line.add > button.name { all: unset; grid-column: title; cursor: pointer; font-size: var(--text-ui); color: var(--faint); }
+.coll-line.add > button.name:hover { color: var(--fg); }
+.coll-line.add > button.name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.coll-create { display: flex; gap: 8px; align-items: center; padding: 8px 0 0 28px; max-width: 520px; }
+.coll-line > .folder-name-form[hidden], .coll-create[hidden] { display: none; }
+.coll-note { margin: 22px 0 0; padding-left: 28px; font-size: var(--text-meta); color: var(--muted); max-width: 72ch; }
+.menu-panel a.drop-target { background: var(--hover); }
+
+/* Without the preview column there is nothing to select. */
+@media (max-width: 1599px) { .paper-line.is-selected, .paper-line.is-selected:hover { background: none; } .paper-line.is-selected:hover { background: var(--hover); } }
+/* 1200–1279 and narrower: the author column narrows. */
+@media (max-width: 1279px) {
+  .paper-line, .coll-line { grid-template-columns: [state] 16px [title] minmax(0, 1fr) [marks] 76px [by] 128px [date] 60px [acts] 28px; }
+}
+/* Phones: two lines per paper; marks and author move under the title, the date goes, ⋯ stays. */
+@media (max-width: 720px) {
+  .coll-line { grid-template-columns: [state] 16px [title] minmax(0, 1fr) [by] auto [acts] 28px; }
+  .coll-line .dots, .coll-line .when { display: none; }
+  .lib-page .page-header { flex-wrap: nowrap; }
+  .lib-page .page-header .titles { flex: 1 1 auto; min-width: 0; }
+  .lib-bar { flex-wrap: wrap; row-gap: 0; }
+  .lib-bar .filter-input { flex: 1 1 100%; margin: 0 0 2px -8px; }
+  .lib-bar .pick-wide { display: none; }
+  .lib-bar .spacer { display: none; }
+  .lib-bar .total { margin-left: auto; }
+  .paper-line { grid-template-columns: [state] 16px [title] minmax(0, 1fr) [acts] 28px; grid-template-rows: auto auto; row-gap: 4px;
+    align-items: start; height: auto; padding: 10px 8px; }
+  .paper-line > .issue-state { margin-top: 3px; }
+  .pl-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 15px; line-height: 1.45; }
+  .pl-tail { grid-column: title; grid-row: 2; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .pl-date { display: none; }
+  .pl-marks .dir-dot.none, .pl-marks .sig:empty { display: none; }
+  .paper-line > .hover-acts { grid-row: 1; }
+  .paper-line .hover-acts .btn { opacity: 1; }
+}
+
+.state { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+.state-done { color: var(--success); } .state-running, .state-partial { color: var(--warning); } .state-failed { color: var(--danger); }
+.pending { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.import-panel { display: none; margin-bottom: 20px; }
+.import-panel:target, .import-panel.show { display: block; }
+
+
+.summary-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.job-status { display: flex; align-items: center; gap: 8px; margin: 8px 0; padding: 10px 12px; border-radius: var(--r); background: var(--warning-soft); color: var(--warning); font-size: 0.9rem; }
+dl.summary { margin: 4px 0 0; }
+.s-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.s-row:last-child { border-bottom: 0; }
+.s-row dt { font-size: 0.86rem; color: var(--muted); padding-top: 2px; }
+.s-row dd { margin: 0; line-height: 1.7; }
+.s-text { color: var(--fg); }
+.page-ref { display: inline-block; margin-left: 6px; font-size: 0.8rem; color: var(--muted); }
+.page-ref:hover { color: var(--accent); }
+.adopt { margin-left: 8px; vertical-align: 1px; }
+.read-first { margin: 0; padding-left: 1.1em; }
+.fields-head { margin-top: 28px; }
+.user-fields .grow { flex: 1; min-width: 200px; }
+@media (max-width: 640px) { .s-row { grid-template-columns: 1fr; gap: 2px; } }
+
+.trans-list { list-style: none; padding: 0; margin: 0; }
+.trans-row { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.trans-row:last-child { border-bottom: 0; }
+.trans-state { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 0.92rem; }
+.trans-meter { display: inline-block; width: 120px; margin: 0; }
+.candidate-list { padding-left: 1.2em; margin: 6px 0; }
+.candidate-list li { margin: 8px 0; }
+.candidate-list .c-title { display: block; }
+
+/* reader = the paper page: toolbar, pages, 标注区 (docs/design/PAPERS.md §C) */
+.reader-toolbar { position: sticky; top: 52px; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 10px 0; margin-bottom: 10px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.reader-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.reader-head .back-icon { transform: rotate(180deg); }
+.reader-titles { flex: 1; min-width: 0; }
+.reader-title { margin: 0; font-size: 1.15rem; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reader-byline { margin: 2px 0 0; font-size: 0.84rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reader-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.reader-controls .spacer { flex: 1; }
+.reader-chip { margin: 0; }
+.reader-chip select { height: 28px; font-size: 0.85rem; padding: 0 28px 0 10px; width: auto; }
+.reader-toolbar #paper-find { width: 200px; height: 28px; }
+.reader-toolbar .keys { font-size: 0.8rem; color: var(--muted); }
+.reader { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 0 28px; }
+.reader.view-both { grid-template-columns: minmax(0, 1fr) 320px; }
+@media (max-width: 1080px) { .reader, .reader.view-both { grid-template-columns: 1fr; } .reader-side { position: static; max-height: none; } }
+/* --reader-top is the toolbar's bottom edge (papers.js measures it; the toolbar wraps on narrow windows). */
+.reader-side { position: sticky; top: calc(var(--reader-top, 150px) + 8px); align-self: start; max-height: calc(100vh - var(--reader-top, 150px) - 16px); overflow-y: auto; padding-bottom: 16px; }
+.side-tabs { margin-bottom: 12px; }
+.side-panel[hidden] { display: none; }
+.side-panel > .card + .card, .side-panel > section + section { margin-top: 12px; }
+.reader-biblio { padding: 22px 28px; }
+.reader-biblio .eyebrow { font-size: 0.8rem; color: var(--muted); margin: 0 0 8px; }
+.reader-abstract { line-height: 1.75; }
+.excerpt-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.excerpt-list li { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.excerpt-list li:last-child { border-bottom: 0; }
+.excerpt-list .q { margin: 4px 0 0; font-family: var(--serif); font-size: 0.95rem; line-height: 1.6; }
+.excerpt-list .n { margin: 4px 0 0; font-size: 0.88rem; color: var(--fg-2); }
+.excerpt-list .meta { display: flex; gap: 10px; margin: 4px 0 0; font-size: 0.8rem; color: var(--muted); }
+.pdf-page { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 22px 28px 26px; margin-bottom: 14px; scroll-margin-top: calc(var(--reader-top, 150px) + 10px); }
+.pdf-page.current { border-color: var(--border-2); }
+.pdf-page.found { box-shadow: 0 0 0 3px var(--accent-soft); }
+.pdf-page .page-head { display: flex; justify-content: space-between; margin: 0 0 12px; font-size: 0.82rem; color: var(--muted); }
+.page-text { font-family: var(--serif); font-size: 1.03rem; line-height: 1.8; word-wrap: break-word; }
+.page-text p, .page-trans p { margin: 0 0 0.85em; }
+.page-text p:last-child, .page-trans p:last-child { margin-bottom: 0; }
+.page-img { display: block; max-width: 100%; border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 12px; background: #fff; }
+.page-img[hidden] { display: none; }
+.page-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px; }
+.col-trans { border-left: 1px solid var(--border); padding-left: 24px; }
+.page-trans { word-wrap: break-word; font-family: var(--serif); font-size: 1rem; line-height: 1.8; color: var(--fg-2); }
+@media (max-width: 1100px) { .page-cols { grid-template-columns: 1fr; } .col-trans { border-left: 0; border-top: 1px solid var(--border); padding: 14px 0 0; margin-top: 14px; } }
+/* Translation is display-only: it can never be selected, so a 划线 always quotes the original. */
+.page-text:lang(zh), .page-text:lang(ja), .page-trans:lang(zh) { font-family: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", var(--serif); }
+
+/* search + radar pages */
+.hits { list-style: none; padding: 0; margin: 0; }
+.hits > li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.snip { margin: 4px 0 0; font-size: 0.92rem; color: var(--fg-2); }
+.snip mark, .page-hits mark { background: var(--mark); color: inherit; }
+.page-hits { list-style: none; padding-left: 12px; margin: 6px 0 0; }
+.page-hits li { margin: 4px 0; font-size: 0.9rem; }
+.news-arrangement .dir-group { margin: 12px 0 4px; }
+.cluster { padding: 8px 0 8px 14px; border-left: 2px solid var(--border); margin: 8px 0; }
+.cluster-items { margin: 4px 0 0; padding-left: 1.1em; font-size: 0.92rem; }
+.news-summary { margin: 4px 0 0; font-size: 0.92rem; color: var(--fg-2); }
+#current-page:not(:empty)::before { content: " · "; }

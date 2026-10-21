@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/issues">研究档案</a>{% if active_direction %}{{ ui.icon('chevron-right','sm') }}<a href="/issues?direction={{ active_direction.slug }}">{{ active_direction.name }}</a>{% endif %}{% if projects.get(issue_project) %}{{ ui.icon('chevron-right','sm') }}<a href="/issues?project={{ issue_project }}">{{ projects[issue_project].name }}</a>{% endif %}{% if parent and not parent.project_root %}{{ ui.icon('chevron-right','sm') }}<a href="{{ parent.url }}">{{ parent.title }}</a>{% endif %}{% if issue and issue.key %}{{ ui.icon('chevron-right','sm') }}<span class="current issue-key">{{ issue.key }}</span>{% endif %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('vendor/issue-editor.css') }}">{% endblock %}
+{% block content %}
+<div id="issue-workspace" class="issue-detail{% if creating %} is-creating{% endif %}"{% if not creating and can_delete %} data-issue-context="{{ issue.id }}" data-key="{{ issue.key }}" data-title="{{ issue.title }}" data-count="{{ delete_count }}" data-page-issue{% endif %}>
+  {% if creating %}
+  {% include "partials/_issue_composer.html" %}
+  {% else %}
+  <div class="issue-writing"{% if issue.project_root %} data-project-parent="{{ issue.project }}"{% endif %}>
+    {%- set back_url = '/issues?direction=' ~ filter_direction if issue.project_root else (parent.url if parent else '/issues') %}
+    {#- The key (附：议题编号) sits above the title; a click copies the link that carries it, /issues/APUS-0002, which
+        keeps finding the issue after a change of direction renumbers it. -#}
+    {%- set key_link = ('/issues/' ~ issue.key) if issue.key else '' %}
+    <div class="issue-detail-tools">{% if issue.key %}<button type="button" class="issue-key-copy" data-copy-link data-link="{{ key_link }}" title="复制带编号的链接" aria-label="编号 {{ issue.key }}，复制链接">{{ issue.key }}</button>{% endif %}{% if parent %}<a href="{{ parent.url }}">{{ ui.icon('network','sm') }}{% if parent.key %}<span class="issue-key">{{ parent.key }}</span>{% endif %}{{ parent.title }}</a>{% endif %}<span class="grow"></span><button type="button" class="btn ghost icon small" data-copy-link{% if key_link %} data-link="{{ key_link }}"{% endif %} title="复制链接" aria-label="复制链接">{{ ui.icon('link') }}</button><details class="menu"><summary class="btn ghost icon small" aria-label="更多操作">{{ ui.icon('ellipsis') }}</summary><div class="menu-panel">{% if issue.artifact %}<a href="/artifacts/{{ issue.id }}">{{ ui.icon('file-text','sm') }}Open material</a>{% endif %}<a href="{{ back_url }}">{{ ui.icon('arrow-right','sm') }}{{ 'Back to direction' if issue.project_root else ('Back to parent' if parent else 'Back to archive') }}</a></div></details></div>
+    <form class="issue-title-form" action="/issues/{{ issue.id }}/property" method="post" data-issue-form data-inline-field><input type="hidden" name="field" value="title"><input type="hidden" name="revision" value="{{ revision }}"><h1><textarea name="value" class="inline-edit" rows="1" data-autogrow aria-label="议题标题" required maxlength="120" spellcheck="false" enterkeyhint="done">{{ issue.title }}</textarea></h1><noscript><button class="btn secondary small" type="submit">Save</button></noscript></form>
+    {% with chips = true %}{% include "partials/_issue_properties.html" %}{% endwith %}
+    <div data-issue-drop="/issues/{{ issue.id }}/drop" data-no-global-drop>
+    <span class="issue-drop-hint" aria-hidden="true">放开即上传</span>
+    <form class="issue-description-form" action="/issues/{{ issue.id }}/property" method="post" data-issue-form data-inline-field data-autosave>
+      <input type="hidden" name="field" value="description"><input type="hidden" name="revision" value="{{ revision }}">
+      {#- The rich editor (static/issue-editor.js, card 0109) mounts on the textarea and keeps it in sync, so the save
+          path stays the textarea's. Until it mounts the description shows rendered, as it will look in the editor;
+          without scripts the plain textarea comes back. -#}
+      <div class="rl-md issue-desc-view" data-desc-view>{% if issue.description %}{{ issue.description | markdown }}{% else %}<p class="faint">添加描述…</p>{% endif %}</div>
+      <textarea name="value" class="inline-edit" rows="3" data-autogrow="88" data-rich hidden aria-label="议题描述" placeholder="添加描述…" maxlength="30000">{{ issue.description }}</textarea>
+      <noscript><style>.issue-desc-view { display: none; } .issue-description-form textarea[data-rich] { display: block !important; }</style></noscript>
+      <div class="description-actions"><span class="issue-save-status" data-save-status role="status"></span></div><noscript><button class="btn secondary small" type="submit">Save</button></noscript>
+    </form>
+    </div>
+    {% include "partials/_issue_materials.html" %}
+    <ul class="issue-upload-queue" data-issue-uploads aria-label="上传文件" aria-live="polite" hidden></ul>
+    {% if issue.artifact %}<details class="issue-material"><summary>{{ ui.icon('file-text','sm') }}研究材料<span class="grow"></span><a href="/artifacts/{{ issue.id }}?tab=edit">打开编辑器 {{ ui.icon('external-link','sm') }}</a></summary><div class="issue-description">{% if material_html %}{{ material_html }}{% endif %}{% if notes_html %}<p class="issue-material-label">助手整理 · 待本人判断</p>{{ notes_html }}{% endif %}</div></details>{% endif %}
+    <section class="issue-subissues" aria-label="子议题"><header><h2>{{ '已归档子议题' if archived else '子议题' }}</h2><span class="issue-progress" title="直接子议题完成数（不含搁置或归档）" data-sub-progress{% if not total %} hidden{% endif %}><span class="issue-progress-ring" style="--progress:{{ ((done / total * 100) | round) if total else 0 }}%"></span><span data-progress-count>{{ done }}/{{ total }}</span></span><span class="grow"></span><button type="button" class="issue-sort-note" data-sub-order="{{ 'manual' if manual_order else 'due' }}" data-with-rows{% if not nodes %} hidden{% endif %} title="{{ '按拖动的顺序排；点一下改按截止日期' if manual_order else '按截止日期排；点一下改按拖动的顺序' }}">{{ 'Manual' if manual_order else 'By due' }}</button><button type="button" class="btn ghost icon small" data-issue-toggle-done data-with-rows{% if not nodes %} hidden{% endif %} aria-label="显示或隐藏已完成子议题" aria-pressed="false">{{ ui.icon('eye','sm') }}</button>{% if issue.project_root %}<details class="menu"><summary class="btn ghost icon small" aria-label="子议题更多操作">{{ ui.icon('ellipsis','sm') }}</summary><div class="menu-panel"><a href="/issues?project={{ issue.project }}{% if not archived %}&amp;archive=1{% endif %}">{{ ui.icon('archive','sm') }}{{ 'Back to current' if archived else 'View archived' }}</a></div></details>{% endif %}{% if can_sub and not archived %}<a class="btn ghost icon small" href="/issues/new?parent={{ issue.id }}" aria-label="添加子议题（⌘⇧O）" data-open-sub-composer data-with-rows{% if not nodes %} hidden{% endif %}>{{ ui.icon('plus','sm') }}</a>{% endif %}</header>
+      {% if nodes %}<div class="issue-subtree">{% include "partials/_issue_rows.html" %}</div>{% elif archived %}<p class="muted small">暂无已归档子议题</p>{% endif %}
+      {% if can_sub and not archived %}{% import "partials/_issue_ui.html" as iu with context %}{% set sub_project = projects.get(issue.project) or {} %}
+      {#- The 添加子议题 row is the in-place composer, folded (ISSUES-LINEAR.md §2.4, card 0098): a title and Enter adds
+          one; +, Tab, the header's + or ⌘⇧O open it for a description and properties. It stays open after each
+          one, keeping the properties; Esc folds it. 课题 and direction are the parent's (a sub-issue cannot leave
+          its 课题), 类型 comes from the 课题, priority starts as the parent's, the due date empty. -#}
+      <form action="/issues" method="post" data-issue-form data-inline-field data-quick-sub data-sub-composer class="issue-add-sub"><input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="parent" value="{{ issue.id }}"><input type="hidden" name="project" value="{{ issue.project }}"><button class="btn ghost icon small" type="submit" aria-label="添加子议题" data-add-sub>{{ ui.icon('plus','sm') }}</button><input class="inline-edit" name="title" placeholder="添加子议题…" aria-label="子议题标题" required maxlength="120" autocomplete="off">
+        <div class="sub-compose-more" data-sub-more hidden>
+          <textarea class="inline-edit" name="description" rows="1" data-autogrow placeholder="添加描述…" aria-label="子议题描述" maxlength="30000"></textarea>
+          <div class="sub-compose-bar">
+            <span class="compose-fixed-property" title="子议题和父议题在同一个课题，研究方向跟着课题；要放到别的课题，用右上角的「新建」。"><span class="issue-direction-dot" style="--dc:{{ direction_color(sub_project.get('direction')) }}"></span>{{ active_direction.name ~ ' › ' if active_direction }}{{ sub_project.get('name', '') }}</span>
+            {{ iu.select('priority', '优先级', issue_priorities, issue.priority, 'chart-column') }}
+            <details class="issue-popover choice-picker" data-choice-picker>{#- The owner stays selected until an explicit handover. -#}
+              <summary aria-label="分配人：{{ assignees[''] }}"><span class="issue-avatar" aria-hidden="true">{{ assignees[''][:1] | upper }}</span><span data-choice-caption>{{ assignees[''] }}</span>{{ ui.icon('chevron-down','sm') }}</summary>
+              <input type="hidden" name="assignee" value="">
+              <div class="issue-popover-panel" role="group" aria-label="分配人"><div class="issue-menu-heading">分配人</div>
+                {% for k, v in assignees.items() %}<button type="button" class="issue-menu-option{% if not k %} selected{% endif %}" data-choice="{{ k }}" data-caption="{{ v }}" aria-pressed="{{ 'false' if k else 'true' }}"><span class="issue-assignee-option">{% if k %}<span class="issue-avatar is-assistant" aria-hidden="true">{{ ui.icon('sparkles','sm') }}</span>{% else %}<span class="issue-avatar" aria-hidden="true">{{ assignees[''][:1] | upper }}</span>{% endif %}{{ v }}</span>{{ ui.icon('check','sm') }}</button>{% endfor %}
+              </div>
+            </details>
+            {% set due_options = {'': '截止'} %}{% for p in due_presets %}{% set _ = due_options.update({p.key: p.name ~ ' · ' ~ p.date.month ~ '月' ~ p.date.day ~ '日'}) %}{% endfor %}
+            {{ iu.select('due', '截止日期', due_options, '', 'calendar') }}
+            {% if sub_project.get('type') %}<span class="compose-fixed-property" title="类型跟着课题">{{ ui.icon('layers','sm') }}类型：{{ sub_project.type }}</span>{% endif %}
+            <span class="grow"></span><button type="button" class="btn ghost small" data-sub-cancel>Cancel</button><button type="button" class="btn small" data-sub-create>Create</button>
+          </div>
+        </div></form>{% endif %}
+    </section>
+    <section class="issue-activity" aria-label="活动"><header><h2>活动</h2><span class="grow"></span>{{ ui.icon('message-square','sm') }}</header>
+      {%- with items = comments, issue_comments = '/issues/' ~ issue.id ~ '/comments', update_comments = ('/artifacts/' ~ issue.id ~ '/updates') if issue.artifact else none %}{% include "partials/_activity.html" %}{% endwith %}
+      <form action="/issues/{{ issue.id }}/comments" method="post" enctype="multipart/form-data" data-issue-form class="issue-comment-form"><input type="hidden" name="revision" value="{{ revision }}"><textarea class="inline-edit" name="text" aria-label="发表评论" placeholder="留下评论或记录进展…" rows="2" data-autogrow data-rich maxlength="4000"></textarea><div><label class="btn ghost icon small" title="附上文件（存入课题的 drafts 文件夹）" aria-label="附上文件">{{ ui.icon('paperclip', 'sm') }}<input type="file" name="file" hidden accept=".pdf,.docx,.doc,.pages,.odt,.rtf,.txt,.md,.tex,.csv,.xlsx,.xls,.pptx,.key,.png,.jpg,.jpeg,.gif,.webp,.heic,.epub,.mobi,.azw3,.azw,.djvu,.fb2" onchange="this.closest('form').querySelector('[data-file-name]').textContent = this.files[0] ? this.files[0].name : ''"></label><span class="muted small" data-file-name></span><span class="muted small">⌘ ↩ 发送</span><button class="btn secondary small" type="submit">Comment</button></div></form>
+    </section>
+  </div>
+  {% include "partials/_issue_properties.html" %}
+  {% endif %}
+</div>
+{% include "partials/_issue_shortcuts.html" %}
+{% include "partials/_issue_delete.html" %}
+{% endblock %}
+{% block scripts %}
+{#- Before issues.js runs (it is deferred), so the description editor can mount on load. -#}
+<script src="{{ asset('vendor/tiptap-editor.min.js') }}"></script>
+<script src="{{ asset('issue-editor.js') }}"></script>
+{% endblock %}

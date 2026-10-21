@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('feeds.css') }}"><link rel="stylesheet" href="{{ asset('pm.css') }}"><link rel="stylesheet" href="{{ asset('front.css') }}">{% endblock %}
+{% block crumbs %}<span class="current">首页</span>{% endblock %}
+{% block content %}
+{% include "partials/_coach_home.html" %}
+
+{% include "partials/_front_carousel.html" %}
+
+{% include "partials/_home_tasks.html" %}
+
+<section id="home-progress" class="home-progress" aria-label="课题进展">
+  <header class="section-head"><h2>课题进展</h2><div class="aside"><a href="/issues">全部课题{{ ui.icon('arrow-right','sm') }}</a></div></header>
+  <div class="project-progress-grid">
+    {% for p in progress_projects %}{{ ui.project_progress(p) }}{% else %}{{ ui.empty('folder','还没有课题','','/projects/new','新建课题') }}{% endfor %}
+  </div>
+</section>
+{% if home_note %}<p class="home-note serif">{{ home_note }}</p>{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ asset('front.js') }}" defer></script>
+{% endblock %}

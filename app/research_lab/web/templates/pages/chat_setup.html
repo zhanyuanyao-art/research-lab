@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/chat/{{ record.thread_id or '' }}">助手</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">交付任务方案</span>{% endblock %}
+{% block content %}
+{% set applied = record.status == 'applied' %}
+{% set p = plan.project %}
+{% set d = plan.deliverable %}
+<header class="page-header">
+  <div class="titles"><h1 class="page-title">{{ d.title }}</h1>
+    <p class="page-desc">{% if applied %}已建立。在 Word 里写，应用按字数和截止日期提醒你。{% else %}助手按你的提纲整理的交付任务。核对、改好日期和字数再确认；确认前什么都不会写入。{% endif %}</p></div>
+  <a class="btn secondary" href="/chat/{{ record.thread_id or '' }}">Back to chat</a>
+</header>
+{% if error %}<div class="banner warning"><span class="text">{{ error }}</span></div>{% endif %}
+{% if running and not applied %}<p class="banner warning">助手还在调整这份方案，完成后刷新再确认。</p>{% endif %}
+
+{% if applied %}
+{% set r = record.result %}
+<div class="stack">
+  <section class="card stack">
+    <h2>{{ '已合并进已有的交付稿' if r.merged else '已建立' }}</h2>
+    {% if r.merged %}<p class="muted small">这份提纲和之前设好的同名交付稿是同一件事：补了 {{ r.added }} 个子任务，原有的截止、字数和 Word 文件没有改。</p>{% endif %}
+    <p>课题 <a href="/projects/{{ r.project }}">{{ r.name }}</a>{{ '（新建）' if r.created_project }} · 截止 {{ r.due or '未定' }} · 目标 {{ r.words ~ ' 字' if r.words else '未定' }}</p>
+    {% if r.file %}<p>Word 文件 <span class="mono">private/{{ r.project }}/{{ r.file }}</span> · <a href="/projects/{{ r.project }}?tab=files">在课题页打开</a></p>{% endif %}
+    {% if r.copied %}<p class="muted small">复制到课题私有文件夹的原稿：{% for c in r.copied %}<span class="mono">{{ c }}</span>{{ '、' if not loop.last }}{% endfor %}（只留在本机）。</p>{% endif %}
+  </section>
+  <section class="card stack">
+    <div class="card-head"><h3>子任务</h3><a class="muted small" href="/tasks">去待办页</a></div>
+    <ul class="list">
+      {% for t in r.tasks %}<li class="list-item"><div class="body"><span class="title">{{ t.title }}</span><div class="sub"><span>{{ '截止 ' ~ t.due if t.due else '未定截止' }}</span>{% if t.existing %}<span class="chip">原有</span>{% endif %}</div></div></li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% else %}
+<form method="post" action="/chat/setup/{{ record.task_id }}/apply" class="stack" id="setup-form">
+  {% if same %}
+  <section class="card stack" id="setup-merge">
+    <h2>已有同名交付稿</h2>
+    <p>课题里已经有一份「{{ same.title }}」{% if same.due %}，截止 {{ same.due }}{% endif %}{% if same.file %}，Word 文件 <span class="mono">{{ same.file }}</span>{% endif %}
+      {% if same_subs %}，已有 {{ same_subs | length }} 节：{% for t in same_subs %}{{ t.title }}{{ '、' if not loop.last }}{% endfor %}{% endif %}。</p>
+    <div class="segmented small" role="radiogroup" aria-label="同名交付稿怎么处理">
+      <label><input type="radio" name="merge" value="merge"{% if form.get('merge', 'merge') != merge_new %} checked{% endif %}>合并，只补缺的节</label>
+      <label><input type="radio" name="merge" value="{{ merge_new }}"{% if form.get('merge') == merge_new %} checked{% endif %}>另建一份</label>
+    </div>
+    <p class="muted small">合并时沿用已有交付稿的截止、字数和 Word 文件，下面标题相同的节会跳过，只加新的节。</p>
+  </section>
+  {% endif %}
+  <section class="card stack">
+    <h2>交付任务</h2>
+    <div class="field"><label for="dl-title">标题</label><input id="dl-title" name="title" value="{{ form.get('title', d.title) }}" required></div>
+    <div class="row">
+      <div class="field"><label for="dl-due">截止日期</label><input id="dl-due" name="due" type="date" value="{{ form.get('due', d.due or '') }}"></div>
+      <div class="field"><label for="dl-words">目标字数</label><input id="dl-words" name="words" type="number" min="100" step="100" value="{{ form.get('words', d.words or '') }}" placeholder="例如 20000"></div>
+    </div>
+    <p class="muted small">课题：{% if p.existing %}挂到已有课题 <a href="/projects/{{ p.slug }}">{{ p.name }}</a>{% else %}新建「{{ p.name }}」<span class="mono">{{ p.slug }}</span> · 方向 {{ direction_name or p.direction }}{% endif %}</p>
+    {% if not p.existing %}
+    <div class="field"><label for="dl-question">研究问题（你自己的话，可以先空着）</label>
+      <input id="dl-question" name="question" value="{{ form.get('question', p.question) }}" placeholder="{{ default_question }}"></div>
+    {% endif %}
+    {% if docx_files %}
+    {% set chosen = form.get('file', d.file or new_file) %}
+    <fieldset class="field">
+      <legend>Word 稿</legend>
+      <div class="stack-sm">
+        {% for f in docx_files %}<label class="row"><input type="radio" name="file" value="{{ f.id }}"{% if chosen == f.id %} checked{% endif %}> 用上传的《{{ f.name }}》（约 {{ f.chars }} 字）</label>{% endfor %}
+        <label class="row"><input type="radio" name="file" value="{{ new_file }}"{% if chosen == new_file %} checked{% endif %}> 按提纲生成只有标题和各节标题的空白 docx</label>
+      </div>
+      <div class="help">放在 <span class="mono">private/{{ p.slug }}/</span>，不进 git。</div>
+    </fieldset>
+    {% else %}
+    <p class="muted small">Word 文件：新建一个只有标题和各节标题的空文档，放在 <span class="mono">private/{{ p.slug }}/</span>，不进 git。上传的是 Word 稿的话可以在对话里再拖进来。</p>
+    {% endif %}
+    {% if plan.note %}<p class="muted small">{{ plan.note }}</p>{% endif %}
+  </section>
+
+  <section class="card stack">
+    <h2>各节和截止</h2>
+    <p class="muted small">整份是一个父任务，每节是它下面的一个子任务，排在该节截止那一周。标题清空就去掉这一节；没写截止的节按整份截止日期均匀排开；用「上移」「下移」调整顺序。</p>
+    {#- Rows keep the index they were rendered with (field names), and section_order carries the order
+        Leo arranged them in; chat.js moves rows and rewrites it. Without scripts the order stays. -#}
+    <input type="hidden" name="section_order" id="section-order" value="{{ form.get('section_order', '') }}">
+    <div id="setup-sections">
+    {% for s in plan.sections %}
+    <div class="row setup-section" data-index="{{ loop.index0 }}">
+      <div class="field" style="flex: 1"><label for="s{{ loop.index0 }}-t"><span class="setup-n">第 {{ loop.index }} 节</span></label><input id="s{{ loop.index0 }}-t" name="section_{{ loop.index0 }}_title" value="{{ form.get('section_' ~ loop.index0 ~ '_title', s.title) }}"></div>
+      <div class="field"><label for="s{{ loop.index0 }}-d">截止</label><input id="s{{ loop.index0 }}-d" name="section_{{ loop.index0 }}_due" type="date" value="{{ form.get('section_' ~ loop.index0 ~ '_due', s.due or '') }}"></div>
+      <div class="field"><label>&nbsp;</label><span class="segmented small"><button type="button" data-move="up" title="上移">Move up</button><button type="button" data-move="down" title="下移">Move down</button></span></div>
+    </div>
+    {% else %}
+    <p class="muted">没有分节，只记整份截止。</p>
+    {% endfor %}
+    </div>
+  </section>
+
+  {% if files or papers %}
+  <section class="card stack">
+    <h2>一起放进课题</h2>
+    <ul class="list">
+      {% for f in files %}<li class="list-item"><div class="body"><span class="title">{{ f.name }}</span><div class="sub">复制到 private/{{ p.slug }}/ · 约 {{ f.chars }} 字</div></div></li>{% endfor %}
+      {% for x in papers %}<li class="list-item"><div class="body"><a class="title" href="/papers/{{ x.id }}">{{ x.title }}</a><div class="sub">挂到课题文献 · {{ x.year or '' }}</div></div></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <div class="row">
+    <button class="btn primary" type="submit"{% if running %} disabled{% endif %}>Create</button>
+    <span class="muted small">要换课题或改提纲，回到对话里说，助手会更新这份方案。</span>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('chat.js') }}" defer></script>{% endblock %}

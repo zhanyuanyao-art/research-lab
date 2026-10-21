@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% block head %}<link rel="stylesheet" href="{{ asset('method.css') }}">{% endblock %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">证据矩阵</span>{% endblock %}
+{% block content %}
+<header class="page-header"><div class="titles"><h1 class="page-title">证据矩阵</h1><p class="page-desc">{{ p.name }} · 每一行是一个解释，每一列是一个观察。格子的状态只由你设置，而且需要挂上证据。</p></div><div class="page-actions"><a class="btn secondary" href="/projects/{{ slug }}">Back to project</a></div></header>
+{% if not g.rows or not g.cols %}
+<p class="muted">证据矩阵需要解释和观察。可以在<a href="/projects/{{ slug }}#tools">课题页的研究工具</a>里添加解释和观察。</p>
+{% else %}
+<p class="kicker">已判定 {{ coverage.resolved }} / {{ coverage.total }} 个单元格。状态只会由你手动设置，每个状态都需要相应的证据。</p>
+<div class="matrix-layout">
+  <div>
+    <div class="matrix-scroll">
+    <table class="matrix">
+      <thead><tr><th>解释</th>{% for o in g.cols %}<th title="{{ o.selection_note or '' }}">{{ o.label }}<span class="mono muted">{{ o.date_start or '' }}</span></th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for h in g.rows %}
+        <tr{% if h.is_own %} class="own"{% endif %}><th title="{{ h.statement }}"><span class="mono">{{ h.code or '#' ~ h.id }}</span>{% if h.is_own %} <span class="chip status-active">自己的</span>{% endif %}<span class="stmt">{{ h.statement[:70] }}</span></th>
+        {% for o in g.cols %}{% set c = g.cells.get((h.id, o.id)) %}
+          <td>{% if c %}{% include "partials/_cell.html" %}{% endif %}</td>
+        {% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="kicker legend">{% for s, gl in glyphs.items() %}{{ gl[0] }} {{ L.cell_status[s] }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    <div id="cell-panel" class="card"><p class="muted">点击一个单元格：写下它的推论、关联划线、记录检索或设置状态。</p></div>
+  </div>
+  {% include "partials/_hunt_list.html" %}
+</div>
+{% endif %}
+{% endblock %}

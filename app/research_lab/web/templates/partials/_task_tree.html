@@ -1,0 +1,57 @@
+{#- The 待办 board as issues: one block per 课题, top-level tasks with their sub-tasks nested, done and
+    parked folded at the end of a block (all view only). Expects: tree (files.tasks.tree), view,
+    filter_project, current_week, next_week, projects, L, ui, sha. -#}
+<div id="task-board" class="task-tree" data-view="{{ view }}" data-filter="{{ filter_project }}">
+{% if not tree %}
+  {% if file_problem %}{{ ui.empty('list-checks', '待办文件读不出来', '_data/tasks.yml 格式有误，修好后这里的待办会重新出现。', None, None) }}
+  {% elif not total and filter_project %}{{ ui.empty('list-checks', '这个课题还没有待办', '在这里新建一条，或在产出页的待办里加一条。', '/tasks/new?project=' ~ filter_project, 'New task', compact=true) }}
+  {% elif not total %}{{ ui.empty('list-checks', '还没有待办', '在这里新建一条，或在产出页的待办里加一条，也可以让助手帮你拆。', '/tasks/new', 'New task') }}
+  {% elif view == 'week' %}{{ ui.empty('list-checks', '本周没有到期的待办', '在「全部」里给几条设上本周的截止，或新建一条。', '/tasks?view=all' ~ ('&project=' ~ filter_project if filter_project else ''), 'View all') }}
+  {% elif view == 'overdue' %}{{ ui.empty('circle-check', '没有逾期的待办', '', None, None, compact=true) }}
+  {% elif filter_project %}{{ ui.empty('list-checks', '这个课题还没有待办', '', '/tasks/new?project=' ~ filter_project, 'New task', compact=true) }}
+  {% else %}{{ ui.empty('list-checks', '还没有待办', '在这里新建一条，或在产出页的待办里加一条，也可以让助手帮你拆。', '/tasks/new', 'New task') }}{% endif %}
+{% endif %}
+{% for b in tree %}
+  {% set proj = projects.get(b.project) %}
+  <section class="task-block" data-project="{{ b.project }}">
+    <div class="section-head">
+      <h2>{% if proj %}<a href="/projects/{{ b.project }}">{{ proj.name }}</a>{% else %}未指定课题{% endif %}<span class="count">{{ b['items'] | length }}</span></h2>
+      <div class="aside"><a href="/tasks/new?project={{ b.project }}">{{ ui.icon('plus', 'sm') }}新建待办</a></div>
+    </div>
+    <div class="card flush">
+      <ol class="list task-list" data-parent="">
+        {% for n in b['items'] %}
+          {% with t = n.task, f = n.flags, node = n, level = 0 %}{% include "partials/_task_row.html" %}{% endwith %}
+          {% if n.task.status not in ('done', 'parked') or n.subs %}
+          <li class="task-children" data-for="{{ n.task.id }}"{% if n.subs and view == 'week' and not (n.subs | selectattr('flags.week_due') | list) and not (n.subs | selectattr('flags.due_soon') | list) %} data-collapsed="1"{% endif %}>
+            <ol class="list task-subs task-list" data-parent="{{ n.task.id }}">
+              {% for c in n.subs %}{% with t = c.task, f = c.flags, node = None, level = 1 %}{% include "partials/_task_row.html" %}{% endwith %}{% endfor %}
+              {% if n.task.status not in ('done', 'parked') %}
+              <li class="task-add">
+                <form hx-post="/tasks/{{ n.task.id }}/sub" hx-select="#task-board" hx-target="#task-board" hx-swap="outerHTML" class="task-add-form">
+                  <input type="hidden" name="filter" value="{{ filter_project }}"><input type="hidden" name="view" value="{{ view }}">
+                  <input type="text" name="title" maxlength="120" required placeholder="添加子任务…" aria-label="添加子任务" autocomplete="off">
+                </form>
+              </li>
+              {% endif %}
+            </ol>
+          </li>
+          {% endif %}
+        {% endfor %}
+        {% if not b['items'] %}<li class="list-item muted small">这个课题本视图下没有待办。</li>{% endif %}
+      </ol>
+      {% if b.closed %}
+      <details class="task-closed">
+        <summary>已完成和搁置 <span class="count">{{ b.closed | length }}</span></summary>
+        <ol class="list task-list" data-parent="">
+          {% for n in b.closed %}
+            {% with t = n.task, f = n.flags, node = n, level = 0 %}{% include "partials/_task_row.html" %}{% endwith %}
+            {% if n.subs %}<li class="task-children" data-for="{{ n.task.id }}"><ol class="list task-subs task-list" data-parent="{{ n.task.id }}">{% for c in n.subs %}{% with t = c.task, f = c.flags, node = None, level = 1 %}{% include "partials/_task_row.html" %}{% endwith %}{% endfor %}</ol></li>{% endif %}
+          {% endfor %}
+        </ol>
+      </details>
+      {% endif %}
+    </div>
+  </section>
+{% endfor %}
+</div>

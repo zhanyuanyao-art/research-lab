@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('weekly.css') }}">{% endblock %}
+{% block crumbs %}<a href="/artifacts">研究档案</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">管理方向</span>{% endblock %}
+{% block content %}
+<header class="page-header"><div class="titles"><h1 class="page-title">管理方向</h1><p class="page-desc">方向是研究档案里的文件夹。可以改名、补充描述和关键词；没有课题和产出使用的方向才能删除。前缀是这个方向下议题编号的开头，创建后不能修改。</p></div></header>
+{% if error %}<p class="warn" role="alert">{{ error }}</p>{% endif %}
+{% if saved %}<p class="ok">{% if saved == 'deleted' %}已删除。{% else %}已保存 {{ saved }}。{% endif %}</p>{% endif %}
+
+{% for d in rows %}
+<section class="card direction-card" id="dir-{{ d.slug }}">
+  <div class="project-head">
+    <span class="name"><a class="dir-tag" style="--dc: {{ direction_color(d.slug) }}; font-size: 1rem; font-weight: 600" href="/artifacts/d/{{ d.slug }}">{{ d.name }}</a></span>
+    <span class="count">{% if d.key %}<span class="issue-key" title="议题编号的前缀，创建后不能修改">{{ d.key }}</span> · {% endif %}{{ d.usage.projects | length }} 个课题 · {{ d.artifact_count }} 个产出</span>
+  </div>
+  {% if d.description %}<p class="muted small">{{ d.description }}</p>{% endif %}
+  <details>
+    <summary class="kicker">Edit</summary>
+    <form class="stack" method="post" action="/artifacts/directions/{{ d.slug }}">
+      <input type="hidden" name="sha" value="{{ sha }}">
+      <div class="row">
+        <div class="grow"><label for="n-{{ d.slug }}">中文名称</label><input type="text" id="n-{{ d.slug }}" name="name" value="{{ d.name }}" required></div>
+        <div class="grow"><label for="e-{{ d.slug }}">英文名称</label><input type="text" id="e-{{ d.slug }}" name="name_en" value="{{ d.name_en or '' }}"></div>
+      </div>
+      <div><label for="k-{{ d.slug }}">关键词（逗号分隔，用于关联和雷达归类）</label><input type="text" id="k-{{ d.slug }}" name="keywords" value="{{ d.keywords_text }}"></div>
+      <div><label for="s-{{ d.slug }}">说明</label><input type="text" id="s-{{ d.slug }}" name="description" value="{{ d.description or '' }}"></div>
+      <div><button class="btn small" type="submit">Save</button></div>
+    </form>
+  </details>
+  <form method="post" action="/artifacts/directions/{{ d.slug }}/delete" class="inline-form" data-confirm="确定删除方向「{{ d.name }}」？">
+    <input type="hidden" name="sha" value="{{ sha }}">
+    <button class="btn small secondary" type="submit"{% if not d.deletable %} disabled title="仍有项目或 产出 使用这个方向"{% endif %}>Delete</button>
+    {% if not d.deletable %}<span class="muted small">仍在使用，不能删除</span>{% endif %}
+  </form>
+</section>
+{% else %}
+<p class="muted">还没有研究方向。</p>
+{% endfor %}
+
+<section class="panel">
+  <h2>新增方向</h2>
+  <form class="stack" method="post" action="/artifacts/directions">
+    <input type="hidden" name="sha" value="{{ sha }}">
+    <div class="row">
+      <div class="grow"><label for="nd-slug">Slug（小写字母、数字、连字符，创建后不可改）</label><input type="text" id="nd-slug" name="slug" class="mono" pattern="[a-z0-9-]+" required value="{{ (form or {}).get('slug', '') }}" placeholder="maritime-security"></div>
+      <div class="grow"><label for="nd-name">中文名称</label><input type="text" id="nd-name" name="name" required value="{{ (form or {}).get('name', '') }}" placeholder="海洋安全研究"></div>
+    </div>
+    <div><label for="nd-key">前缀（2 到 5 个大写字母，议题编号用它开头，例如 MSEC-0001；创建后不可改）</label><input type="text" id="nd-key" name="key" class="mono" pattern="[A-Za-z]{2,5}" maxlength="5" required autocapitalize="characters" value="{{ (form or {}).get('key', '') }}" placeholder="MSEC"></div>
+    <div><label for="nd-en">英文名称</label><input type="text" id="nd-en" name="name_en" value="{{ (form or {}).get('name_en', '') }}"></div>
+    <div><label for="nd-kw">关键词（逗号分隔）</label><input type="text" id="nd-kw" name="keywords" value="{{ (form or {}).get('keywords', '') }}"></div>
+    <div><label for="nd-desc">说明</label><input type="text" id="nd-desc" name="description" value="{{ (form or {}).get('description', '') }}"></div>
+    <div><button class="btn" type="submit">Add direction</button></div>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('weekly.js') }}" defer></script>{% endblock %}

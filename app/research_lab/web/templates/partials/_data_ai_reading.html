@@ -1,0 +1,18 @@
+{# The analysis.read suggestion. Display only: it never fills the user's reading or a check. #}
+{% from "partials/_data_macros.html" import fmt %}
+<div class="ds-ai-panel" id="ai-reading">
+{% if run.ai %}
+  <div class="card suggested">
+    <p class="kicker">AI 解读建议 · 仅供对照，不会写入你的解读、检验或成果的 Claim</p>
+    <p class="ds-ai-text">{{ run.ai.reading }}</p>
+    {% if run.ai.caveats %}<h3>注意</h3><ul>{% for c in run.ai.caveats %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+    {% if run.ai.next_checks %}<h3>可做的后续检验</h3><ul>{% for c in run.ai.next_checks %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+{% endif %}
+{% if job %}{% include "partials/_data_job.html" %}{% endif %}
+{% if run.status == 'done' %}
+  <button class="btn small secondary" hx-post="/data/runs/{{ run.id }}/ai-read" hx-target="#ai-job" hx-swap="innerHTML">
+    {{ 'Suggest again' if run.ai else 'Suggest a reading' }}</button>
+  <div id="ai-job"></div>
+{% endif %}
+</div>

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('chat.css') }}">{% endblock %}
+{% block crumbs %}<a href="/chat">助手</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">后台任务</span>{% endblock %}
+{% block content %}
+<div class="chat-layout">
+  <aside class="chat-side">{% include "partials/_thread_list.html" %}</aside>
+  <section class="chat-main jobs-main">
+    <header class="chat-pane-head chat-head"><h1 class="chat-title">后台任务</h1></header>
+    <div class="chat-scroll jobs-scroll">
+    <p class="page-desc">助手在后台做的事：概要、翻译、复现方案、结果解读，以及你在对话里交代的任务。完成后会自动出现在对应页面。</p>
+
+    {% if recent_tasks %}
+    <section class="card">
+      <div class="card-head"><h3>对话任务</h3></div>
+      <ul class="list">
+        {% for t in recent_tasks %}
+        <li class="list-item">
+          <div class="body">
+            <a class="title" href="/chat/{{ t.thread_id }}">{{ t.prompt | truncate(60) }}</a>
+            <div class="sub">{{ skill_titles.get(t.skill, t.skill) }} · {{ {'claude': 'Claude Code', 'deepseek': 'DeepSeek'}.get(t.engine, '未开始') }} · {{ t.created_at | local_time }}{% if t.tool_calls %} · {{ t.tool_calls }} 步{% endif %}</div>
+          </div>
+          <span class="badge {{ {'waiting': 'warning', 'done': 'success', 'failed': 'danger'}.get(t.status, '') }}">{{ {'queued': '排队中', 'running': '进行中', 'waiting': '等你回复', 'done': '已完成', 'failed': '失败', 'cancelled': '已停止'}[t.status] }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head"><h3>后台任务</h3>{% if open_jobs %}<span class="muted small">{{ open_jobs }} 个进行中</span>{% endif %}</div>
+      {% if jobs %}
+      <table class="data">
+        <thead><tr><th>任务</th><th>对象</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody>
+        {% for j in jobs %}
+        <tr>
+          <td>{{ L.job_kind[j.kind] }}</td>
+          <td>{% if j.href and j.title %}<a href="{{ j.href }}">{{ j.title | truncate(48) }}</a>{% elif j.title %}{{ j.title | truncate(48) }}{% else %}<span class="faint">—</span>{% endif %}</td>
+          <td>
+            {% if j.status == 'done' %}<span class="badge success">{{ j.outcome }}</span>
+            {% elif j.status == 'failed' %}<span class="badge danger">失败</span> <span class="muted small job-reason" title="{{ j.error or '' }}">{{ j.reason }}</span>
+            {% elif j.status == 'claimed' %}<span class="badge"><span class="chat-pulse" aria-hidden="true"></span>处理中</span>
+            {% else %}<span class="badge">{{ L.job_status[j.status] }}</span>{% if j.status == 'queued' and j.error %} <span class="muted small job-reason" title="{{ j.error }}">{{ j.error | truncate(60) }}</span>{% endif %}{% endif %}
+          </td>
+          <td class="muted small"><time datetime="{{ j.shown_at }}">{{ j.shown_at | local_time }}</time></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}{{ ui.empty('inbox', '还没有后台任务', '导入文献后，概要和翻译会在这里排队完成。', '/papers', 'Import papers') }}{% endif %}
+    </section>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{#- One activity thread (card 0097, ISSUES-LINEAR §2.3, §2.6), on an issue page and under an output: comments
+    as cards (Markdown, rendered by files/markdown.py), Leo's property changes and the app's lines as grey events,
+    oldest first. Times are relative, worked out in the browser (issues.js formats time[data-rel]); hovering
+    shows the full time. Leo can edit and delete his own comments where the page offers the routes:
+      items            files/issues.comments(ref)
+      issue_comments   URL prefix for issues.yml comments ('/issues/<ref>/comments'), or none
+      update_comments  URL prefix for an output's updates.yml entries ('/artifacts/<ref>/updates'), or none
+      updates_sha      updates.yml as the page read it; edits of an output's entries carry it
+    An issue comment's edit / delete sends the page's current revision (issues.js). -#}
+{% import "partials/ui.html" as ui with context %}
+{% set owner_display = workspace_owner() %}
+{% macro when(at) -%}
+{%- set iso = (at or '')[:19] | replace(' ', 'T') -%}
+<time datetime="{{ iso }}" data-rel title="{{ (at or '')[:16] }}">{% if at and at | length >= 16 %}{{ at[5:7] | int }}月{{ at[8:10] | int }}日 {{ at[11:16] }}{% else %}{{ at }}{% endif %}</time>
+{%- endmacro %}
+<ol class="activity" data-thread>
+  {% for c in items %}
+  {% set base = (issue_comments if c.source == 'issue' else update_comments) if c.own else none %}
+  {#- An output's entry names the updates.yml the page was drawn from, so a stale edit is refused (card 0112). -#}
+  {% set guard = ('?sha=' ~ updates_sha) if (c.source == 'update' and updates_sha is defined and updates_sha) else '' %}
+  {% if c.kind != 'comment' %}
+  <li class="activity-event{% if c.by == 'assistant' %} by-assistant{% endif %}">
+    <span class="activity-mark" aria-hidden="true"></span>
+    <span class="activity-line">{% if c.by == 'user' %}<strong>{{ owner_display }}</strong> {% elif c.by == 'assistant' %}<strong>{{ assistant_name or '助手' }}</strong> {% endif %}{% if c.link %}<a href="{{ c.link }}">{{ c.text }}</a>{% else %}{{ c.text }}{% endif %}</span>
+    <span class="activity-time">{{ when(c.at) }}</span>
+  </li>
+  {% else %}
+  <li class="activity-comment{% if c.by == 'assistant' %} by-assistant{% endif %}" id="comment-{{ c.source }}-{{ c.key | replace(' ', '_') | replace(':', '') }}">
+    {% if c.by == 'assistant' %}<span class="issue-avatar is-assistant" aria-hidden="true">{{ ui.icon('sparkles', 'sm') }}</span>
+    {% else %}<span class="issue-avatar" aria-hidden="true">{{ owner_display[:1] | upper }}</span>{% endif %}
+    <div class="activity-card">
+      <div class="activity-meta">
+        <strong>{{ owner_display if c.by == 'user' else (assistant_name or '助手') }}</strong>{% if c.by == 'assistant' %}<span class="badge">助手</span>{% endif %}
+        {{ when(c.at) }}{% if c.edited %}<span class="faint" title="{{ c.edited }}">已编辑</span>{% endif %}{% if c.via %}<span class="faint">经助手录入</span>{% endif %}
+        {% if base %}<span class="grow"></span><span class="activity-acts">
+          <button type="button" class="btn ghost quiet small" data-comment-edit="{{ base }}/{{ c.key | urlencode }}/edit{{ guard }}">Edit</button>
+          <button type="button" class="btn ghost quiet small" data-comment-delete="{{ base }}/{{ c.key | urlencode }}/delete{{ guard }}">Delete</button>
+        </span>{% endif %}
+      </div>
+      <div class="rl-md activity-body" data-comment-body>{% if c.link %}<p><a href="{{ c.link }}">{{ c.text }}</a></p>{% else %}{{ c.text | markdown }}{% endif %}</div>
+      {% if c.attachments and issue %}<div class="activity-attachments">{% for rel in c.attachments %}<button type="button" class="btn ghost small" data-open-attachment="/issues/{{ issue.id }}/attachments/open" data-rel="{{ rel }}" title="{{ rel }}">{{ ui.icon('paperclip', 'sm') }}{{ rel.split('/')[-1] }}</button>{% endfor %}</div>{% endif %}
+      {#- A hand-over plan (card 0116): 开始 runs it. Only the app's own route, so a hand edit cannot post elsewhere. -#}
+      {% if c.by == 'assistant' and c.start and c.start is string and c.start.startswith('/agent/handover/') and c.start.endswith('/start') %}
+      <form method="post" action="{{ c.start }}" class="activity-start"><button type="submit" class="btn small" data-handover-start>Start</button></form>
+      {% endif %}
+      {% if base %}<textarea hidden data-comment-source>{{ c.text }}</textarea>{% endif %}
+    </div>
+  </li>
+  {% endif %}
+  {% endfor %}
+</ol>

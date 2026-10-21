@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block crumbs %}<a href="/projects">课题</a>{{ ui.icon('chevron-right', 'sm') }}{% if p %}<a href="/projects/{{ p.slug }}">{{ p.name }}</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">编辑课题</span>{% else %}<span class="current">新建课题</span>{% endif %}{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title">{% if p %}编辑课题{% else %}新建课题{% endif %}</h1>
+    <p class="page-desc">{% if p %}只改动你修改的几项，其余保持不变。{% else %}一个课题是一个方向下的具体问题。创建后会生成它的文件夹：说明、文献表、证据表。{% endif %}</p>
+  </div>
+</header>
+{% if error %}<div class="banner danger" role="alert"><span class="text">{{ error }}</span></div>{% endif %}
+{% if conflict %}
+<div class="conflict">
+  <p class="muted small">“-” 行是磁盘上的当前版本，“+” 行是你的编辑。</p>
+  <pre class="diff">{% for line in conflict.diff.splitlines() %}<span class="{{ 'add' if line.startswith('+') and not line.startswith('+++') else ('del' if line.startswith('-') and not line.startswith('---') else ('hunk' if line.startswith('@@') else '')) }}">{{ line }}</span>
+{% endfor %}</pre>
+</div>
+{% endif %}
+<form class="card stack" method="post" action="{% if p %}/projects/{{ p.slug }}/edit{% else %}/projects/new{% endif %}" style="max-width: 720px" id="project-form">
+  <input type="hidden" name="sha" value="{{ sha }}">
+  <div class="field"><label for="pe-name">课题名称</label><input type="text" id="pe-name" name="name" required value="{{ values.name or '' }}" placeholder="例如：东盟中心地位与大国竞争"{% if not p %} autofocus{% endif %}></div>
+  <div class="field"><label for="pe-question">研究问题</label><textarea id="pe-question" name="question" class="serif" required rows="3" placeholder="一句话写清要回答什么">{{ values.question or '' }}</textarea></div>
+  <div class="grid-2">
+    <div class="field"><label for="pe-direction">方向</label>
+      <select id="pe-direction" name="direction"><option value="">（未指定）</option>{% for d in directions %}<option value="{{ d.slug }}"{% if d.slug == values.direction %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="pe-stage">阶段</label>
+      <select id="pe-stage" name="stage">{% for s in stages %}<option value="{{ s.key }}"{% if s.key == values.stage %} selected{% endif %}>{{ L.stage[s.key] }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="grid-2">
+    <div class="field"><label for="pe-since">起始月份</label><input type="text" id="pe-since" name="since" class="mono" pattern="\d{4}-\d{2}(-\d{2})?" placeholder="2026-09" value="{{ values.since or '' }}"></div>
+    {% if not p %}
+    <div class="field"><label for="pe-slug">文件夹名</label><input type="text" id="pe-slug" name="slug" class="mono" pattern="[a-z0-9]+(-[a-z0-9]+)*" required value="{{ values.slug or '' }}" placeholder="asean-centrality">
+      <div class="help">小写英文、数字和连字符；按课题名自动生成，可修改，创建后不能再改。中文课题名请自己写一个英文短名。</div></div>
+    {% else %}
+    <div class="field"><label>文件夹名</label><div class="mono muted" style="padding: 8px 0">{{ p.slug }}</div><div class="help">产出通过它指向课题，不能修改。</div></div>
+    {% endif %}
+  </div>
+  <div class="field"><label for="pe-note">备注</label><textarea id="pe-note" name="note" rows="2" placeholder="来源、约束或下一步的提醒">{{ values.note or '' }}</textarea></div>
+  <div class="form-actions"><button class="btn" type="submit">{% if p %}Save{% else %}Create project{% endif %}</button><a class="btn ghost" href="{% if p %}/projects/{{ p.slug }}{% else %}/projects{% endif %}">Cancel</a></div>
+</form>
+{% if p %}
+<div class="section-head"><h2>课题文件</h2></div>
+<div class="card flush"><ul class="list">
+  {% for n, l in {'index.md': '说明', 'literature.md': '文献表', 'evidence.md': '证据表'}.items() %}
+  <li class="list-item hub-file">{{ ui.icon('file-text') }}<div class="body"><span class="title">{{ l }}</span><div class="sub"><span class="mono">{{ n }}</span></div></div><div class="trail"><a class="btn secondary small" href="/projects/{{ p.slug }}/files/{{ n }}">{{ ui.icon('pencil', 'sm') }}Edit</a></div></li>
+  {% endfor %}
+</ul></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if not p %}
+<script>
+(function () {
+  var name = document.getElementById('pe-name'), slug = document.getElementById('pe-slug'), touched = !!slug.value;
+  slug.addEventListener('input', function () { touched = !!slug.value; });
+  name.addEventListener('input', function () {
+    if (touched) return;
+    slug.value = name.value.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48);
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{# Result tables of a run: every table states n and missing. `result` is analysis_runs.result_json. #}
+{% from "partials/_data_macros.html" import fmt %}
+{% set s = result.summary or {} %}
+{% set p_cols = ("p", "F 检验 p", "LR 检验 p") %}
+<div class="ds-summary">
+  <span class="chip">n = {{ fmt(s.n) }}</span>
+  <span class="chip">缺失删除 {{ fmt(s.missing_dropped or 0) }}</span>
+  {% if s.r2 is defined and s.r2 is not none %}<span class="chip">R² {{ fmt(s.r2) }}</span>{% endif %}
+  {% if s.adj_r2 is defined and s.adj_r2 is not none %}<span class="chip">调整 R² {{ fmt(s.adj_r2) }}</span>{% endif %}
+  {% if s.pseudo_r2 is defined %}<span class="chip">伪 R² {{ fmt(s.pseudo_r2) }}</span>{% endif %}
+  {% if s.chi2 is defined %}<span class="chip">χ² {{ fmt(s.chi2) }} · df {{ s.df }} · p {{ fmt(s.p) }}</span>{% endif %}
+  {% if s.t is defined %}<span class="chip">t {{ fmt(s.t) }} · p {{ fmt(s.p) }}</span>{% endif %}
+  {% if s.entities %}<span class="chip">{{ s.entities }} 个个体</span>{% endif %}
+  {% if s.se %}<span class="chip">{{ s.se }}</span>{% endif %}
+</div>
+{% for n in result.notes or [] %}<p class="ds-note warn">注：{{ n }}</p>{% endfor %}
+{% for t in result.tables or [] %}
+<figure class="ds-table">
+  <figcaption><strong>{{ t.title }}</strong> <span class="muted">n = {{ fmt(t.n) }} · 缺失/删除 = {{ fmt(t.missing if t.missing is not none else 0) }}</span></figcaption>
+  <div class="ds-scroll">
+  <table class="data ds-num">
+    <thead><tr>{% for c in t.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in t.rows %}<tr>{% for v in row %}{% set col = t.columns[loop.index0] if loop.index0 < t.columns|length else '' %}<td{% if loop.first %} class="lead"{% endif %}>{% if col in p_cols and v is number and v is not boolean and v < 0.001 %}&lt; 0.001{% else %}{{ fmt(v) }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table>
+  </div>
+  {% if t.note %}<p class="muted ds-caption">{{ t.note }}</p>{% endif %}
+</figure>
+{% endfor %}

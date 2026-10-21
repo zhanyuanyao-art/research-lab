@@ -1,0 +1,16 @@
+{#- The live block of /replicate/<plan> (card 0158): while a job runs it polls itself every 3 s; when the job has
+    ended the status route answers HX-Refresh and the page reloads with the new run. Context: plan.id, job (the
+    running replication_jobs row or none), progress {log, calls, n_calls, scripts, tables, figures}, recent. -#}
+<section class="card" id="replicate-status" aria-live="polite"{% if job %} hx-get="/replicate/{{ plan.id }}/status" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  {% if job %}
+  <div class="row"><h3 class="grow">{{ '正在运行：AI 写代码、运行、修正' if job.mode == 'ai' else '正在重跑保存的代码（不调用 AI）' }}</h3>
+    <form method="post" action="/replicate/{{ plan.id }}/stop"><button type="submit" class="btn secondary small" data-replicate-stop>Stop</button></form></div>
+  <p class="muted small">开始于 {{ job.started_at }} · 已运行 {{ progress.n_calls or 0 }} 次脚本{% if job.mode == 'ai' %} · 最多 {{ max_turns }} 轮{% endif %}</p>
+  <p class="small">脚本：{% for s in progress.scripts %}<span class="chip">{{ s }}</span> {% else %}<span class="muted">还没有</span>{% endfor %}</p>
+  <p class="small">结果：{% if progress.results %}<span class="chip">results.json</span>{% else %}<span class="muted">还没有 results.json</span>{% endif %}{% for f in progress.figures %} <span class="chip">{{ f }}</span>{% endfor %}</p>
+  {% if progress.calls %}<ul class="list small">{% for c in progress.calls %}<li>{{ c.at }} · {{ c.script }} · 退出码 {{ c.exit }} · {{ c.seconds }} 秒</li>{% endfor %}</ul>{% endif %}
+  {% if progress.log %}<details><summary class="small">运行日志</summary><pre class="mono small">{{ progress.log }}</pre></details>{% endif %}
+  {% else %}
+  <p class="muted small">现在没有在运行。{% if recent %}上一次：{{ {'done': '完成', 'error': '出错', 'stopped': '已停止', 'running': '运行中'}.get(recent[0].state, recent[0].state) }}（{{ recent[0].finished_at or recent[0].started_at }}）{% endif %}</p>
+  {% endif %}
+</section>

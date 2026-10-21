@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ asset('weekly.css') }}">{% endblock %}
+{% block crumbs %}<a href="/">首页</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">调整计划</span>{% endblock %}
+{% block content %}
+{% set field_label = {'period': '阶段', 'question': '核心问题', 'this_week': '本周', 'next_week': '下一步', 'project': '当前项目',
+                      'puzzle': '谜题', 'need_to_find_out': '待查明', 'reading': '在读'} %}
+<header class="page-header"><div class="titles"><h1 class="page-title">调整计划</h1><p class="page-desc">这学期的研究问题、这周要做的事和下一步。首页顶部显示这里的内容。</p></div></header>
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+{% if saved %}<p class="ok">{% if saved == 'nothing' %}没有改动。{% else %}已更新 {% for k in saved.split(',') %}{{ field_label.get(k, k) }}{{ '、' if not loop.last }}{% endfor %}。{% endif %}</p>{% endif %}
+{% if pending %}
+<div class="conflict"><p class="muted">你未保存的修改：</p><ul>{% for k, v in pending.items() %}<li><code>{{ k }}</code>：{% if v is string %}{{ v }}{% else %}{{ v | join(' · ') }}{% endif %}</li>{% endfor %}</ul></div>
+{% endif %}
+
+{% if sha is none %}
+<p class="muted">还没有计划文件。</p>
+{% else %}
+<form method="post" action="/now" class="stack" data-dirty-guard>
+  <input type="hidden" name="sha" value="{{ sha }}">
+  {% for f in fields %}
+  <div>
+    <label for="f-{{ f.key }}">{{ field_label.get(f.key, f.key | replace('_', ' ')) }} <span class="mono muted">{{ f.key }}</span>{% if f.is_list %} <span class="muted">（每行一条）</span>{% endif %}</label>
+    {% if f.long %}<textarea class="inline-edit" id="f-{{ f.key }}" name="f_{{ f.key }}" data-autogrow rows="{{ f.value.count('\n') + 1 }}">{{ f.value }}</textarea>
+    {% else %}<input type="text" class="inline-edit" id="f-{{ f.key }}" name="f_{{ f.key }}" value="{{ f.value }}">{% endif %}
+  </div>
+  {% endfor %}
+  <div class="row"><button class="btn" type="submit">Write now.yml</button><span class="muted small">只重写改动过的键，文件里的注释会保留。</span></div>
+</form>
+{% endif %}
+
+<h2>在看板上的预览</h2>
+<section class="hero">
+  <div class="hero-top">
+    <span class="hero-week">{{ current_week | week_zh }}</span>
+    <span class="hero-tag">{{ now.period }}</span>
+  </div>
+  <p class="hero-question">{{ now.question }}</p>
+  <dl class="hero-grid">
+    <div><dt>本周</dt><dd>{{ now.this_week }}</dd></div>
+    <div><dt>当前项目</dt><dd>{{ (projects.get(now.project) or {}).get('name', now.project) }}</dd></div>
+    <div><dt>下一步</dt><dd>{{ now.next_week }}</dd></div>
+  </dl>
+</section>
+{% if now.puzzle %}<p><strong>谜题。</strong>{{ now.puzzle }}</p>{% endif %}
+{% if now.need_to_find_out %}<h3>待查明</h3><ol>{% for n in now.need_to_find_out %}<li>{{ n }}</li>{% endfor %}</ol>{% endif %}
+{% if now.reading %}<h3>在读</h3><ul>{% for n in now.reading %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('weekly.js') }}" defer></script>{% endblock %}

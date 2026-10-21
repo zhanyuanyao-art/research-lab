@@ -1,0 +1,165 @@
+{# Component macros. Import with {% import "partials/ui.html" as ui with context %}. #}
+
+{% macro icon(name, cls='', data_for='') -%}
+<svg class="i {{ cls }}"{% if data_for %} data-for="{{ data_for }}"{% endif %} aria-hidden="true"><use href="{{ asset('icons.svg') }}#{{ name }}"></use></svg>
+{%- endmacro %}
+
+{% macro dir_tag(slug, link=true) -%}
+{%- set d = direction_map.get(slug) -%}
+{%- if d -%}
+{%- if link %}<a class="dir-tag" href="/artifacts/d/{{ slug }}" style="--dc: {{ direction_color(slug) }}">{{ d.name }}</a>
+{%- else %}<span class="dir-tag" style="--dc: {{ direction_color(slug) }}">{{ d.name }}</span>{% endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{#- Direction as a mark (推送, card 0106): the identity colour, the name (and an optional second line) as a tooltip
+    that hover, keyboard focus or a tap opens. No direction keeps the slot empty, so the source line does not move. -#}
+{% macro dir_dot(slug, extra='') -%}
+{%- set d = direction_map.get(slug) if slug else none -%}
+{%- if d -%}
+{%- set tip = d.name ~ ('\n' ~ extra if extra else '') -%}
+<span class="dir-dot tip" tabindex="0" role="img" style="--dc: {{ direction_color(slug) }}" data-tip="{{ tip }}" aria-label="{{ tip }}"></span>
+{%- else %}<span class="dir-dot none" aria-hidden="true"></span>{% endif -%}
+{%- endmacro %}
+
+{#- Whether a feed paper's full text can be had (card 0106): open lock, lock (需订阅), book (已在文献库), or an empty slot. -#}
+{% macro access_mark(it) -%}
+{%- if it.imported -%}{%- set m = ('in-library', 'book-open', '已在文献库') -%}
+{%- elif it.oa_pdf_url and it.oa_pdf_url.startswith(('https://', 'http://')) -%}{%- set m = ('open', 'lock-open', '出版社免费提供' if it.oa_license == 'publisher' else '可获取原文') -%}
+{%- elif it.is_oa -%}{%- set m = ('open', 'lock-open', '期刊页可读') -%}
+{%- elif it.is_oa == 0 -%}{%- set m = ('closed', 'lock', '需订阅') -%}
+{%- else -%}{%- set m = none -%}{%- endif -%}
+{%- if m %}<span class="access-mark {{ m[0] }} tip" tabindex="0" role="img" data-tip="{{ m[2] }}" aria-label="{{ m[2] }}">{{ icon(m[1], 'sm') }}</span>
+{%- else %}<span class="access-mark" aria-hidden="true"></span>{% endif -%}
+{%- endmacro %}
+
+{% macro maturity(level) -%}
+{%- set rank = {'seed': 1, 'developed': 2, 'paper-ready': 3}.get(level, 0) -%}
+<span class="maturity" title="成熟度"><span class="pips">{% for n in range(3) %}<span{% if n < rank %} class="on"{% endif %}></span>{% endfor %}</span>{{ L.level[level] }}</span>
+{%- endmacro %}
+
+{% macro stepper(index, total=8, color=None) -%}
+<span class="stepper"{% if color %} style="--dc: {{ color }}"{% endif %} aria-hidden="true">{% for n in range(total) %}<span class="{{ 'done' if n < index else ('current' if n == index else '') }}"></span>{% endfor %}</span>
+{%- endmacro %}
+
+{% macro empty(icon_name, title, text='', href=None, label=None, compact=false) -%}
+<div class="empty{{ ' compact' if compact }}">{{ icon(icon_name) }}<strong>{{ title }}</strong>{% if text %}<span>{{ text }}</span>{% endif %}{% if href %}<a class="btn secondary small" href="{{ href }}">{{ label }}</a>{% endif %}</div>
+{%- endmacro %}
+
+{% macro kind_of(type_) -%}{{ L.kind[L.type_kind[type_]] }}{%- endmacro %}
+
+{% macro output_row(a, show_dir=false, manage=true) -%}
+<li class="list-item">
+  <span class="kind-col">{{ kind_of(a.type) }}</span>
+  <div class="body">
+    <a class="title serif" href="/artifacts/{{ a.ref }}">{{ a.title }}</a>
+    <div class="sub">
+      {{ maturity(a.level) }}
+      {% if projects.get(a.project) %}<span>{{ projects[a.project].name }}</span>{% endif %}
+      {% if show_dir and a.direction %}{{ dir_tag(a.direction) }}{% endif %}
+      {% if not a.counts %}<span class="badge warning">结论待写</span>{% endif %}
+    </div>
+  </div>
+  <span class="trail">{{ a.week | week_short_zh }}{% if manage and a.sha256 %}{{ row_menu(a) }}{% endif %}</span>
+</li>
+{%- endmacro %}
+
+{# File management for one output, from any list: edit, rename (title only; the file and ref stay), move to
+   another 课题, or move the file to the trash folder. Every action carries the row's sha, so a file edited
+   elsewhere since the page loaded is refused instead of overwritten. #}
+{% macro row_menu(a) -%}
+<details class="menu row-menu hover-actions">
+  <summary class="btn ghost icon small" aria-label="管理">{{ icon('ellipsis', 'sm') }}</summary>
+  <div class="menu-panel">
+    <a href="/artifacts/{{ a.ref }}?tab=edit">{{ icon('pencil') }}Edit</a>
+    <form method="post" action="/artifacts/{{ a.ref }}/rename" class="menu-form">
+      <input type="hidden" name="sha" value="{{ a.sha256 }}"><input type="hidden" name="next" value="{{ request.url.path }}">
+      <input type="text" name="title" value="{{ a.title }}" aria-label="新标题" required><button class="btn secondary small" type="submit">Rename</button>
+    </form>
+    <form method="post" action="/artifacts/{{ a.ref }}/project" class="menu-form">
+      <input type="hidden" name="sha" value="{{ a.sha256 }}"><input type="hidden" name="next" value="{{ request.url.path }}">
+      <select name="project" aria-label="移到课题" onchange="this.form.requestSubmit()">{% for slug, p in projects.items() %}<option value="{{ slug }}"{% if slug == a.project %} selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+    </form>
+    <hr>
+    <form method="post" action="/artifacts/{{ a.ref }}/delete" data-confirm="把「{{ a.title }}」移到回收站？文件会保留在 app/data/trash，可以找回。">
+      <input type="hidden" name="sha" value="{{ a.sha256 }}"><input type="hidden" name="next" value="{{ request.url.path }}">
+      <button type="submit" class="danger-text">{{ icon('trash-2') }}Move to trash</button>
+    </form>
+  </div>
+</details>
+{%- endmacro %}
+
+{% macro project_card(p) -%}
+<a class="card project-card interactive" href="/projects/{{ p.slug }}" style="--dc: {{ direction_color(p.direction) }}">
+  <div class="top">
+    {% if p.direction %}{{ dir_tag(p.direction, link=false) }}{% else %}<span></span>{% endif %}
+    <span class="row">{% if p.type %}<span class="badge" title="成果类型">类型：{{ p.type }}</span>{% endif %}<span class="badge">{{ L.stage[p.stage] }}</span></span>
+  </div>
+  <div>
+    <div class="name">{{ p.name }}</div>
+    <p class="question">{{ p.question }}</p>
+  </div>
+  <div class="progress-row">{{ stepper(p.stage_index, p.stage_total or 8, direction_color(p.direction)) }}</div>
+  {% if p.next %}<div class="next">{{ icon('arrow-right', 'sm') }}<span>下一步：{{ L.milestone[p.next.milestone] }}{% if p.next.failing %}，{{ p.next.failing }}{% endif %}</span></div>
+  {% elif p.note %}<div class="next">{{ icon('arrow-right', 'sm') }}<span>{{ p.note }}</span></div>{% endif %}
+  <div class="foot"><span>{{ p.paper_count }} 篇文献 · {{ p.artifact_count }} 个产出</span>{{ icon('chevron-right') }}</div>
+</a>
+{%- endmacro %}
+
+{# Shared on the homepage and research direction pages. The bar counts leaf issues, never paper completion. #}
+{% macro project_progress(p, compact=false) -%}
+{% if compact %}{#- 研究档案's one-line variant (ISSUES-LINEAR.md §2.8) on the sub-issue grid: the dot in the status
+    column, then name, type, progress ring, the nearest unfinished due date and the stage. A missing cell
+    keeps its track, so every row's due date ends at the same x. -#}
+<a class="project-row" href="/issues?project={{ p.slug }}" style="--dc:{{ direction_color(p.direction) }}">
+  <span class="issue-direction-dot"></span>
+  {% if p.key %}<span class="project-row-key">{{ p.key }}</span>{% endif %}
+  <span class="project-row-title">{{ p.name }}</span>
+  {% if p.type %}<span class="badge project-row-type" title="成果类型">类型：{{ p.type }}</span>{% endif %}
+  {% if p.total %}<span class="issue-progress project-row-progress" role="img" aria-label="已完成 {{ p.done }}，进行中 {{ p.doing }}，待开始 {{ p.todo }}。父子不重复计数，不含搁置或归档。" title="议题完成数，按最末级议题统计；父子不重复计数，不含搁置或归档。"><span class="issue-progress-ring" style="--progress:{{ (p.done / p.total * 100) | round }}%"></span>{{ p.done }}/{{ p.total }}</span>{% endif %}
+  {% if p.next_due %}{% set tn = due_tone(p.next_due) if due_tone is defined else '' %}<span class="project-row-due{% if tn %} due-{{ tn }}{% endif %}" title="最近截止：{{ p.next_due_title }}">{{ icon('calendar','sm') }}{{ p.next_due[5:7] | int }}月{{ p.next_due[8:10] | int }}日</span>{% endif %}
+  {% if p.stage %}<span class="project-row-stage">{{ L.stage[p.stage] }}</span>{% endif %}
+</a>
+{%- else %}
+<a class="project-progress-card archive-project-row" href="/issues?project={{ p.slug }}" style="--dc:{{ direction_color(p.direction) }}">
+  <div class="project-progress-head"><span class="issue-direction-dot"></span><h3>{{ p.name }}</h3>{% if p.type %}<span class="badge" title="成果类型">类型：{{ p.type }}</span>{% endif %}{{ icon('chevron-right','sm') }}</div>
+  <div class="project-progress-stat"><span>议题完成 <strong>{{ p.done }}<span> / {{ p.total }}</span></strong></span>{% if p.week %}<span class="project-week">本周到期 {{ p.week }} 项</span>{% endif %}</div>
+  <div class="project-status-bar" role="img" aria-label="已完成 {{ p.done }}，进行中 {{ p.doing }}，待开始 {{ p.todo }}。父子不重复计数，不含搁置或归档。" title="按最末级议题统计；父子不重复计数，不含搁置或归档。">
+    {% for state in ('done','doing','todo') %}{% if p[state] %}<span class="{{ state }}" style="flex:{{ p[state] }}"></span>{% endif %}{% endfor %}
+  </div>
+  <div class="project-progress-legend">{% if p.total %}<span><i class="done"></i>完成 {{ p.done }}</span><span><i class="doing"></i>进行 {{ p.doing }}</span><span><i class="todo"></i>待开始 {{ p.todo }}</span>{% else %}<span>尚无议题</span>{% endif %}{% if p.stage %}<span class="project-stage">{{ L.stage[p.stage] }}</span>{% endif %}</div>
+</a>
+{%- endif %}
+{%- endmacro %}
+
+{% macro library_url(changes) %}/papers?{{ dict(base_q, **changes) | urlencode }}{% endmacro %}
+{% macro library_folders() %}
+<section id="library-folders" class="library-folders" aria-label="文献文件夹" data-folder-order="{{ collection_order }}">
+  {% set folder_note = {'deleted': '已删除文件夹，里面的文献还在。', 'stale': '文件夹在别处改过，这次没有删除；刷新后的列表在下面，可以再删一次。', 'missing': '这个文件夹已经不在了。'}.get(request.query_params.get('folder', '')) %}
+  {% if folder_note %}<div class="flash">{{ icon('check' if request.query_params.get('folder') == 'deleted' else 'info', 'sm') }}{{ folder_note }}</div>{% endif %}
+  <div class="folder-heading"><h2>文件夹</h2><span>{{ collections | length }} 个</span></div>
+  <form action="/paper-collections" method="post" data-library-form data-new-folder-form class="folder-name-form folder-create-form" hidden><input class="inline-edit" name="name" aria-label="新文件夹名称" placeholder="文件夹名称" required maxlength="60"><button class="btn secondary small" type="submit">Create</button><button type="button" class="btn ghost small" data-cancel-folder>Cancel</button></form>
+  <ul class="folder-list card flush">
+    {% for c in collections %}
+    <li class="collection-row" draggable="true" data-folder-id="{{ c.id }}">
+      <div class="folder-display"><a href="/papers?collection={{ c.id }}" data-drop-collection="{{ c.id }}" title="打开文件夹">{{ icon('folder') }}<span data-folder-name>{{ c.name }}</span><span class="counts">{{ c.total }} 篇</span>{{ icon('chevron-right','sm') }}</a>
+        <details class="menu folder-menu"><summary class="btn ghost icon small" aria-label="管理文件夹：{{ c.name }}">{{ icon('ellipsis','sm') }}</summary><div class="menu-panel"><button type="button" data-rename-collection="{{ c.id }}">{{ icon('pencil','sm') }}Rename</button><button type="button" class="folder-up" data-folder-step="-1"{% if loop.first %} disabled{% endif %}>{{ icon('chevron-down','sm') }}Move up</button><button type="button" data-folder-step="1"{% if loop.last %} disabled{% endif %}>{{ icon('chevron-down','sm') }}Move down</button><hr><button type="submit" form="delete-{{ c.id }}" class="danger-text">{{ icon('trash-2','sm') }}Delete folder</button></div></details>
+      </div>
+      <form action="/paper-collections/{{ c.id }}/rename" method="post" data-library-form class="folder-name-form" id="rename-{{ c.id }}" hidden><input type="hidden" name="version" value="{{ c.version }}"><input class="inline-edit" name="name" value="{{ c.name }}" aria-label="文件夹名称：{{ c.name }}" required maxlength="60"><button class="btn ghost icon small" type="submit" aria-label="保存文件夹名称">{{ icon('check','sm') }}</button><button type="button" class="btn ghost icon small" data-cancel-folder aria-label="取消重命名">{{ icon('x','sm') }}</button></form>
+      {#- After the rename form: papers.js renames through the row's first form. A plain post, so a refusal comes back as a notice on the folder page. -#}
+      <form action="/paper-collections/{{ c.id }}/delete" method="post" id="delete-{{ c.id }}" data-confirm="删除文件夹「{{ c.name }}」？文献本身不会删除，不在其他文件夹里的会回到未归档。" hidden><input type="hidden" name="version" value="{{ c.version }}"></form>
+    </li>
+    {% else %}<li class="folder-empty">新建一个文件夹，按研究方向归放文献。</li>{% endfor %}
+  </ul>
+</section>
+{% endmacro %}
+
+{% macro library_directions() %}
+<section class="library-directions" aria-label="按研究方向浏览文献">
+  <div class="folder-heading"><h2>研究方向</h2></div>
+  <div class="project-progress-grid">
+    {% for d in rail.directions %}<a class="library-direction-card" href="/papers?direction={{ d.slug }}" style="--dc:{{ direction_color(d.slug) }}"><div><span class="issue-direction-dot"></span><h2>{{ d.name }}</h2>{{ icon('chevron-right','sm') }}</div><p>{{ d.total }} 篇文献{% if d.unread %}<span>{{ d.unread }} 篇未读</span>{% endif %}</p></a>{% endfor %}
+    {% if rail.unclassified %}<a class="library-direction-card" href="/papers?direction=_none"><div>{{ icon('inbox','sm') }}<h2>未分类</h2>{{ icon('chevron-right','sm') }}</div><p>{{ rail.unclassified }} 篇文献</p></a>{% endif %}
+  </div>
+</section>
+{% endmacro %}

@@ -1,0 +1,64 @@
+{#- The four properties on top of the reader's 概要 tab (card 0129, docs/design/LIBRARY-UI.md §3.2, §五 7): 状态, 方向,
+    课题, 议题, each changed in place from a menu. Plain posts that come back to this page (`next`); the routes are
+    the list's (/status, /archive). 议题 (card 0131, §3.6): the issues whose materials name this paper, with their
+    keys, read through the paper_issues global (routes/issues.py); Link issue opens a picker like the issue page's
+    (_issue_materials.html) and writes that issue's list. GET /papers/<id>/issues/search renders this file with
+    `issue_picker` for the picker's results; paper-reader.js drives the picker and redraws #paper-props. -#}
+{% import "partials/ui.html" as ui with context %}
+{% if issue_picker is defined %}
+  {% for h in issue_picker.hits %}
+  {#- A linked issue wears the check (and says so to a screen reader); picking it again unlinks it. aria-selected marks
+      the option ↑↓ has reached (paper-reader.js), which the search box names in aria-activedescendant. -#}
+  <button type="submit" name="pick" value="{{ h.ref }} {{ h.revision }} {{ 0 if h.linked else 1 }}" class="issue-pick" role="option" id="paper-issue-opt-{{ loop.index }}" aria-selected="false" aria-label="{{ h.key }} {{ h.title }}{{ '，已关联' if h.linked }}">
+    {{ ui.icon('list-checks', 'sm') }}<span class="issue-pick-text"><span class="t">{% if h.key %}<span class="issue-key">{{ h.key }}</span> {% endif %}{{ h.title }}</span>{% if h.project %}<span class="m">{{ h.project }}</span>{% endif %}</span>
+    {% if h.linked %}{{ ui.icon('check', 'sm') }}{% endif %}
+  </button>
+  {% else %}<p class="issue-pick-empty">{{ '没有找到「' ~ issue_picker.q ~ '」' if issue_picker.q else '还没有议题' }}</p>{% endfor %}
+{% else %}
+{%- set here = request.url.path ~ ('?' ~ request.url.query if request.url.query else '') -%}
+{%- set d = direction_map.get(paper.direction) -%}
+<dl class="prop-list" id="paper-props">
+  <dt>状态</dt>
+  <dd><details class="menu prop-menu">
+    <summary class="prop-val" aria-label="阅读状态：{{ dict(states)[read_state] }}"><span class="issue-state{{ ' doing' if read_state == 'reading' else ' done' if read_state == 'done' else '' }}">{% if read_state == 'done' %}{{ ui.icon('check', 'sm') }}{% endif %}</span>{{ dict(states)[read_state] }}</summary>
+    <div class="menu-panel"><form method="post" action="/papers/{{ paper.id }}/status" aria-label="阅读状态"><input type="hidden" name="next" value="{{ here }}">
+      {% for key, label in states %}<button name="state" value="{{ key }}"{% if key == read_state %} aria-current="true"{% endif %}><span class="issue-state{{ ' doing' if key == 'reading' else ' done' if key == 'done' else '' }}">{% if key == 'done' %}{{ ui.icon('check', 'sm') }}{% endif %}</span>{{ label }}</button>{% endfor %}
+    </form></div>
+  </details></dd>
+  <dt>方向</dt>
+  <dd><details class="menu prop-menu">
+    <summary class="prop-val{% if not d %} unset{% endif %}" aria-label="方向">{% if d %}<span class="dir-tag" style="--dc: {{ direction_color(paper.direction) }}">{{ d.name }}</span>{% else %}{{ ui.icon('plus', 'sm') }}Set{% endif %}</summary>
+    <div class="menu-panel"><form method="post" action="/papers/{{ paper.id }}/archive" aria-label="设定方向"><input type="hidden" name="next" value="{{ here }}">
+      {% for x in direction_list %}<button name="direction" value="{{ x.slug }}"{% if x.slug == paper.direction %} aria-current="true"{% endif %}><span class="dir-dot" style="--dc: {{ direction_color(x.slug) }}" aria-hidden="true"></span>{{ x.name or x.slug }}</button>{% endfor %}
+    </form></div>
+  </details></dd>
+  <dt>课题</dt>
+  <dd>
+    {% for slug, name in linked_projects %}<a class="prop-val" href="/projects/{{ slug }}">{{ ui.icon('folder', 'sm') }}{{ name }}</a>{% endfor %}
+    {% if other_projects %}<details class="menu prop-menu" data-add-project>
+      <summary class="{{ 'btn ghost icon small tip' if linked_projects else 'prop-val unset' }}" data-tip="Add to project" aria-label="Add to project">{{ ui.icon('plus', 'sm') }}{% if not linked_projects %}Add{% endif %}</summary>
+      <div class="menu-panel"><form method="post" action="/papers/{{ paper.id }}/archive" aria-label="加入课题"><input type="hidden" name="next" value="{{ here }}">
+        {% for slug, name in other_projects %}<button name="project" value="{{ slug }}">{{ ui.icon('folder', 'sm') }}{{ name }}</button>{% endfor %}
+      </form></div>
+    </details>{% elif not linked_projects %}<span class="prop-val unset">—</span>{% endif %}
+  </dd>
+  <dt>议题</dt>
+  {%- set linked_issues = paper_issues(paper.id, revisions=True) if paper_issues is defined else [] %}
+  <dd data-paper-issues>
+    {% for r in linked_issues %}<span class="paper-issue"><a class="prop-val" href="{{ r.url }}" title="{{ r.title }}">{{ ui.icon('list-checks', 'sm') }}{% if r.key %}<span class="issue-key">{{ r.key }}</span>{% endif %}{{ r.title }}</a>
+      <form method="post" action="/papers/{{ paper.id }}/issues" data-paper-issue-form><input type="hidden" name="ref" value="{{ r.id }}"><input type="hidden" name="revision" value="{{ r.revision }}"><input type="hidden" name="on" value="0"><input type="hidden" name="next" value="{{ here }}"><button class="btn ghost icon small" type="submit" title="Unlink" aria-label="Unlink: {{ r.title }}">{{ ui.icon('x', 'sm') }}</button></form></span>
+    {% endfor %}
+    <details class="issue-popover paper-issue-picker" data-paper-issue-picker>
+      <summary class="{{ 'btn ghost icon small tip' if linked_issues else 'prop-val unset' }}" data-tip="Link issue" aria-label="Link issue">{{ ui.icon('plus', 'sm') }}{% if not linked_issues %}Link issue{% endif %}</summary>
+      <div class="issue-popover-panel issue-pick-panel">
+        <form method="post" action="/papers/{{ paper.id }}/issues" data-paper-issue-form>
+          <input type="hidden" name="next" value="{{ here }}">
+          <label class="issue-pick-search">{{ ui.icon('search', 'sm') }}<input type="search" placeholder="搜索议题：编号、标题或课题" autocomplete="off" aria-label="搜索议题" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="paper-issue-results" data-paper-issue-search data-url="/papers/{{ paper.id }}/issues/search"></label>
+          <div class="issue-pick-results" id="paper-issue-results" role="listbox" aria-label="议题" data-paper-issue-results></div>
+          <p class="issue-pick-foot">↵ 关联 · 已关联的再按一次取消 · Esc 关闭</p>
+        </form>
+      </div>
+    </details>
+  </dd>
+</dl>
+{% endif %}

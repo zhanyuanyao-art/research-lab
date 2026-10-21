@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% from "partials/_data_macros.html" import flash %}
+{#- Card 0196: one replication on one page (Leo 10-19: no third level). 研究, 数据, 方法 and 结果 open in place, each
+    drawn with components rather than paragraphs; pictures open large in a dialog beside a note on how to read them.
+    Only the deck has a page of its own. Components come from app.css; replication.css adds layout only. -#}
+{% block head %}<link rel="stylesheet" href="{{ asset('replication.css') }}">{% endblock %}
+{% block crumbs %}<a href="/data">数据</a>{{ ui.icon('chevron-right', 'sm') }}<span class="current">{{ short_title }}</span>{% endblock %}
+{%- macro zoom(pic, label, note, cls='') -%}
+<button type="button" class="rp-thumb {{ cls }}" data-zoom="{{ pic }}" data-label="{{ label }}" data-note="{{ note }}" aria-label="放大：{{ label }}">
+  <img src="{{ pic }}" alt="{{ label }}" loading="lazy"><span class="muted small">{{ label }}</span>
+</button>
+{%- endmacro -%}
+{%- macro section(id, name, sub, open=false) -%}
+<details class="rp-sec" id="{{ id }}"{% if open %} open{% endif %}>
+  <summary><span class="rp-sec-head"><span class="title">{{ name }}</span><span class="sub">{{ sub or '还没有' }}</span></span>{{ ui.icon('chevron-right', 'sm rp-chev') }}</summary>
+  <div class="rp-sec-body">{{ caller() }}</div>
+</details>
+{%- endmacro -%}
+{% block content %}
+{%- set e = v.entries() %}
+{%- set base = "/data/plans/" ~ plan.id %}
+{%- set pic = base ~ "/deck/asset/" %}
+<div class="replication" data-testid="replication-report">
+<header class="page-header">
+  <div class="titles">
+    <h1 class="page-title serif">{{ v.title }}</h1>
+    <p class="page-desc">{% if plan.direction %}{{ ui.dir_tag(plan.direction) }} {% endif %}{{ v.status }}</p>
+  </div>
+  <div class="page-actions">
+    {%- if deck_info.exists %}<a class="btn primary" href="{{ base }}/deck">Open deck</a>
+    {%- elif not v.needs %}<form method="post" action="{{ base }}/deck"><button class="btn primary" type="submit">Make deck</button></form>{% endif %}
+  </div>
+</header>
+{{ flash(msg, err) }}
+{%- with p = plan %}{% include "partials/_run_all_status.html" ignore missing %}{% endwith %}
+
+<div class="card flush rp-sections" data-testid="report-sections">
+
+{%- set st = v.study() %}
+{% call section("study", "研究", e.study) %}
+  {%- if st.question %}
+  {%- if st.title %}<p class="kicker">{{ st.title }}</p>{% endif %}
+  <p class="hero-question">{{ st.question }}</p>
+  {%- endif %}
+  {%- if st.models %}
+  <h3 class="rp-h">相互竞争的解释</h3>
+  <div class="rp-cols rp-cols-{{ st.models|length }}">
+    {%- for m in st.models %}
+    <div class="card rp-model">
+      <div class="card-head"><h3>{{ m.tag or m.name }}</h3>{% if m.support %}<span class="chip {{ m.tone }}">{{ m.support }}</span>{% endif %}</div>
+      {%- if m.tag and m.name %}<p class="rp-model-name serif">{{ m.name }}</p>{% endif %}
+      <p class="small">{{ m.claim }}</p>
+      {%- if m.measure %}<p class="muted small">测量：{{ m.measure }}</p>{% endif %}
+    </div>
+    {%- endfor %}
+  </div>
+  {%- endif %}
+  {%- if st.findings or st.questions %}
+  <div class="grid-2 rp-gap">
+    {%- if st.findings %}
+    <div class="card"><div class="card-head"><h3>主要发现</h3></div>
+      <ul class="list">{% for f in st.findings %}<li class="list-item rp-tight">{{ ui.icon('circle-check', 'sm') }}<span class="body">{{ f }}</span></li>{% endfor %}</ul>
+    </div>
+    {%- endif %}
+    {%- if st.questions %}
+    <div class="card"><div class="card-head"><h3>值得讨论</h3></div>
+      <ol class="rp-ol">{% for q in st.questions %}<li>{{ q }}</li>{% endfor %}</ol>
+    </div>
+    {%- endif %}
+  </div>
+  {%- endif %}
+  {%- if not st.question and not st.models %}{{ ui.empty('book-open', '还没有研究概要', '运行之后，这里画出论文的问题、相互竞争的解释和发现。', compact=true) }}{% endif %}
+{% endcall %}
+
+{%- set dv = v.data() %}
+{% call section("data", "数据", e.data) %}
+  {%- if dv.unit %}<p class="muted">{{ dv.unit }}</p>{% endif %}
+  {%- if dv.sources %}
+  <div class="tiles rp-gap">
+    {%- for s in dv.sources %}
+    <div class="tile"><div class="tile-value">{{ s.big or '·' }}</div><div class="tile-label">{{ s.name }}</div><div class="tile-sub">{{ s.what }}</div></div>
+    {%- endfor %}
+  </div>
+  {%- endif %}
+  {%- if dv.steps %}
+  <h3 class="rp-h">{{ dv.measure_title or '关键变量怎么测' }}</h3>
+  <ol class="rp-steps">
+    {%- for s in dv.steps %}
+    <li class="card"><span class="chip">第 {{ loop.index }} 步</span><h3>{{ s.name }}</h3><p class="small">{{ s.what }}</p></li>
+    {%- endfor %}
+  </ol>
+  {%- if dv.measure_note %}<p class="muted small">{{ dv.measure_note }}</p>{% endif %}
+  {%- endif %}
+  <h3 class="rp-h">复现包</h3>
+  <div class="tiles">
+    <div class="tile"><div class="tile-value">{{ dv.package.scripts|length }}</div><div class="tile-label">作者脚本</div></div>
+    <div class="tile"><div class="tile-value">{{ dv.package.data|length }}</div><div class="tile-label">数据文件</div></div>
+    <div class="tile"><div class="tile-value">{{ dv.package.docs|length }}</div><div class="tile-label">说明书</div></div>
+  </div>
+  {%- if dv.package.scripts or dv.package.data or dv.package.docs %}
+  <details class="rp-more"><summary>文件清单</summary>
+    <div class="rp-files">
+      {%- for name in dv.package.data %}<span class="chip">{{ ui.icon('database', 'sm') }}{{ name }}</span>{% endfor %}
+      {%- for name in dv.package.scripts %}<span class="chip">{{ ui.icon('files', 'sm') }}{{ name }}</span>{% endfor %}
+      {%- for name in dv.package.docs %}<span class="chip">{{ ui.icon('file-text', 'sm') }}{{ name }}</span>{% endfor %}
+    </div>
+  </details>
+  {%- endif %}
+{% endcall %}
+
+{% call section("methods", "方法", e.methods) %}
+  {%- set cols, mrows = v.matrix() %}
+  {%- if mrows %}
+  <table class="data rp-matrix">
+    <tr><th>方法用在哪</th>{% for c in cols %}<th class="rp-c">{{ c }}</th>{% endfor %}</tr>
+    {%- for r in mrows %}<tr><td><a href="#method-{{ r.key }}">{{ r.name }}</a></td>{% for x in r.cells %}<td class="rp-c">{% if x %}{{ ui.icon('check', 'sm') }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+  </table>
+  {%- endif %}
+  {%- for m in v.methods %}
+  <details class="rp-item" id="method-{{ m.key }}">
+    <summary><span class="rp-sec-head"><span class="title">{{ m.name }}</span><span class="sub">{{ m.summary }}</span></span>{{ ui.icon('chevron-right', 'sm rp-chev') }}</summary>
+    <div class="grid-2 rp-gap">
+      <div class="card"><div class="card-head"><h3>原理</h3></div>
+        {%- if m.reading %}<ul class="rp-ul">{% for x in m.reading %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+        {%- if m.formula %}<pre>{{ m.formula }}</pre>{% endif %}
+      </div>
+      <div class="card"><div class="card-head"><h3>本文</h3></div>
+        {%- if m.usage %}<p class="small">{{ m.usage }}</p>{% endif %}
+        {%- if m.code %}<p class="muted small">{{ m.where }}</p><pre>{{ m.code }}</pre>{% endif %}
+      </div>
+    </div>
+    {%- if m.checks %}
+    <div class="card rp-gap"><div class="card-head"><h3>要做哪些检验，为什么</h3>{% if m.assumptions %}<span class="muted small">前提：{{ m.assumptions|join('、') }}</span>{% endif %}</div>
+      <table class="data"><tr><th>检验</th><th>检查哪条前提</th><th>怎么看</th></tr>
+        {%- for r in m.checks %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td class="small">{{ r[2] }}</td></tr>{% endfor %}</table>
+    </div>
+    {%- endif %}
+    <details class="rp-more"><summary>完整讲解</summary><article class="prose">{{ m.chapter | md | safe }}</article></details>
+  </details>
+  {%- else %}{{ ui.empty('flask-conical', '还没有认出方法', '取到作者代码之后，这里列出论文用到的方法。', compact=true) }}
+  {%- endfor %}
+{% endcall %}
+
+{%- set items = v.result_items() %}
+{% call section("results", "结果", e.results) %}
+  {%- if v.deck and v.deck.assets.get('overview.png') %}
+  {{ zoom(pic ~ 'overview.png', '每个数的对照', '每一行是一张表，每个方块是一个要复现的数。绿色一致，黄色只有方向一致，红色对不上，灰色还没复现出来。', 'rp-wide') }}
+  {%- endif %}
+  {%- for it in items %}
+  <details class="rp-item"{% if not it.page %} data-empty{% endif %}>
+    <summary><span class="rp-sec-head"><span class="title">{{ it.label }} · {{ it.caption }}</span><span class="sub">{{ it.script }}</span></span>
+      <span class="chip {{ 'ok' if it.ok else 'warn' }}">{{ it.status }}</span>{{ ui.icon('chevron-right', 'sm rp-chev') }}</summary>
+    {%- if it.page %}
+    <div class="rp-result">
+      {%- if it.original %}{{ zoom(pic ~ it.original.name, it.original.label, it.original.note) }}
+      {%- elif it.original_missing %}<p class="muted small">{{ it.original_missing }}</p>{% endif %}
+      {%- if it.ours %}{{ zoom(pic ~ it.ours.name, it.ours.label, it.ours.note) }}
+      {%- elif it.rows %}
+      <div>
+        <table class="data"><tr>{% for c in it.columns %}<th{% if loop.index > 2 %} class="num"{% endif %}>{{ c }}</th>{% endfor %}</tr>
+          {%- for r in it.rows %}<tr>{% for x in r %}<td{% if loop.index > 2 %} class="num"{% endif %}>{{ x }}</td>{% endfor %}</tr>{% endfor %}</table>
+        {%- if it.verdict %}<p class="small"><span class="chip {{ 'ok' if it.verdict_ok else 'warn' }}">{{ it.verdict }}</span> <span class="muted">{{ it.verdict_note }}</span></p>{% endif %}
+      </div>
+      {%- endif %}
+      {%- if it.chart %}{{ zoom(pic ~ it.chart.name, it.chart.label, it.chart.note) }}{% endif %}
+    </div>
+    {%- if it.src %}<p class="muted small">{{ it.src }}</p>{% endif %}
+    {%- else %}
+    <p class="muted small">{{ '复现包里没有这个脚本，取到后会自动跑' if it.status == '缺脚本' else '这一项还没有可以对照的内容' }}</p>
+    {%- endif %}
+  </details>
+  {%- else %}{{ ui.empty('table', '还没有结果', '运行作者代码之后，这里每张表一行。', compact=true) }}
+  {%- endfor %}
+{% endcall %}
+
+<a class="rp-sec rp-link" href="{{ base }}/deck"><span class="rp-sec-head"><span class="title">展示稿</span><span class="sub">{{ e.deck or '还没有' }}</span></span>{{ ui.icon('chevron-right', 'sm') }}</a>
+</div>
+<p class="replication-more"><a class="muted" href="{{ base }}/detail">方案详情</a></p>
+</div>
+
+<dialog class="zoom-dialog rp-zoom" id="rp-zoom" aria-label="放大查看">
+  <div class="rp-zoom-grid">
+    <img alt="">
+    <aside><h3></h3><p></p><form method="dialog"><button class="btn" type="submit">Close</button></form></aside>
+  </div>
+</dialog>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('replication.js') }}" defer></script>{% endblock %}
