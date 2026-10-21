@@ -1,4 +1,4 @@
-# 开发
+# 开发流程
 
 这里是 Research Lab 的源码，以 AGPL-3.0-or-later 公开。想改自己的副本，用普通的 git 分支和提交就行，也可以让 Claude Code、Codex 这类工具按 [AGENTS.md](../AGENTS.md) 在本地改。
 
