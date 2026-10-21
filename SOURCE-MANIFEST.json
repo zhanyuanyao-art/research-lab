@@ -1,5 +1,5 @@
 {
-  "source_commit": "ffe609db2bccd6e0980414aec2540f80a269bd7f",
+  "source_commit": "aff45567fa2603c1537c079c4a76d16462bb4370",
   "status": "private-review-only",
   "files": {
     ".github/ISSUE_TEMPLATE/bug-report.yml": {
@@ -68,8 +68,8 @@
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "e753fc0ed707f42b19a0f9a006785bbb858ebcf20bae60988ff60ebbaeb689c0",
-      "bytes": 4858,
+      "sha256": "d1e204e3b23da3b8230fc78a618b034d88a990cd500699f3c1d468e71ac50099",
+      "bytes": 6565,
       "mode": "100644"
     },
     "REVIEW.md": {
@@ -3418,8 +3418,8 @@
       "mode": "100644"
     },
     "app/research_lab/web/templates/partials/_issue_rows.html": {
-      "sha256": "8916906ec3806b843ff016f12135fd57cb931b2571a302c2eeed92e3735ef1be",
-      "bytes": 3459,
+      "sha256": "7731eb93027509644527023f8068fe192c20a80fc48abe6c07cb16fad9f86780",
+      "bytes": 3577,
       "mode": "100644"
     },
     "app/research_lab/web/templates/partials/_issue_shortcuts.html": {
@@ -4018,8 +4018,8 @@
       "mode": "100644"
     },
     "app/tests/test_issue_assignee.py": {
-      "sha256": "d213d13b2862b80e951393e5b96acee29ca48ccfc40488caea21da0d91d4731d",
-      "bytes": 3443,
+      "sha256": "91bc3cb68956bba7cfc9b5495995836deeb47a4fde806731b40d5e6d32dc1bf4",
+      "bytes": 3766,
       "mode": "100644"
     },
     "app/tests/test_issue_cards.py": {
@@ -4520,6 +4520,16 @@
     "docs/screenshots/replication.png": {
       "sha256": "3f7c727bc3daff3854f58feb959710f3aa0a09e3cf4b20ef3f7059d0cd7320fe",
       "bytes": 384901,
+      "mode": "100644"
+    },
+    "docs/screenshots/tasks.png": {
+      "sha256": "587114cc4aebe3f5a1b89f0dc85306b52a08fb71e7b02dab5bb4085510dc435a",
+      "bytes": 492730,
+      "mode": "100644"
+    },
+    "docs/screenshots/theo.png": {
+      "sha256": "c8835b1485908e940ccafd30c6d0ee113c189370075151e318dc5fa9dcf8422d",
+      "bytes": 358932,
       "mode": "100644"
     },
     "mac-third-party-sources.json": {

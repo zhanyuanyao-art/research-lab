@@ -13,12 +13,13 @@
     {% if r.key %}<span class="issue-row-key">{{ r.key }}</span>{% endif %}
     <a class="issue-row-title" href="/issues/{{ r.id }}">{{ r.title }}</a>
     {% if n.total %}<span class="issue-progress" title="子议题完成数"><span class="issue-progress-ring" style="--progress:{{ (n.done / n.total * 100) | round }}%"></span>{{ n.done }}/{{ n.total }}</span>{% endif %}
+    {#- Trail items follow the grid tracks (app.css): one placed left of the one before it drops to a second row. -#}
     <div class="issue-row-trail">
       {% if r.labels %}<span class="issue-row-labels">{% for label in r.labels %}{{ iu.label(label) }}{% endfor %}</span>{% endif %}
       {% if not issue_project and projects.get(r.project) %}<span class="issue-project-tag">{{ ui.icon('folder','sm') }}{{ projects[r.project].name }}{% if projects[r.project].type %} · 类型：{{ projects[r.project].type }}{% endif %}</span>{% endif %}
       {% if r.due %}{% set tn = due_tone(r.due, r.status) if due_tone is defined else '' %}<span class="issue-row-date{% if tn %} due-{{ tn }}{% endif %}" title="截止 {{ r.due }}">{{ ui.icon('calendar','sm') }}{{ r.due[5:7] | int }}月{{ r.due[8:10] | int }}日</span>{% endif %}
-      {% if r.assignee and assignees is defined and r.assignee in assignees %}<span class="issue-avatar is-assistant" title="分配给 {{ assignees[r.assignee] }}" aria-label="分配给 {{ assignees[r.assignee] }}">{{ ui.icon('sparkles','sm') }}</span>{% endif %}
       {% if r.priority != 'none' %}<span class="issue-priority {{ r.priority }}" title="{{ issue_priorities[r.priority] }}优先级">{{ ui.icon('chart-column','sm') }}</span>{% endif %}
+      {% if r.assignee and assignees is defined and r.assignee in assignees %}<span class="issue-avatar is-assistant" title="分配给 {{ assignees[r.assignee] }}" aria-label="分配给 {{ assignees[r.assignee] }}">{{ ui.icon('sparkles','sm') }}</span>{% endif %}
     </div>
   </div>
   {% if n.children %}<div class="issue-tree-children">{{ rows(n.children, depth + 1) }}</div>{% endif %}

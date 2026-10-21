@@ -26,6 +26,9 @@ def test_assigning_to_theo_shows_on_the_row_and_only_opens_a_plan(client, repo, 
     assert r.status_code == 200 and T.get(child)['assignee'] == 'theo'
     rows = client.get(f'/issues/{parent}').text.split('class="issue-subtree"', 1)[1].split('data-sub-composer', 1)[0]
     assert 'class="issue-avatar is-assistant" title="分配给 Theo"' in rows and rows.count('issue-avatar') == 1   # Leo shows no avatar
+    I.update(child, 'priority', 'medium', I.revision(child))
+    rows = client.get(f'/issues/{parent}').text.split('class="issue-subtree"', 1)[1].split('data-sub-composer', 1)[0]
+    assert rows.index('class="issue-priority medium"') < rows.index('class="issue-avatar is-assistant"')   # card 0209: tracks run prio, avatar
     (plan,) = conn.execute("SELECT * FROM agent_tasks").fetchall()      # card 0116: a plan step, nothing runs before 开始
     assert plan["status"] == "queued" and tasks.handover_state(conn, child) == "planning"
     assert I.display('assignee', 'theo') == 'Theo' and I.display('assignee', '') == I.display('assignee', 'Leo') == 'Zhanyuan Yao'
