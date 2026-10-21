@@ -2,7 +2,16 @@
 
 A local research workspace for social scientists: read papers, follow new journal articles, replicate published results, manage research tasks, and work with an AI assistant. The interface is in Simplified Chinese.
 
-给社会科学研究者的本地研究工作台：读论文、追新刊、复现论文、管理研究任务，配一个 AI 助手。论文、笔记和数据都存在你自己的电脑上。
+给社会科学研究者的本地研究工作台：目前版本提供新闻及论文推送，文献阅读和摘要生成，方法复现和展示文稿，在 agent 支持下可在应用内管理研究进度，调整应用功能及视觉效果，所有数据保存在本地。
+
+## 每日推送
+
+![每日推送](docs/screenshots/feed.png)
+
+- 订阅期刊和新闻源，每天早上按权重推送关注的研究方向的时事新闻和论文摘要。
+- 点击论文可以收进文献库，通过阅读器进行阅读，支持 agent 阅读形成摘要。
+- 期刊文章来自 Crossref 和 OpenAlex，新闻来自公开 RSS。设置的「学科与兴趣」里有政治学、国际关系、区域研究等预设；其他期刊按 ISSN 写进工作区的 `_data/feeds.yml`。
+
 
 ![读论文](docs/screenshots/reader.png)
 
@@ -14,19 +23,8 @@ A local research workspace for social scientists: read papers, follow new journa
 
   > Detlef Nolte, "How to Compare Regional Powers: Analytical Concepts and Research Topics", Review of International Studies, Vol. 36, No. 4, 2010, pp. 881-901.
 
-- 点 DOI 在浏览器里打开出版社页面。
 - 选中一段按 E 存成划线，可以写批注，之后在课题里按页码找回。
-- 按 Command/Ctrl+K 搜论文、议题编号或 PDF 正文。
 
-## 每日推送
-
-![每日推送](docs/screenshots/feed.png)
-
-- 订阅期刊和新闻源，每天早上把新论文和新闻按研究方向排好。
-- 标题和摘要翻成中文；几家媒体报道的同一件事合成一条，写明它为什么重要。
-- 周一补上周末的内容。
-- 点论文标题就收进文献库，直接打开阅读器。
-- 期刊文章来自 Crossref 和 OpenAlex，新闻来自公开 RSS。设置的「学科与兴趣」里有政治学、国际关系、区域研究等预设；其他期刊按 ISSN 写进工作区的 `_data/feeds.yml`。
 
 ## 复现论文
 
@@ -35,7 +33,7 @@ A local research workspace for social scientists: read papers, follow new journa
 - 从一篇论文开始，点 Run all：从 Dataverse、OSF 或 GitHub 取回作者的复现包，列出论文里的表和图，在沙箱里运行作者的 R 代码，把每个数和论文原表逐个对照。
 - 页面列出研究问题、数据来源、用到的方法和每张表的复现结果。方法部分附讲解，比如双重差分为什么要做平行趋势检验。
 - 需要你处理的只有两类事：需要权限才能下载的数据，和需要安装的系统依赖。
-- 设置里的「复现环境」检查 R 和编译工具缺什么，给出安装命令，可以一次预装常用 R 包。
+- 设置里的复现环境检查 R 和编译工具缺什么，给出安装命令，可以预装常用 R 包。
 
 ## 生成展示稿
 
@@ -53,10 +51,9 @@ A local research workspace for social scientists: read papers, follow new journa
 
 - 研究按研究方向、课题、子议题三层组织，子议题下面还可以再分。
 - 每条议题有编号、状态、优先级、截止日期、分配人和标签。编号按研究方向加前缀，比如 FP-0004。
-- 属性点一下就保存，可以撤销。描述和评论用 Markdown 写，可以附文件、关联文献；评论和每次改动按时间排在同一条活动记录里。
+- 描述和评论用 Markdown 写，可以附文件、关联文献；评论和每次改动按时间排在同一条活动记录里。
 - 议题可以分配给自己，也可以交给 Theo。交给 Theo 的议题，它先在评论里写计划，你点 Start 它才开始做；做完把结果写成评论，议题交回给你验收。
 - 首页列出本周到期和已逾期的议题。
-- 键盘操作：S 状态、P 优先级、A 分配人、L 标签。
 - Claude Code、Codex 这类编程智能体可以用 `rl issues` 命令读议题、写评论、附文件。
 
 ## 助手 Theo
@@ -69,7 +66,7 @@ A local research workspace for social scientists: read papers, follow new journa
 - 用一句话调设置，比如每天推送多少条。
 - 论文概要、推送翻译和复现报告也由同一个引擎完成。
 - 它起草的研究内容要你采纳后才进研究档案。它不写引文，不设证据状态。
-- 引擎二选一：DeepSeek API，或本机已登录的 Claude Code，每天有花费和次数上限。新工作区默认暂停 AI，你在设置里恢复之前，不会把任何内容发给模型。不接模型也能读 PDF、管理文献和议题。
+- 引擎自配：可用DeepSeek API，或本机已登录的 Claude Code，每天有花费和次数上限。不接模型也能读 PDF、管理文献和议题。
 
 ## 安装
 
