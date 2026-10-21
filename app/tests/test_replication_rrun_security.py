@@ -71,7 +71,9 @@ def under(profile: Path, ws: Path, argv: list[str], rhome: Path, *, install: boo
                           capture_output=True, text=True, timeout=timeout)
 
 
-PYTHON_ALLOW = (f'(allow process-exec* (literal "{PYTHON}"))\n(allow file-read* (subpath "{PYTHON_HOME}"))\n'
+# The probe's own interpreter. A python.org framework build (GitHub's macOS runners) execs a second binary under
+# Resources/Python.app, so the whole interpreter home may run; the profile under test is imported unchanged above it.
+PYTHON_ALLOW = (f'(allow process-exec* (subpath "{PYTHON_HOME}"))\n(allow file-read* (subpath "{PYTHON_HOME}"))\n'
                 f'(allow file-map-executable (subpath "{PYTHON_HOME}"))')
 PERL_ALLOW = '(allow process-exec* (literal "/usr/bin/perl"))\n(allow file-read* (literal "/usr/bin/perl"))'
 
