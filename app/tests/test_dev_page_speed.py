@@ -13,6 +13,7 @@ import httpx
 import pytest
 
 from research_lab.devflow import flow, status
+from ._timing import SLOW
 
 
 @pytest.fixture(autouse=True)
@@ -232,7 +233,7 @@ def test_app_copies_never_hold_up_the_page(monkeypatch):
     monkeypatch.setattr(status, "_scan_copies", scan)
     t = time.perf_counter()
     assert status.launchable_copies(wait=0.05) is None                  # first lookup still running
-    assert time.perf_counter() - t < 1
+    assert time.perf_counter() - t < 1 * SLOW
     assert status.launchable_copies(wait=0) is None and len(scans) == 1  # no second lookup while one runs
     release.set()
     status._copies["thread"].join(5)

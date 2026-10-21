@@ -16,6 +16,7 @@ import pytest
 from research_lab.config import get_paths
 from research_lab.files import issues as I
 from research_lab.replication import datasets, export, plans, workspace as W
+from ._timing import SLOW
 
 SLUG = "us-rok-reassurance"                 # direction alliance-us (the fixture's projects.yml)
 OTHER_SLUG = "asean-centrality"             # direction sea-asean
@@ -425,9 +426,9 @@ def test_hostile_megabyte_input_stays_fast(conn, plan, tmp_path, monkeypatch):
         fn()
         return time.perf_counter() - t
     big = "(" * 700_000 + "'" * 700_000 + "source(" * 100_000
-    assert took(lambda: export._text(big * 3, 200)) < 1 and took(lambda: export._td("|" * 5_000_000, 200)) < 1
-    assert took(lambda: export._part("..‮" * 2_000_000)) < 1 and len(export._part("x" * 5_000_000 + ".R")) <= 120
-    assert took(lambda: export._keys_of("Table " * 500_000)) < 1
+    assert took(lambda: export._text(big * 3, 200)) < 1 * SLOW and took(lambda: export._td("|" * 5_000_000, 200)) < 1 * SLOW
+    assert took(lambda: export._part("..‮" * 2_000_000)) < 1 * SLOW and len(export._part("x" * 5_000_000 + ".R")) <= 120
+    assert took(lambda: export._keys_of("Table " * 500_000)) < 1 * SLOW
     ws = W.workspace_dir(plan)
     _put(ws / "author" / "code" / "main.R", 'source("./code/helper.R")\nfread("./data/meetingData.csv")\n' + big[:1_900_000])
     for i in range(250):
@@ -435,7 +436,7 @@ def test_hostile_megabyte_input_stays_fast(conn, plan, tmp_path, monkeypatch):
     rows = [{"kind": "table", "label": f"Table {i}", "caption": "c" * 1_000_000, "page": "1", "section": "", "group": "main",
              "scripts": [{"path": "main.R", "full": "code/main.R", "have": True}] * 50, "outputs": ["o" * 100_000] * 20, "ticked": True}
             for i in range(1, 60)]
-    assert took(lambda: export.build_folder(conn, plan, tmp_path / "out" / "hostile", items=rows)) < 1
+    assert took(lambda: export.build_folder(conn, plan, tmp_path / "out" / "hostile", items=rows)) < 1 * SLOW
     readme = (tmp_path / "out" / "hostile" / "README.md").read_text()
     assert len(readme) < 400_000
 

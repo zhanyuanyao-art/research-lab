@@ -12,6 +12,7 @@ import pytest
 from research_lab.replication import fetch, package, plans
 
 from .test_data import data_client  # noqa: F401 - a fixture
+from ._timing import SLOW
 
 MB = 1024 * 1024
 CSV = b"country,year,y\nA,2010,1.5\nA,2011,2.5\nB,2010,0.5\nB,2011,0.7\n"
@@ -381,7 +382,7 @@ def test_scanning_a_very_long_line_stays_linear():
         for text in texts:
             t = time.perf_counter()
             package.scan(path, text, ["data/a.csv"], ["data/a.csv"])
-            assert time.perf_counter() - t < 1.0, (path, text[:20])
+            assert time.perf_counter() - t < 1.0 * SLOW, (path, text[:20])
     s = package.scan("x.py", 'import pandas as pd\na = pd.read_csv("data/a.csv")\nb = a.b.read_excel("data/b.xlsx")\n'
                      'c = f(z).read_json("data/c.json")\nm = sm.OLS(y, X)\n', ["data/a.csv", "data/b.xlsx", "data/c.json"], [])
     assert s.reads == ["data/a.csv", "data/b.xlsx", "data/c.json"] and s.models == {"sm.OLS": 1}

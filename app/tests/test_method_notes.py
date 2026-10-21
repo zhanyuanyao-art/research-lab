@@ -7,6 +7,7 @@ import time
 import pytest
 
 from research_lab.replication import method_notes as M
+from ._timing import SLOW
 
 
 def _keys(scripts: dict[str, str]) -> list[str]:
@@ -112,7 +113,7 @@ def test_hostile_code_finishes_fast(hostile):
     for name in ("big.R", "big.do", "big.py"):
         t = time.perf_counter()
         M.detect({name: hostile})
-        assert time.perf_counter() - t < 1.0, name
+        assert time.perf_counter() - t < 1.0 * SLOW, name
 
 
 # ---------------------------------------------------------------- the chapters

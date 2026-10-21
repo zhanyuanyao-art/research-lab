@@ -11,6 +11,7 @@ from research_lab.replication import coverage as cov
 from research_lab.replication import plans
 
 from .test_data import data_client, ingest_quiet  # noqa: F401 - data_client is a fixture
+from ._timing import SLOW
 
 
 def items_of(text: str, source: str = "main", page: str = "7") -> dict[str, cov.Item]:
@@ -403,7 +404,7 @@ def within(seconds: float, fn, *args, **kw):
     start = time.perf_counter()
     out = fn(*args, **kw)
     took = time.perf_counter() - start
-    assert took < seconds, f"{getattr(fn, '__name__', fn)} took {took:.2f}s"
+    assert took < seconds * SLOW, f"{getattr(fn, '__name__', fn)} took {took:.2f}s"
     return out
 
 

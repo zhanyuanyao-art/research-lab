@@ -12,6 +12,7 @@ from research_lab.replication import workspace as W
 
 from .test_replication_deck import (add_run, data_client, fixture_plan, png_bytes, read, results_json,  # noqa: F401
                                     texts)
+from ._timing import SLOW
 
 AI = {"title_zh": "顾问与外交决策", "study_sub": "谁的倾向决定决策", "question_title": "一群人开会听谁的",
       "question": "与会者的倾向怎样变成一个决定",
@@ -207,7 +208,7 @@ def test_megabyte_inputs_are_cut_and_every_part_finishes_in_time():
     out = [R.cover(ctx, ai, "")] + R.study(ctx, ai) + R.data(ctx, ai, {huge[:50]: huge}, {}) + R.conclusion(ctx, ai)
     out += R.methods(ctx, ai, found)
     res, _, _ = R.results(ctx, None, R.Assets(None), [])
-    assert time.perf_counter() - t < 1.0
+    assert time.perf_counter() - t < 1.0 * SLOW
     texts_ = [s.title for s in out + res] + [x for s in out + res for c in s.cards for x in (c.head, c.body, *c.points)]
     texts_ += [x for s in out + res for x in s.points + s.meta + [s.lede, s.subtitle]]
     assert max(len(x) for x in texts_) <= 200

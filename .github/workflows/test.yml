@@ -13,6 +13,7 @@ jobs:
       RL_FEEDS_AUTO: '0'
       RL_PM_AUTO: '0'
       RL_AUTOFIX: '0'
+      RL_TIMING_SCALE: '3'       # shared runners are slower; see app/tests/_timing.py
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

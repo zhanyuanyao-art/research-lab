@@ -1,5 +1,5 @@
 {
-  "source_commit": "e749136b8900dc190f09b5faa385a36bcbe36733",
+  "source_commit": "ffe609db2bccd6e0980414aec2540f80a269bd7f",
   "status": "private-review-only",
   "files": {
     ".github/ISSUE_TEMPLATE/bug-report.yml": {
@@ -13,8 +13,8 @@
       "mode": "100644"
     },
     ".github/workflows/test.yml": {
-      "sha256": "7820965e32e701f490251405b7316750c9ede54962a4cf5c0803832e29183b61",
-      "bytes": 581,
+      "sha256": "a249a0b9c06efdc0d5bacd0f777f0c635e61b0cd49f1b18e4a118d54bb878ea5",
+      "bytes": 668,
       "mode": "100644"
     },
     ".gitignore": {
@@ -3587,6 +3587,11 @@
       "bytes": 0,
       "mode": "100644"
     },
+    "app/tests/_timing.py": {
+      "sha256": "8db0ffaef29b064d7d620b90101d61afaa86c13d1f62572390915d7af6f3128e",
+      "bytes": 437,
+      "mode": "100644"
+    },
     "app/tests/conftest.py": {
       "sha256": "4ffd6f19c2fa96d363e7e9477181453c81af406881b2af122a1e4ac98282ac8e",
       "bytes": 5104,
@@ -3838,8 +3843,8 @@
       "mode": "100644"
     },
     "app/tests/test_checkviz.py": {
-      "sha256": "371d694182c69390546213a9b769877dcf169ce79cfed611ce8c459813d954b8",
-      "bytes": 16805,
+      "sha256": "2bb61538cc17c57157b2b3497fa4a94649faf6f9846b6cbdbc71b13d8bd3d7fd",
+      "bytes": 16859,
       "mode": "100644"
     },
     "app/tests/test_claude_code.py": {
@@ -3898,8 +3903,8 @@
       "mode": "100644"
     },
     "app/tests/test_dev_page_speed.py": {
-      "sha256": "aaff2e99dd89b53e583aefb05588893413d98e439979cf63b14f3654feb7440a",
-      "bytes": 15659,
+      "sha256": "79871fb21b03e247f9279edf80b36aebb859fad6772ea358737f121f08f3932d",
+      "bytes": 15692,
       "mode": "100644"
     },
     "app/tests/test_devflow.py": {
@@ -4138,8 +4143,8 @@
       "mode": "100644"
     },
     "app/tests/test_method_notes.py": {
-      "sha256": "cb258431fa6172f30a4da64711b0a0b1aae507940afbc9f0457602310c6541c8",
-      "bytes": 5693,
+      "sha256": "b9ef1ac7075ec5f4891cd3f2c7516206a4a4b2e632ef625dc61df9648b4841ef",
+      "bytes": 5726,
       "mode": "100644"
     },
     "app/tests/test_net_redirects.py": {
@@ -4213,8 +4218,8 @@
       "mode": "100644"
     },
     "app/tests/test_pipeline.py": {
-      "sha256": "51d723cdaefb0cef6b06e0b9c6c9ad7c0d50c4e7b6a14f84ca0d1617eb509f14",
-      "bytes": 43672,
+      "sha256": "066b4b4fd4b2b9774c5ba11e18633b8932cb9c923bc75f9a18b575afa3d27d1e",
+      "bytes": 43719,
       "mode": "100644"
     },
     "app/tests/test_pm_home.py": {
@@ -4258,18 +4263,18 @@
       "mode": "100644"
     },
     "app/tests/test_replication_coverage.py": {
-      "sha256": "1256b1cca4673ac5899a9c4ae0e175e14e73d6d9329d4dd9358b12bae77c53fc",
-      "bytes": 27723,
+      "sha256": "13f56d9f164a7c3bd29377b4c71dc05e379a554d8a67f64df40a62eecce9ab1e",
+      "bytes": 27756,
       "mode": "100644"
     },
     "app/tests/test_replication_deck.py": {
-      "sha256": "a73ecba40e7f74d1937ec170e8373a9e35fedeba16bc41545cd9b27adab7f302",
-      "bytes": 26821,
+      "sha256": "38a32d41266c454b6bdf98ac3bbd51de317fc88b08f0a73fdd0e5a3cb6776586",
+      "bytes": 26868,
       "mode": "100644"
     },
     "app/tests/test_replication_export.py": {
-      "sha256": "0c3233a13a6745cac23fba57ce2aaea70fd358177c5bd3f323eea73a29a03405",
-      "bytes": 32461,
+      "sha256": "a8250f3e31bcc935a612fbf9e0040c0bbf7ee5e6ef6896e6eddff7f2fa384814",
+      "bytes": 32522,
       "mode": "100644"
     },
     "app/tests/test_replication_fetch.py": {
@@ -4293,13 +4298,13 @@
       "mode": "100644"
     },
     "app/tests/test_replication_missing.py": {
-      "sha256": "86dd54a75223f838fdc688f646e4d86de270002fbbf82ce604d53e2fd5c23231",
-      "bytes": 28245,
+      "sha256": "2b73e5855fa04d5ffb1114c7ee05119a8ba45fc49f16d62b010a44059b9c12f6",
+      "bytes": 28320,
       "mode": "100644"
     },
     "app/tests/test_replication_package.py": {
-      "sha256": "59ca31f7448b9397c2e5a69206d590e2008947057ebf2a5ee26f48b79988bf81",
-      "bytes": 25765,
+      "sha256": "5d2c41046df34f9e297279c6bfb1436a1a97e19542dc45e2f62156b0fda83c7c",
+      "bytes": 25798,
       "mode": "100644"
     },
     "app/tests/test_replication_page.py": {
@@ -4333,8 +4338,8 @@
       "mode": "100644"
     },
     "app/tests/test_replication_rrun_security.py": {
-      "sha256": "02131992f7d0b564736e84be86affab9e369b8edb862334f0e469f130ae61d80",
-      "bytes": 35865,
+      "sha256": "7cdf7e076e8d1c34655893c4653909e5b955ee1dfcb2993c3a304c54cf8f07d8",
+      "bytes": 35954,
       "mode": "100644"
     },
     "app/tests/test_replication_targets.py": {
@@ -4363,8 +4368,8 @@
       "mode": "100644"
     },
     "app/tests/test_report_content.py": {
-      "sha256": "8264ec7a47f4e57e8d48c31440ee8b9c6943ac2082e04706daf02601fa3534b2",
-      "bytes": 23713,
+      "sha256": "a7037905183e7619ba56e222e05c9555ab1bf9f54a47681e4c4814cedf4af2e2",
+      "bytes": 23746,
       "mode": "100644"
     },
     "app/tests/test_research.py": {

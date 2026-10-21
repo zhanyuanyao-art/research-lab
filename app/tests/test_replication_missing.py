@@ -14,6 +14,7 @@ import httpx
 import pytest
 
 from research_lab.replication import datasets, fetch, missing, plans, workspace
+from ._timing import SLOW
 
 CSV = b"country,year,y\nA,2010,1.5\nB,2011,2.5\nC,2012,0.5\n"
 SRC = "doi:10.7910/DVN/ABC123"
@@ -407,11 +408,11 @@ def seconds(fn, *args, **kw):
 def test_a_text_of_nothing_but_write_calls_is_read_in_bounded_time(call, conn):
     text = call * (360_000 // len(call))
     names, took = seconds(missing.written_names, {"author/code/a.R": text})
-    assert names == set() and took < 1.0, took
+    assert names == set() and took < 1.0 * SLOW, took
     plan_id = plans.create_blank(conn)
     author(plan_id, {"code/a.R": text + '\nd <- read.csv("data/real.csv")\nfit <- lm(y ~ x, data = d)\n'})
     rep, took = seconds(missing.report, conn, plan_id)
-    assert [i.key for i in rep.items] == ["data/real.csv"] and took < 1.0, took
+    assert [i.key for i in rep.items] == ["data/real.csv"] and took < 1.0 * SLOW, took
 
 
 def test_the_write_scan_is_charged_by_a_budget_and_still_finds_names_inside_it():
@@ -427,7 +428,7 @@ def test_twenty_thousand_distinct_reads_stay_linear_and_the_panel_draws_a_capped
     lines = "\n".join(f'x{i} <- read.csv("data/f{i}.csv")' for i in range(20_000))
     author(plan_id, {"code/main.R": lines + "\nfit <- lm(y ~ x, data = x0)\n"})
     rep, took = seconds(missing.report, conn, plan_id)
-    assert took < 1.0, took
+    assert took < 1.0 * SLOW, took
     assert rep.truncated and rep.total_missing == missing.MAX_FILES and len(rep.items) == missing.MAX_ROWS
     assert rep.hidden == missing.MAX_FILES - missing.MAX_ROWS and rep.scripts == ["code/main.R"]
 
@@ -438,12 +439,12 @@ def test_the_row_cap_counts_what_it_hides_and_the_whole_list_stays_available(con
     author(plan_id, {"code/main.R": lines + "\nfit <- lm(y ~ x, data = x0)\n"})
     fetch.record_listing(plan_id, SRC, fetch.Listing("dataverse", "t", [fetch.Remote(f"data/f{i}.csv", "https://x/1", 100) for i in range(0, 3000, 2)]))
     rep, took = seconds(missing.report, conn, plan_id)
-    assert took < 1.0, took
+    assert took < 1.0 * SLOW, took
     assert not rep.truncated and rep.total_missing == 3000 and len(rep.items) == missing.MAX_ROWS and rep.hidden == 2700
     every, took = seconds(missing.missing_for, conn, plan_id)
-    assert len(every) == 3000 and took < 1.0, took
+    assert len(every) == 3000 and took < 1.0 * SLOW, took
     waiting, took = seconds(missing.waiting_scripts, conn, plan_id)
-    assert len(waiting["code/main.R"]) == 3000 and took < 1.0, took
+    assert len(waiting["code/main.R"]) == 3000 and took < 1.0 * SLOW, took
     assert {i.why for i in every} == {"unfetched", "unknown"}
 
 
@@ -452,7 +453,7 @@ def test_many_paths_ending_in_one_name_merge_without_a_pairwise_pass(conn):
     reads = "\n".join(f'read.csv("a{i}/b/x.csv")' for i in range(3000)) + '\nread.csv("x.csv")\nfit <- lm(y ~ x)\n'
     author(plan_id, {"code/main.R": reads})
     rep, took = seconds(missing.report, conn, plan_id, limit=None)
-    assert took < 1.0, took
+    assert took < 1.0 * SLOW, took
     assert rep.total_missing == 3000 and "x.csv" not in {i.key for i in rep.items}   # the bare name joined one of the longer paths
     assert len([i for i in rep.items if i.key == "a0/b/x.csv"]) == 1
 

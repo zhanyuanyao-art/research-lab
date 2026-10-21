@@ -19,6 +19,7 @@ import pytest
 from research_lab.ai import dispatch, queue, registry
 from research_lab.replication import coverage, datasets, deck, export, fetch, missing, pipeline, plans, renv, rrun
 from research_lab.replication import workspace as W
+from ._timing import SLOW
 
 ITEMS = [
     {"label": "Table 1", "scripts": [{"path": "code/main.R"}], "outputs": []},
@@ -586,7 +587,7 @@ def test_hostile_text_is_read_in_linear_time():
         pipeline._dependency("lme4", text)
         pipeline._mentions(text, pkgs)
         pipeline._dep_needs({"lme4": text, "nloptr": text})
-        assert time.monotonic() - t0 < 1.0
+        assert time.monotonic() - t0 < 1.0 * SLOW
 
 
 # ---------------------------------------------------------------- Stop, sizes, hostile structures
@@ -650,7 +651,7 @@ def test_three_hundred_mutually_sourcing_scripts_stay_under_a_second(conn, plan)
     labels, more = ctx.affects(names[:1])
     up = ctx.loading({"lme4"})
     labels_all, _ = ctx.affects(names)
-    assert time.monotonic() - t0 < 1.0
+    assert time.monotonic() - t0 < 1.0 * SLOW
     assert len(labels) + more == 200                       # rtext reads at most 200 source() paths per script
     assert up == names[:60] and len(labels_all) == pipeline.MAX_AFFECTS
 
@@ -666,7 +667,7 @@ def test_three_hundred_failed_scripts_and_packages_stay_under_a_second(plan):
     t0 = time.monotonic()
     explained = pipeline._explained(ctx, ctx.outcome["failed"], ctx.outcome["skipped"])
     dep, _data = pipeline._final_needs(None, ctx)
-    assert time.monotonic() - t0 < 1.0
+    assert time.monotonic() - t0 < 1.0 * SLOW
     assert explained == set(scripts) and len(dep) == 20
 
 

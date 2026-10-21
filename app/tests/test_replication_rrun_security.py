@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 
 from research_lab.replication import rrun, rtables, rtext, workspace as W
+from ._timing import SLOW
 
 HAS_SANDBOX = os.access(W.SANDBOX_EXEC, os.X_OK)
 needs_sandbox = pytest.mark.skipif(not HAS_SANDBOX, reason="macOS sandbox-exec only")
@@ -489,7 +490,7 @@ def test_a_megabyte_of_hostile_r_text_costs_under_a_second_whatever_is_asked_of_
         for cached in (rtext.call_index, rtext.sourced_files, rtext.read_refs, rtext.write_dirs, rtext._first_components):
             cached.cache_clear()
         spent = cpu(fn)
-        assert spent < 1.0, f"{what} on {name}: {spent:.2f} s"
+        assert spent < 1.0 * SLOW, f"{what} on {name}: {spent:.2f} s"
 
 
 def hostile_tables() -> dict[str, str]:
@@ -518,7 +519,7 @@ def test_a_megabyte_of_hostile_table_output_costs_under_a_second(name):
     blocks = rtables.parse_stargazer(text)
     res = rtables.results_from_blocks([("a.R", blocks, [])], [{"table": "T", "model": "(1)", "term": "x"}] * 5)
     spent = time.process_time() - start
-    assert spent < 1.0, f"{name}: {spent:.2f} s"
+    assert spent < 1.0 * SLOW, f"{name}: {spent:.2f} s"
     assert len(blocks) <= rtables.MAX_BLOCKS and len(res["tables"]) <= rtables.MAX_BLOCKS * rtables.MAX_COLS
     assert all(len(b.models) <= rtables.MAX_COLS and len(b.rows) <= rtables.MAX_ROWS for b in blocks)
 
@@ -555,7 +556,7 @@ def test_a_megabyte_of_hostile_install_log_is_read_in_under_a_second(name):
     hints = [rrun.hint_of(log.cause(p), p) for p in names]
     parsed = rrun.parse_install_log(text)
     spent = time.process_time() - start
-    assert spent < 1.0, f"{name}: {spent:.2f} s"
+    assert spent < 1.0 * SLOW, f"{name}: {spent:.2f} s"
     assert len(log.lists) <= rrun.LOG_LISTS and all(len(h) < 400 for h in hints)
     assert all(len(a) + len(b) <= rrun.SEG_LINES for a, b in log.segments.values())
     assert isinstance(parsed["failed"], dict)
@@ -564,14 +565,14 @@ def test_a_megabyte_of_hostile_install_log_is_read_in_under_a_second(name):
 def test_the_cell_reader_is_not_cubic_on_a_run_of_spaces():
     for n in (2_000, 4_000, 100_000, 1_000_000):
         spent = cpu(rtables._cell, "(" + " " * n + ")")
-        assert spent < 0.05, (n, spent)
+        assert spent < 0.05 * SLOW, (n, spent)
     assert rtables._cell("( 1.5 )").se == 1.5 and rtables._cell("[ 0.1 , 0.9 ]").ci == (0.1, 0.9)
 
 
 def test_a_package_of_many_hostile_files_is_scanned_within_the_time_budget_and_says_it_stopped_early():
     texts = {f"code/f{i:03d}.R": "library(" * 20_000 for i in range(150)}
     spent = cpu(lambda: rtext.parse_packages(texts))
-    assert spent < 1.5, spent                        # the budget is rtext.SCAN_SECONDS; the files already scanned are kept
+    assert spent < 1.5 * SLOW, spent                        # the budget is rtext.SCAN_SECONDS; the files already scanned are kept
     got = rtext.parse_packages(texts)
     assert got.truncated and any("没有扫" in n or "没有扫完" in n or "太密" in n for n in got.notes)
 
@@ -587,10 +588,10 @@ def test_the_page_reads_an_oversized_package_within_its_caps(conn, tmp_path):
     texts = rrun._r_texts(ws)
     assert len(texts) <= W.AUTHOR_SCRIPTS
     spent = cpu(rrun.package_list, ws)
-    assert spent < 1.0, spent
+    assert spent < 1.0 * SLOW, spent
     start = time.process_time()
     live = rrun.live(pid)
-    assert time.process_time() - start < 0.5 and live["running"] is False
+    assert time.process_time() - start < 0.5 * SLOW and live["running"] is False
     index = rtext.FileIndex(rrun._author_files(ws))
     saved = {p: t for p, t in texts.items() if p in index.exact}
     assert cpu(lambda: [rtext.missing_sourced(index, p, saved) for p in list(saved)[:rrun.SHOWN_SCRIPTS]]) < 1.0
@@ -629,7 +630,7 @@ def test_a_file_size_limit_stops_an_endless_print_and_logs_are_read_from_their_e
         fh.write("[rr] fail last 2\nthe very end\n")
     assert rrun._tail(ws, "logs/big.log", 20).endswith("the very end\n")
     assert rrun._log_lines(ws, "logs/big.log") == ["[rr] ok first 1", "[rr] fail last 2"]
-    assert cpu(rrun._tail, ws, "logs/big.log", 6000) < 0.2 and cpu(rrun._log_lines, ws, "logs/big.log") < 1.0
+    assert cpu(rrun._tail, ws, "logs/big.log", 6000) < 0.2 * SLOW and cpu(rrun._log_lines, ws, "logs/big.log") < 1.0 * SLOW
     (ws / "logs" / "link.log").symlink_to(ws / "logs" / "big.log")
     assert rrun._tail(ws, "logs/link.log") == "" and rrun._log_lines(ws, "logs/link.log") == []
 

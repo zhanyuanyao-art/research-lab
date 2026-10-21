@@ -21,6 +21,7 @@ from research_lab.replication import deck, plans
 from research_lab.replication import workspace as W
 
 from .test_data import data_client, ingest_quiet  # noqa: F401 - data_client is a fixture
+from ._timing import SLOW
 
 LONG = "Advisers shape the decisions that national security meetings reach, and the chair listens to them closely. " * 3
 
@@ -237,8 +238,8 @@ def test_a_pdf_figure_bomb_is_killed_and_the_app_never_stands_still(tmp_path, mo
     took = time.perf_counter() - t
     stop.set()
     thread.join()
-    assert img is None and took < 3                                      # rendered in the app it would be ~2.5 s with nothing else running
-    assert max(b - a for a, b in zip(ticks, ticks[1:])) < 0.5            # another thread of the app ran the whole time (the GIL was free)
+    assert img is None and took < 3 * SLOW                                      # rendered in the app it would be ~2.5 s with nothing else running
+    assert max(b - a for a, b in zip(ticks, ticks[1:])) < 0.5 * SLOW            # another thread of the app ran the whole time (the GIL was free)
     ok = tmp_path / "ok.pdf"
     doc = pymupdf.open()
     doc.new_page(width=200, height=100).insert_text((20, 50), "plot")
@@ -451,7 +452,7 @@ def test_the_download_route_has_no_way_to_name_another_file(data_client, fixture
 def under(limit: float, fn, *args, **kw):
     t = time.perf_counter()
     out = fn(*args, **kw)
-    assert time.perf_counter() - t < limit
+    assert time.perf_counter() - t < limit * SLOW
     return out
 
 

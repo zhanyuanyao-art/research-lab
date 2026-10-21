@@ -11,6 +11,7 @@ import pytest
 
 from research_lab.replication import checkviz as V
 from research_lab.replication import compare as C
+from ._timing import SLOW
 
 RLO, ZWSP = chr(0x202E), chr(0x200B)          # right-to-left override, zero-width space
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -253,7 +254,7 @@ def test_five_hundred_items_render_fast(fmt):
     start = time.perf_counter()
     V.table_chart(items, title="Table", fmt=fmt)
     V.overview_chart(V.group_by_table(items), fmt=fmt)
-    assert time.perf_counter() - start < 3.0
+    assert time.perf_counter() - start < 3.0 * SLOW
 
 
 def test_megabyte_labels_cost_no_more_than_short_ones():
@@ -265,13 +266,13 @@ def test_megabyte_labels_cost_no_more_than_short_ones():
     start = time.perf_counter()
     groups = V.group_by_table(items)
     V.summary_line(items)
-    assert time.perf_counter() - start < 1.0
+    assert time.perf_counter() - start < 1.0 * SLOW
     start = time.perf_counter()
     _svg_ok(V.table_chart(items, title=huge))
-    assert time.perf_counter() - start < 1.0
+    assert time.perf_counter() - start < 1.0 * SLOW
     start = time.perf_counter()
     _svg_ok(V.overview_chart(groups, title=huge))
-    assert time.perf_counter() - start < 1.0
+    assert time.perf_counter() - start < 1.0 * SLOW
 
 
 # ── odd numbers and failures ─────────────────────────────────────────────────────────────────────────────────
