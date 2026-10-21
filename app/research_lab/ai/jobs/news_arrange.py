@@ -13,7 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...db.connection import now_iso, set_setting
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 from ..registry import register
 
 
@@ -70,7 +70,7 @@ EXAMPLE = {
 
 def _system() -> str:
     zh = "Write theme, why_it_matters and note in Simplified Chinese; ids and slugs stay exactly as given."
-    return SYSTEM_RULES.replace("Write English.", zh) if "Write English." in SYSTEM_RULES else f"{SYSTEM_RULES} {zh}"
+    return system_rules().replace("Write English.", zh)
 
 
 def _projects() -> list[dict[str, Any]]:
@@ -103,7 +103,7 @@ class NewsArrange(JobSpec):
                          + (f" (direction {p['direction']})" if p.get("direction") else "") for p in projects]
         dir_lines = [f"- {d['slug']}: {d.get('name', '')} / {d.get('name_en', '')}" for d in dirs]
         user = "\n".join([
-            f"Task: arrange the {len(news.items)} commentary items of the news digest of {news.date} for Leo.",
+            f"Task: arrange the {len(news.items)} commentary items of the news digest of {news.date} for the user.",
             "",
             "Research directions:", *(dir_lines or ["(none)"]), "",
             "Projects:", *(project_lines or ["(none)"]), "",
@@ -111,7 +111,7 @@ class NewsArrange(JobSpec):
             "- Use only the items listed below and refer to them by id (n1, n2, …). Do not add outside events or facts.",
             "- clusters: 2–6 themes; each item appears in at most one cluster; items that fit nowhere may be left out.",
             "- direction: one direction slug from the list for each cluster, or null.",
-            "- why_it_matters: one or two sentences on why the theme matters for Leo's research directions.",
+            "- why_it_matters: one or two sentences on why the theme matters for the user's research directions.",
             "- project_links: only where an item plainly bears on a listed project's question; project_slug from the list.",
             "- Write theme, why_it_matters and note in Simplified Chinese.",
             "",

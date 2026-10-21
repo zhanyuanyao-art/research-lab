@@ -78,10 +78,17 @@ class JobSpec:
 
 
 SYSTEM_RULES = (
-    "You are the research assistant inside Leo's Research Lab, a PhD workbench for International "
-    "Relations of East Asia. Work only from the material given in this request. Never invent sources, "
+    "You are the research assistant inside Research Lab, a research workbench for one user. "
+    "Work only from the material given in this request. Never invent sources, "
     "quotations, dates or facts about cases; when the material does not support an answer, return an "
     "empty list or null. Label every claim you draft with a strength (seed or developed). Write English. "
     "Reply with a single JSON object matching the schema in the request and nothing else. Inside text values "
     "quote with 「」 in Chinese and “” in English, never a bare \" (it breaks the JSON)."
 )
+
+
+def system_rules() -> str:
+    """SYSTEM_RULES plus who the user is and what they study. The facts come last so every job's system message
+    still opens the same way (DeepSeek caches by prefix)."""
+    from ..files.issues import user_facts
+    return f"{SYSTEM_RULES} {user_facts()}"

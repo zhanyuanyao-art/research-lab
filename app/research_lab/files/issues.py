@@ -67,20 +67,62 @@ OWNER = 'Zhanyuan Yao'
 OWNER_VALUES = ('', 'Leo', OWNER)
 
 
+def _profile() -> dict | None:
+    """profile.yml as a dict; None when the file is missing (a legacy workspace), {} when unreadable."""
+    try:
+        data = load_yaml(get_paths().data_yml / 'profile.yml')
+    except FileNotFoundError:
+        return None
+    except (OSError, UnicodeError, YAMLError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _plain_name(value: Any) -> str:
+    name = value.strip() if isinstance(value, str) else ''
+    # The name also appears in Markdown comments and prompts; keep it plain text.
+    valid = all(unicodedata.category(c)[0] in 'LNM' or c in " .-'’" for c in name)
+    return name if 0 < len(name) <= 80 and valid else ''
+
+
 def owner_name() -> str:
     """Keep legacy workspaces unchanged while new ones identify their own user."""
-    profile = get_paths().data_yml / 'profile.yml'
-    try:
-        data = load_yaml(profile)
-    except FileNotFoundError:
+    profile = _profile()
+    if profile is None:
         return OWNER
+    return _plain_name(profile.get('owner_name')) or '我'
+
+
+def call_name() -> str:
+    """What the assistant calls the user: profile.yml `call_name`; 'Leo' in the legacy workspace (no profile.yml,
+    Leo's own lab); else the owner's name, or '' while that is still the placeholder 我."""
+    profile = _profile()
+    if profile is None:
+        return 'Leo'
+    name = _plain_name(profile.get('call_name')) or owner_name()
+    return '' if name == '我' else name
+
+
+def research_field() -> str:
+    """The workspace's research directions for prompts (name and English name), or '' when none are set."""
+    try:
+        rows = datafiles.read('directions')
     except (OSError, UnicodeError, YAMLError):
-        return '我'
-    value = data.get('owner_name', '') if isinstance(data, dict) else ''
-    name = value.strip() if isinstance(value, str) else ''
-    # The name also appears in Markdown comments; keep it plain text.
-    valid = all(unicodedata.category(c)[0] in 'LNM' or c in " .-'’" for c in name)
-    return name if 0 < len(name) <= 80 and valid else '我'
+        return ''
+    names = []
+    for d in rows if isinstance(rows, list) else []:
+        if not isinstance(d, dict):
+            continue
+        name, en = (' '.join(str(d.get(k) or '').split())[:80] for k in ('name', 'name_en'))
+        if name or en:
+            names.append(f'{name} ({en})' if name and en and en != name else name or en)
+    return '; '.join(names[:12])
+
+
+def user_facts() -> str:
+    """The line every model prompt carries instead of assuming who the user is or what they study."""
+    return (f"The user: {call_name() or 'unnamed'}. "
+            f"Research directions: {research_field() or 'not set yet'}.")
 
 
 def assignees() -> dict[str, str]:

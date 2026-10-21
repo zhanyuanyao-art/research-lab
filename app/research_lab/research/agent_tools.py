@@ -41,7 +41,7 @@ def draft(conn, args, task_id):
     d = store.save_draft(conn, task_id, args)
     return _result({'saved': True, 'revision': d['revision'], 'status': d['status'],
                     'link': f'[审阅产出](/chat/research/{d["session_id"]}/review)',
-                    'note': 'Only Leo can adopt this draft into the research archive.'})
+                    'note': 'Only the user can adopt this draft into the research archive.'})
 
 
 def register(Tool, obj):

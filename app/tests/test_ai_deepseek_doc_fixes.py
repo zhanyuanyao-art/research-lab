@@ -13,7 +13,7 @@ import httpx
 import pytest
 from research_lab.ai import claude_code, cost, queue, registry, runner
 from research_lab.ai.deepseek import DEADLINE_S, THINKING_MIN_TOKENS, OpenAICompatProvider, ProviderError
-from research_lab.ai.provider import SYSTEM_RULES, ChatRequest
+from research_lab.ai.provider import SYSTEM_RULES, ChatRequest, system_rules
 from research_lab.replication import plans
 
 from .test_ai import VALID, EchoSpec, Script, reply
@@ -391,7 +391,7 @@ def test_the_plan_prompt_opens_with_the_paper_text_and_ends_with_the_task(conn, 
     req, _ = plans.build(conn, jost_like)
     system, user = req.messages[0]["content"], req.messages[-1]["content"]
     block = plans.paper_block(conn, jost_like)
-    assert system == SYSTEM_RULES and user.startswith(block)
+    assert system == system_rules() and user.startswith(block)
     assert block.index("<paper_text>") < block.index("<results_pages>") < block.index("<availability>")
     assert block.endswith("</availability>\n\n") and "Paper:" not in block and "Task:" not in block
     rest = user[len(block):]

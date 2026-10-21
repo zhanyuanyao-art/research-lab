@@ -235,7 +235,7 @@ def test_issue_commands_with_setting_words_stay_with_the_issue_tools(repo, text)
 @pytest.mark.parametrize("text", ["换成深色会不会更费电", "论文每天 5 篇是不是太少了", "推送能不能少一点"])
 def test_a_question_changes_no_setting(conn, text):
     reply = change(conn, text, {"key": "ui.theme", "new": "dark"})
-    assert reply.startswith("not changed: Leo's message is a question") and TU.tunable(conn, "ui.theme") == "system"
+    assert reply.startswith("not changed: the user's message is a question") and TU.tunable(conn, "ui.theme") == "system"
     assert conn.execute("SELECT COUNT(*) FROM assistant_changes").fetchone()[0] == 0
 
 
@@ -260,8 +260,8 @@ def test_runtime_reads_engine_and_tier_settings_through_the_registry(conn):
 
 def test_settings_skill_budget_and_tools():
     sk = skills.get("settings")
-    assert (sk.tier, sk.max_tool_calls, sk.max_output_tokens) == ("light", 5, 800)
-    assert set(sk.tools) == {"read_settings", "change_settings", "ask_user"}
+    assert (sk.tier, sk.max_tool_calls, sk.max_output_tokens) == ("light", 8, 800)
+    assert set(sk.tools) == {"read_settings", "change_settings", "ask_user", "find_journal", "subscribe_journal", "unsubscribe_source", "add_news_source", "list_subscriptions"}   # card 0211
     assert tools.TOOLS["change_settings"].needs_task
 
 
@@ -300,7 +300,7 @@ def test_deepseek_settings_request_applies_directly(conn, monkeypatch):
     router.route(conn, "论文每天 5 篇就够了", page="/feed")
     t = conn.execute("SELECT * FROM agent_tasks").fetchone()
     assert t["skill"] == "settings" and t["status"] == "done" and t["model"] == "deepseek-flash"
-    assert {f["function"]["name"] for f in seen[0]["tools"]} == {"read_settings", "change_settings", "ask_user"}
+    assert {f["function"]["name"] for f in seen[0]["tools"]} == set(skills.get("settings").tools)
     assert TU.tunable(conn, "feeds.digest.papers_n") == 5
     assert seen[2]["messages"][-1]["content"].startswith("已改 1 处。")
 

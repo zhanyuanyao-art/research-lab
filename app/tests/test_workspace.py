@@ -94,7 +94,7 @@ def test_new_workspace_confirmed_bug_does_not_launch_maintainer_pipeline(tmp_pat
     with closing(connect()) as conn:
         first = tasks.create(conn, "首页按钮点了没反应", skill="task")
         reply = tools.report_bug(conn, args, first)
-        question = reply.split("then stop:\n", 1)[1].split("\nWhen he answers", 1)[0]
+        question = reply.split("then stop:\n", 1)[1].split("\nWhen they answer", 1)[0]
         conn.execute("UPDATE agent_tasks SET status='waiting', question=? WHERE id=?", (question, first))
         confirmed = tasks.create(conn, "好", skill="task", parent_id=first)
         reply = tools.report_bug(conn, args, confirmed)

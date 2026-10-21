@@ -11,7 +11,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from ...db.connection import now_iso
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 from ..registry import register
 
 
@@ -89,7 +89,7 @@ class ChecksDerive(JobSpec):
             "would weaken the claim. Do not state what the data show, do not cite sources, and do not write any "
             "part of the user's argument. Return {\"checks\": []} when the material does not support a check."
         )
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES}, {"role": "user", "content": user}],
+        req = ChatRequest(messages=[{"role": "system", "content": system_rules()}, {"role": "user", "content": user}],
                           max_tokens=2000)
         return req, []
 

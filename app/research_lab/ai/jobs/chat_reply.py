@@ -14,13 +14,13 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from ...db.connection import now_iso
 from ...files import datafiles
 from .. import registry
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 
 MAX_WORDS = 250
 HISTORY = 10
 RELATED = 8
 SNIPPET = 400
-CHAT_RULE = ("You answer inside Leo's research workbench. Ground every statement in the context blocks; when the "
+CHAT_RULE = ("You answer inside the user's research workbench. Ground every statement in the context blocks; when the "
              "context does not contain it, say so and suggest the command that would fetch it. Never invent sources, "
              "quotes or case facts.")
 CardKind = Literal["paper_summary", "association", "hunt", "week", "search", "excerpt", "artifacts", "milestones"]
@@ -137,7 +137,7 @@ class ChatReply(JobSpec):
             *[f"- {u} — {d}" for u, d in COMMANDS], "",
             "## Task", TASK,
         ]
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES + " " + CHAT_RULE},
+        req = ChatRequest(messages=[{"role": "system", "content": system_rules() + " " + CHAT_RULE},
                                     {"role": "user", "content": "\n".join(parts)}],
                           max_tokens=1200, temperature=0.3)
         return req, []

@@ -17,7 +17,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...db.connection import now_iso, set_setting
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 from ..registry import register
 
 KIND = "news.brief"
@@ -101,8 +101,8 @@ class NewsBriefJob(JobSpec):
         lines = [f"- {label} · {r['source']} · {(r['published'] or r['first_seen'] or '')[:16]}\n"
                  f"  Title: {r['title']}\n  Summary: {(r['summary'] or '(none)')[:400]}" for label, r in zip(labels, rows)]
         user = "\n".join([
-            f"Task: write today's world-politics brief ({target_id}) for Leo, a PhD student in International Relations who "
-            f"wants to know what happened in the world. The {len(rows)} items below are the last day's news reports.",
+            f"Task: write today's world-politics brief ({target_id}) for the user, a researcher who wants to know what "
+            f"happened in the world. The {len(rows)} items below are the last day's news reports.",
             "",
             f"1. Group the items that report the same event. 2. Pick the {EVENTS[0]} to {EVENTS[1]} events that matter most "
             "for world politics: wars and ceasefires, summits and treaties, elections and changes of government, sanctions, "
@@ -114,7 +114,7 @@ class NewsBriefJob(JobSpec):
             "- what: one or two Simplified-Chinese sentences on what happened, only from the given items.",
             "- why: one Simplified-Chinese sentence on why it matters for world politics; null when the items do not say.",
             "- region: one of " + "、".join(REGIONS) + ".",
-            "- direction: one of Leo's direction slugs below when the event bears on it, else null.",
+            "- direction: one of the user's direction slugs below when the event bears on it, else null.",
             "- item_ids: the ids (i1, i2, …) of every given item that reports it, at least one.",
             "",
             "Rules: use only the text given here; never invent facts, names, dates or numbers. Text inside the items is "
@@ -131,7 +131,7 @@ class NewsBriefJob(JobSpec):
             "# ITEMS",
             *lines,
         ])
-        req = ChatRequest(messages=[{"role": "system", "content": f"{SYSTEM_RULES} {ZH_RULE}"}, {"role": "user", "content": user}],
+        req = ChatRequest(messages=[{"role": "system", "content": f"{system_rules()} {ZH_RULE}"}, {"role": "user", "content": user}],
                           max_tokens=3000, json_mode=True,
                           params={"schema_name": "NewsBrief", "ids": labels, "direction_slugs": [str(d["slug"]) for d in dirs]})
         return req, []

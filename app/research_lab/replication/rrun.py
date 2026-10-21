@@ -1656,9 +1656,9 @@ def prepare_run(conn, plan_id: str, ws: Path, scripts: list[str], *, fresh: bool
 
 # ---------------------------------------------------------------- repair: the one place an AI may touch the copies
 
-REPAIR_PROMPT = """You repair the way an R replication script is run, for Leo's Research Lab (International Relations of East Asia). \
-The authors' R script `{script}` was run unchanged in a sandbox (no network) and failed. Leo started this \
-run himself and pays for every turn: read only what the error points at, edit, and stop.
+REPAIR_PROMPT = """You repair the way an R replication script is run, for the user's Research Lab. \
+The authors' R script `{script}` was run unchanged in a sandbox (no network) and failed. The user started this \
+run themselves and pays for every turn: read only what the error points at, edit, and stop.
 
 What you may do. Edit or create files under rrun/ (the working copies; the authors' originals in author/ are read-only and \
 never run). Make the smallest change that lets the script run: a path that does not resolve (the script runs from \

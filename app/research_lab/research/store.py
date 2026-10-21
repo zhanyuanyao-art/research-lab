@@ -155,7 +155,7 @@ def prompt_context(conn, task_id):
     d = latest(conn, session['id'])
     return ('\n\nThis is a persistent research workflow. Read research_state (continue by next_offset) before proceeding. '
             'Its sources, exclusions and draft are authoritative task state across engines. '
-            'Save working progress before the tool budget is exhausted. A draft is not accepted until Leo uses the review page. '
+            'Save working progress before the tool budget is exhausted. A draft is not accepted until the user uses the review page. '
             f'Kind: {session["kind"]}; current revision: {d["revision"] if d else 0}.')
 
 

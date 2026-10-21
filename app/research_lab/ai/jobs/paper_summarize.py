@@ -24,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from ...config import get_paths
 from ...db.connection import now_iso
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 from ..registry import register
 
 FULL_TEXT_TOKENS = 30_000
@@ -216,7 +216,7 @@ LANGUAGE_RULES = (
 def system_prompt() -> str:
     """The shared rules say 'Write English.'; summaries are Chinese by decision of SPEC-v2."""
     zh = "Write all prose in Simplified Chinese; identifiers, page labels and slugs stay as given."
-    return SYSTEM_RULES.replace("Write English.", zh) if "Write English." in SYSTEM_RULES else f"{SYSTEM_RULES} {zh}"
+    return system_rules().replace("Write English.", zh)
 
 
 def directions_block() -> str:
@@ -441,7 +441,7 @@ class PaperSummarize(JobSpec):
             *LANGUAGE_RULES,
             "- Use only the material below. Put the printed page labels from the '=== p. X ===' markers in each field's pages list.",
             "- Paraphrase in your own words. Never copy sentences from the text; there is no quote field.",
-            "- Anything about events, dates or who did what is shown to Leo as 'to verify'; keep it brief and page-cited.",
+            "- Anything about events, dates or who did what is shown to the user as 'to verify'; keep it brief and page-cited.",
             "- When the material does not support a field, use null text and an empty pages list.",
             "- Describe only what this paper does. Never write what it does not discuss, and never bring in a topic, "
             "region, case or concept the paper itself does not raise; relevance_to_project is the only field that "

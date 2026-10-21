@@ -18,7 +18,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ..ai.provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..ai.provider import ChatRequest, JobSpec, system_rules
 from ..ai.registry import register
 from ..db.connection import now_iso
 from ..tunables import default, tunable
@@ -93,7 +93,7 @@ EXAMPLE = {"items": [
     {"id": "i1", "zh_title": "标题的忠实中文翻译", "zh_summary": "这一条论证或报道了什么，一句话。",
      "why_it_matters": None, "direction": "direction-slug", "score": 3, "importance": None, "category": None, "region": None},
     {"id": "i2", "zh_title": "标题的忠实中文翻译", "zh_summary": "这一条论证或报道了什么，一句话。",
-     "why_it_matters": "与 Leo 的方向或课题有什么关系，一句话；关系不明显时为 null。", "direction": None, "score": 1,
+     "why_it_matters": "与用户的方向或课题有什么关系，一句话；关系不明显时为 null。", "direction": None, "score": 1,
      "importance": 2, "category": "其他视角", "region": "全球"},
 ]}
 
@@ -144,7 +144,7 @@ class FeedEnrich(JobSpec):
             lines.append(f"{head}\n{body}")
         kind_word = "news reports and commentary items" if is_news else "new journal articles"
         user = "\n".join([
-            f"Task: Leo reads a daily push of {kind_word}. For each of the {len(rows)} items below return one entry.",
+            f"Task: the user reads a daily push of {kind_word}. For each of the {len(rows)} items below return one entry.",
             "",
             "Fields:",
             "- id: the item id exactly as given (i1, i2, …).",
@@ -152,16 +152,16 @@ class FeedEnrich(JobSpec):
             "do not add, interpret or editorialise.",
             "- zh_summary: one Chinese sentence (at most 60 characters) on what the item argues or reports, using only the "
             "given " + ("summary" if is_news else "abstract") + ". If none is given, null.",
-            ("- why_it_matters: one short Chinese sentence on why it matters for Leo's directions or projects; null when the "
+            ("- why_it_matters: one short Chinese sentence on why it matters for the user's directions or projects; null when the "
              "link is not plain." if is_news else "- why_it_matters: null (papers do not need it)."),
             "- direction: one direction slug from the list, or null.",
-            "- score: integer 0-5, relevance to Leo's directions and projects (5 bears directly on a project question, "
+            "- score: integer 0-5, relevance to the user's directions and projects (5 bears directly on a project question, "
             "3 is clearly within a direction, 0 is unrelated). "
             "Score 0 for anything that is not an argument or report about the world: a publication announcing its own new "
             "issue, newsletter or digest, events, webinars, podcasts, calls for papers, job ads, subscription or donation "
             "appeals — whatever the topic words in it.",
-            ("- importance: integer 0-5, the weight of the event in world politics for an International Relations scholar, "
-             "whatever the region and whatever Leo's directions (5: a war, a major summit outcome, a change of government or "
+            ("- importance: integer 0-5, the weight of the event in world politics, "
+             "whatever the region and whatever the user's directions (5: a war, a major summit outcome, a change of government or "
              "a global crisis; 3: a notable national policy or diplomatic development; 1: minor; 0: no political "
              "significance, and 0 for the non-news items above)." if is_news else "- importance: null."),
             ("- category: one of " + "、".join(CATEGORIES) + "." if is_news else "- category: null."),
@@ -180,7 +180,7 @@ class FeedEnrich(JobSpec):
             "# ITEMS",
             *lines,
         ])
-        system = SYSTEM_RULES.replace("Write English.", ZH_RULE) if "Write English." in SYSTEM_RULES else f"{SYSTEM_RULES} {ZH_RULE}"
+        system = system_rules().replace("Write English.", ZH_RULE)
         req = ChatRequest(messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
                           max_tokens=4000, json_mode=True,
                           params={"schema_name": "FeedEnrichment", "stream": stream, "ids": labels,

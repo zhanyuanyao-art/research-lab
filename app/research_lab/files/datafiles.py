@@ -584,3 +584,160 @@ def set_feed_terms(list_name: str, terms: list[str], expected_sha: str, paths: P
     else:
         data.insert(len(data), list_name, _flow(items))
     return save_yaml(p, data, expected_sha)
+
+
+# The assistant also adds and removes whole sources (card 0211). Their text comes from Crossref or a feed, so it is
+# validated here, at the write layer: no control characters, bounded lengths, well-formed ISSNs and URLs.
+
+FEED_ABBR_RE = _re.compile(r"^[A-Za-z][A-Za-z0-9]{1,11}$")
+ISSN_RE = _re.compile(r"^\d{4}-\d{3}[\dX]$")
+FEED_POOLS = ("core", "watch", "hunt", "expansion")
+FEED_LANES = ("world", "research")
+FEED_NAME_MAX = 200
+FEED_URL_MAX = 500
+_CONTROL = _re.compile(r"[\x00-\x1f\x7f-\x9f  ]")
+
+
+def valid_issn(value: Any) -> bool:
+    """Form and check digit (ISO 3297)."""
+    s = str(value or "").strip().upper()
+    if not ISSN_RE.match(s):
+        return False
+    digits = s.replace("-", "")
+    check = (11 - sum(int(c) * (8 - i) for i, c in enumerate(digits[:7])) % 11) % 11
+    return digits[7] == ("X" if check == 10 else str(check))
+
+
+def _feed_text(value: Any, limit: int, what: str) -> str:
+    text = " ".join(str(value or "").split())
+    if not text or len(text) > limit or _CONTROL.search(text):
+        raise DataFileError(f"{what}要在 1 到 {limit} 个字之间，不能有控制字符。")
+    return text
+
+
+def _feed_url(value: Any) -> str:
+    from urllib.parse import urlsplit
+    url = str(value or "").strip()
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        parts = None
+    if (not parts or parts.scheme not in ("http", "https") or not parts.hostname or len(url) > FEED_URL_MAX
+            or _CONTROL.search(url) or any(c.isspace() for c in url)):
+        raise DataFileError("新闻源地址要是 http 或 https 开头的完整链接。")
+    return url
+
+
+def _url_key(url: Any) -> tuple:
+    from urllib.parse import urlsplit
+    try:
+        p = urlsplit(str(url or "").strip())
+        return p.netloc.lower(), p.path.rstrip("/"), p.query
+    except ValueError:
+        return ("invalid", str(url))
+
+
+def _issns(value: Any) -> list[str]:
+    return [str(i).strip().upper() for i in ([value] if isinstance(value, str) else value or []) if str(i).strip()]
+
+
+def _new_feed_entry(kind: str, values: dict[str, Any]) -> CommentedMap:
+    from ruamel.yaml.scalarstring import DoubleQuotedScalarString as Q
+    weight = values.get("weight", 60)
+    if isinstance(weight, bool) or not isinstance(weight, int) or not 0 <= weight <= 100:
+        raise DataFileError("权重请填 0 到 100 的整数。")
+    if values.get("enabled", True) not in (True, False):
+        raise DataFileError("开关只能是开或关。")
+    entry = CommentedMap()
+    if kind == "journal":
+        abbr = str(values.get("abbr") or "").strip()
+        if not FEED_ABBR_RE.match(abbr):
+            raise DataFileError("期刊缩写要以字母开头，由 2 到 12 个字母或数字组成。")
+        issns = list(dict.fromkeys(_issns(values.get("issn"))))
+        if not 1 <= len(issns) <= 4 or not all(valid_issn(i) for i in issns):
+            raise DataFileError("ISSN 要写成 1234-567X 这样，校验位正确，最多 4 个。")
+        pool = values.get("pool") or "core"
+        if pool not in FEED_POOLS:
+            raise DataFileError(f"期刊池只能是：{'、'.join(FEED_POOLS)}")
+        entry.update(abbr=abbr, name=Q(_feed_text(values.get("name"), FEED_NAME_MAX, "期刊名")),
+                     issn=_flow(issns), pool=pool, weight=weight)
+    elif kind == "news":
+        lane = values.get("lane") or "research"
+        if lane not in FEED_LANES:
+            raise DataFileError(f"新闻栏目只能是：{'、'.join(FEED_LANES)}")
+        entry.update(name=Q(_feed_text(values.get("name"), FEED_NAME_MAX, "新闻源名称")),
+                     url=Q(_feed_url(values.get("url"))), lane=lane, weight=weight)
+    else:
+        raise DataFileError(f"未知的来源类型：{kind}")
+    if values.get("enabled") is False:
+        entry["enabled"] = False
+    entry.fa.set_flow_style()
+    return entry
+
+
+def feed_duplicate(kind: str, values: dict[str, Any], section: list) -> dict | None:
+    """The source already in `section` that `values` would repeat: a journal by abbr or any shared ISSN, a news feed
+    by name or URL (ignoring case and a trailing slash). Disabled entries count."""
+    rows = [e for e in section or [] if isinstance(e, dict)]
+    if kind == "journal":
+        abbr = str(values.get("abbr") or "").strip().casefold()
+        issns = set(_issns(values.get("issn")))
+        return next((dict(e) for e in rows if str(e.get("abbr") or "").strip().casefold() == abbr
+                     or issns & set(_issns(e.get("issn")))), None)
+    name = str(values.get("name") or "").strip().casefold()
+    key = _url_key(values.get("url"))
+    return next((dict(e) for e in rows if str(e.get("name") or "").strip().casefold() == name
+                 or _url_key(e.get("url")) == key), None)
+
+
+def _feeds_for_write(p: Path, expected_sha: str) -> Any:
+    """feeds.yml loaded for a write; a missing file is created only when the caller read it as missing (sha '')."""
+    if p.exists():
+        _check_sha(p, expected_sha)
+        data = load_yaml(p)
+    elif expected_sha:
+        raise StaleFileError(f"{p.name} was removed since it was loaded")
+    else:
+        data = None
+    if data is None:
+        data = CommentedMap()
+    if not isinstance(data, dict):
+        raise DataFileError("推送配置文件格式有误，没有改动。")
+    return data
+
+
+def add_feed_source(kind: str, values: dict[str, Any], expected_sha: str, paths: Paths | None = None) -> str:
+    """Append one journal (abbr, name, issn, pool, weight) or news feed (name, url, lane, weight) to _data/feeds.yml
+    as a one-line entry like the hand-written ones, optionally `enabled: false`. Refuses a duplicate (DataFileError).
+    expected_sha '' means the file did not exist when read. Returns the new sha."""
+    if expected_sha is None:
+        raise ValueError("expected_sha is required")
+    p = _path("feeds", paths)
+    data = _feeds_for_write(p, expected_sha)
+    entry = _new_feed_entry(kind, values)
+    key = "news" if kind == "news" else "journals"
+    section = data.get(key)
+    if section is None:
+        section = data[key] = CommentedSeq()
+    if not isinstance(section, list):
+        raise DataFileError("推送配置文件格式有误，没有改动。")
+    if feed_duplicate(kind, entry, section) is not None:
+        raise DataFileError("这个来源已经在推送配置里了。")
+    if not section and isinstance(section, CommentedSeq):
+        section.fa.set_block_style()      # `journals: []` becomes a list of one-line entries
+    section.append(entry)
+    return save_yaml(p, data, expected_sha)
+
+
+def remove_feed_source(kind: str, name: str, expected_sha: str, paths: Paths | None = None) -> str:
+    """Delete one source (a journal by abbr or name, a news feed by name), for undoing an assistant's add. Raises
+    KeyError when it is not there. Returns the new sha."""
+    if not expected_sha:
+        raise ValueError("expected_sha is required")
+    p = _path("feeds", paths)
+    _check_sha(p, expected_sha)
+    data = load_yaml(p)
+    section = _feed_section(data, kind)
+    entry = _find_feed(section, kind, name)
+    del section[next(i for i, e in enumerate(section) if e is entry)]
+    return save_yaml(p, data, expected_sha)

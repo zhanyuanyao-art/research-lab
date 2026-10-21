@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...config import get_paths
 from ...db.connection import now_iso
+from ...files.issues import user_facts
 from ..provider import ChatRequest, JobSpec
 from ..registry import register
 
@@ -29,8 +30,8 @@ TARGETS = ("en", "zh")
 LANG_EN = {"zh": "Simplified Chinese", "en": "English", "ja": "Japanese", "ko": "Korean"}
 
 SYSTEM = (
-    "You are a careful academic translator inside Leo's Research Lab, a PhD workbench for International "
-    "Relations of East Asia. Translate only the text given. Do not summarize, omit, comment on or add "
+    "You are a careful academic translator inside Research Lab, a research workbench for one user. "
+    "Translate only the text given. Do not summarize, omit, comment on or add "
     "anything. Reply with a single JSON object matching the schema in the request and nothing else."
 )
 
@@ -143,7 +144,7 @@ class PaperTranslate(JobSpec):
         input_path = cache / f"{paper_id}-translate-{lang_to}-{rng[0]}-{rng[1]}.txt"
         input_path.write_text(block, encoding="utf-8")
         user = "\n".join([
-            f"Task: translate the pages below from {src} into {dst}, so Leo can read them side by side with the original.",
+            f"Task: translate the pages below from {src} into {dst}, so the user can read them side by side with the original.",
             f"Paper: {paper['title']} ({paper_id}) · pages p. {chosen[0].label}–{chosen[-1].label} of {len(pages)}.",
             "",
             "Rules:",
@@ -163,7 +164,7 @@ class PaperTranslate(JobSpec):
             block,
         ])
         out_tokens = min(MAX_OUTPUT_TOKENS, max(1000, int(est_tokens(block) * 2) + 400))
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}],
+        req = ChatRequest(messages=[{"role": "system", "content": f"{SYSTEM} {user_facts()}"}, {"role": "user", "content": user}],
                           max_tokens=out_tokens, json_mode=True, temperature=0.1,
                           params={"schema_name": "TranslationResult", "page_range": [rng[0], rng[1]],
                                   "page_indexes": [p.index for p in chosen], "file_id": f["id"],

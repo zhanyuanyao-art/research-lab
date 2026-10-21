@@ -11,7 +11,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...db.connection import now_iso
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 from ..registry import register
 
 MAX_ROWS = 30
@@ -93,7 +93,7 @@ class AnalysisRead(JobSpec):
             "diagnostic runs the user could do with these methods. Write in Simplified Chinese (this job overrides the "
             "English rule); keep variable names as they appear."
         )
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES}, {"role": "user", "content": user}],
+        req = ChatRequest(messages=[{"role": "system", "content": system_rules()}, {"role": "user", "content": user}],
                           max_tokens=1500)
         return req, []
 

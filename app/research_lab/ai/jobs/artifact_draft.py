@@ -17,7 +17,7 @@ from ...config import get_paths
 from ...db.connection import get_setting, now_iso
 from ...files import artifacts, datafiles
 from .. import registry
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 
 EXC_RE = re.compile(r"EXC-\d{4}-\d{4}")
 MAX_BODY_CHARS = 12000
@@ -104,7 +104,7 @@ class ArtifactDraft(JobSpec):
         body = a.body if len(a.body) <= MAX_BODY_CHARS else a.body[:MAX_BODY_CHARS] + "\n[…truncated]"
         schema = json.dumps(DraftResult.model_json_schema(), ensure_ascii=False)
         user = "\n".join([
-            f"Task: help Leo draft this week's artifact {target_id} ({a.get('type')} · {a.get('level')}).",
+            f"Task: help the user draft this week's artifact {target_id} ({a.get('type')} · {a.get('level')}).",
             f"Project question: {project.get('question', '(none)')}",
             "",
             "## Selected excerpts (the ONLY evidence you may use)",
@@ -124,7 +124,7 @@ class ArtifactDraft(JobSpec):
             "excerpt says, with its locator, ending with the excerpt id in brackets, e.g. [EXC-2026-0001]. "
             "Cite only the excerpt ids listed above. Never quote text that is not in the excerpt.",
             "- Do NOT write the 'What did I figure out' or 'Claim' sections. You may offer at most 2 short "
-            "what_i_figured_out_candidates; Leo decides whether to write his own.",
+            "what_i_figured_out_candidates; the user decides whether to write their own.",
             "- outline: the order in which the sections could argue, as short lines.",
             "- questions: open questions the excerpts raise, phrased as questions.",
             "- related_artifacts: refs from the list above that this artifact builds on or contests; else [].",
@@ -134,7 +134,7 @@ class ArtifactDraft(JobSpec):
             "Example json:",
             json.dumps(self.example(), ensure_ascii=False),
         ])
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES}, {"role": "user", "content": user}],
+        req = ChatRequest(messages=[{"role": "system", "content": system_rules()}, {"role": "user", "content": user}],
                           max_tokens=3000, params={"excerpt_ids": ids, "artifact_sha": a.sha,
                                                    "known_refs": others})
         return req, [str(path)]

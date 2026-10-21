@@ -38,6 +38,8 @@ Applying and undoing never call a model and do not check the daily spend cap. Ki
 in; card 0080 adds 'setting' with register(kind, apply_fn, undo_fn), each fn(conn, rows, source) ->
 [{id, status, result?, note?, detail?, target?}] for the rows it handled. A handler may call
 finish_row(conn, result) as it goes, so a crash mid-batch never re-applies a row already written.
+A row a handler carried out but cannot put back (a run it started, card 0212) is applied with result
+ONCE: it counts as applied and is never undone.
 """
 from __future__ import annotations
 
@@ -52,6 +54,7 @@ from ..files import issues
 from ..files.yamlio import StaleFileError
 
 STATUSES = ("proposed", "applied", "undone", "dismissed")
+ONCE = "once"
 ACTIONS = ("set", "create", "comment")
 # One process serves the app: two clicks on 执行 queue here, and the second finds nothing proposed.
 _LOCK = threading.RLock()
@@ -205,8 +208,9 @@ def _undoable(batch_rows: list[dict]) -> bool:
 
 
 def _undo_pending(r: dict) -> bool:
-    """Applied, not a comment, and not one undo already left alone because Leo changed it (final)."""
-    return r["status"] == "applied" and r["action"] != "comment" and r["result"] != "kept"
+    """Applied, not a comment, not a one-off action (ONCE), and not one undo already left alone because Leo
+    changed it (final)."""
+    return r["status"] == "applied" and r["action"] != "comment" and r["result"] not in ("kept", ONCE)
 
 
 def last_batch(conn, thread_id: str) -> str | None:

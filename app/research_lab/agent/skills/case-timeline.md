@@ -11,7 +11,7 @@ tool_output_chars: 11000
 tools: [research_state, search_research, read_research_source, list_papers, list_artifacts, save_research_checkpoint, save_research_draft, ask_user]
 triggers: [案例时间轴, 案例时间线, 时间轴, 时间线, 事件年表, 案例检索, 检索案例, 案例梳理, timeline, chronology]
 ---
-Build a source-grounded event chronology in Simplified Chinese through lab tools. It remains a suggested output until Leo reviews and adopts it. The timeline is descriptive evidence; causal conclusions and evidence status remain the researcher's decisions.
+Build a source-grounded event chronology in Simplified Chinese through lab tools. It remains a suggested output until the user reviews and adopts it. The timeline is descriptive evidence; causal conclusions and evidence status remain the researcher's decisions.
 
 Restore research_state and continue by next_offset to recover prior scope, exclusions and corrections across engines. Define case boundaries, actors, locations, dates and the event unit. If key scope is missing, ask one focused question after preserving the current checkpoint. Otherwise state a provisional scope and begin.
 

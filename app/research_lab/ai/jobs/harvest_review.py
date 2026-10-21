@@ -16,7 +16,7 @@ from ...db.connection import now_iso
 from ...files import artifacts, datafiles, harvests
 from ...files.yamlio import dump_yaml
 from .. import registry
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 
 SECTIONS = ("What did I figure out", "Claim", "Next question")
 FRONT_KEYS = ("ref", "title", "week", "type", "level", "project", "status", "version", "related")
@@ -99,7 +99,7 @@ class HarvestReview(JobSpec):
         projects = datafiles.read("projects") or []
         start, end = harvests.period_range(target_id)
         user = "\n".join([
-            f"Task: review Leo's {harvests.kind_of(target_id)} harvest {target_id} ({start} to {end}).",
+            f"Task: review the user's {harvests.kind_of(target_id)} harvest {target_id} ({start} to {end}).",
             "",
             "## Counting artifacts in the period (the ONLY refs you may use)",
             json.dumps(items, ensure_ascii=False, indent=1),
@@ -120,7 +120,7 @@ class HarvestReview(JobSpec):
             "Example json:",
             json.dumps(self.example(), ensure_ascii=False),
         ])
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES}, {"role": "user", "content": user}],
+        req = ChatRequest(messages=[{"role": "system", "content": system_rules()}, {"role": "user", "content": user}],
                           max_tokens=2500, params={"period": target_id, "refs": refs})
         return req, []
 

@@ -75,8 +75,8 @@ def test_presets_dedupe_and_manual_disabled_entries_win(empty_feeds):
 def test_all_presets_are_bounded_unique_and_have_real_identifiers(empty_feeds):
     save(tuple(presets.IDS))
     src = sources.load()
-    assert len(src.journals) == 9 and len(src.news) == 3
-    assert len({i for j in src.journals for i in j.issns}) == 9
+    assert len(src.journals) == len(presets.JOURNALS) and len(src.news) == 3
+    assert len({i for j in src.journals for i in j.issns}) == len(presets.JOURNALS)
     for _, issn, publisher in presets.JOURNALS.values():
         digits = issn.replace('-', '')
         total = sum(int(n) * (8 - i) for i, n in enumerate(digits[:7])) + (10 if digits[-1] == 'X' else int(digits[-1]))

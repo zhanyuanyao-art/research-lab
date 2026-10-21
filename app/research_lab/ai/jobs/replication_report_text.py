@@ -22,7 +22,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from ...db.connection import now_iso
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 from ..registry import register
 
 MAX_TOKENS = 4000
@@ -207,7 +207,7 @@ class ReportText(JobSpec):
                 "parentheses for asides; keep variable names as the paper writes them.\n\n"
                 "Example of the json shape (content is from another paper; do not copy it):\n"
                 + json.dumps(EXAMPLE, ensure_ascii=False))
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES}, {"role": "user", "content": user}],
+        req = ChatRequest(messages=[{"role": "system", "content": system_rules()}, {"role": "user", "content": user}],
                           max_tokens=MAX_TOKENS)
         return req, []
 

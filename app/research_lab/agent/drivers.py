@@ -54,7 +54,7 @@ def _fresh_prompt(task, parent) -> str:
         return task["prompt"]
     prev = (parent["report"] or "")[:3000]
     q = f"\nYou asked: {parent['question']}" if parent["question"] else ""
-    return f"Earlier in this conversation Leo asked: {parent['prompt']}\nYour report was:\n{prev}{q}\n\nLeo now says: {task['prompt']}"
+    return f"Earlier in this conversation the user asked: {parent['prompt']}\nYour report was:\n{prev}{q}\n\nThe user now says: {task['prompt']}"
 
 
 class ClaudeCodeDriver:
@@ -172,7 +172,7 @@ class DeepSeekDriver:
                 text, _err = execute_tool(self.conn, ctx, fn.get("name") or "", args)
                 messages.append({"role": "tool", "tool_call_id": call.get("id"), "content": text})
             if ctx.question:
-                messages.append({"role": "user", "content": "Stop here: give a one-paragraph status in Chinese; your question is shown to Leo."})
+                messages.append({"role": "user", "content": "Stop here: give a one-paragraph status in Chinese; your question is shown to the user."})
         out.history = messages[1:]
         out.usage = usage
         return out

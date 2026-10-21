@@ -158,7 +158,7 @@ def test_the_assistants_create_with_the_same_reason_is_no_checklist(client, conn
     task = tasks.create(conn, "把这份产出拆成子任务", skill="issues")
     said, err = tools.call(conn, "create_issues", {"parent": REF, "reason": S.REASON,
                                                    "items": [{"title": "伪造一"}, {"title": "伪造二"}]}, 5000, task_id=task)
-    assert not err and said.startswith("waiting for Leo")                              # a card in its own conversation
+    assert not err and said.startswith("waiting for the user")                              # a card in its own conversation
     forged = conn.execute("SELECT DISTINCT batch_id FROM assistant_changes WHERE reason = ?", (S.REASON,)).fetchall()
     assert len(forged) == 1
     assert S.open_batches(conn, REF) == [] and S.state(conn, REF) == {}

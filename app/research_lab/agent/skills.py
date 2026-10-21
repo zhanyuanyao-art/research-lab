@@ -46,7 +46,7 @@ class Assistant:
     default_skill: str    # where a request goes when nothing routes it elsewhere
 
 
-ASSISTANTS = {"theo": Assistant("theo", "Theo", "Leo 研究台的任务管理助手", "task")}
+ASSISTANTS = {"theo": Assistant("theo", "Theo", "研究台的任务管理助手", "task")}
 CURRENT_ASSISTANT = "theo"
 
 
@@ -190,6 +190,8 @@ SETTING_CHANGE = re.compile(
     r"(?<![a-z])key(?![a-z])|密钥|优先|提醒|上限|开放获取|关掉|打开|关了|开了|停掉|往前排|往后排"
     r"|靠前|靠后|权重|关键词|比例|别发|别超过|不超过|最多|花费|调成|设置成|改成|换成|调高|调低|多一点|少一点|多推|少推|严格|宽松")
 ISSUE_OBJECT = re.compile(r"进行中|已完成|完成|搁置|待办|优先级|那条|这条|第\s*[一二三四五六七八九十百\d]+\s*[章节]")
+# Push subscriptions (card 0211): the feed tools are on the settings skill; 「加一个期刊」 would read as a task command.
+FEED_SOURCE = re.compile(r"订阅|退订|停订|新闻源|(?<![a-z])rss(?![a-z])|(?:加|添加|增加)(?:一个|一本|个|本)?(?:期刊|杂志)")
 
 
 def _app_names(text: str) -> bool:
@@ -216,6 +218,8 @@ def is_settings_request(text: str) -> bool:
     t = (text or "").lower()
     if ISSUE_OBJECT.search(t):
         return False
+    if FEED_SOURCE.search(t):
+        return True
     if SETTING_PHRASE.search(t) or (SUMMARY_DEPTH.search(t) and not ONE_PAPER.search(t)):
         return True
     if not SETTING_CHANGE.search(t):
@@ -248,6 +252,15 @@ def is_issue_request(text: str) -> bool:
     return bool(ISSUE_ANCHOR.search(t) or (ISSUE_NOUN.search(t) and ISSUE_ACTION.search(t)))
 
 
+# Steering a replication (card 0212) goes to its tools ahead of the progress and command words below, which would send
+# 「复现进度怎么样了」 to the task skill. A new plan or a question about the design stays with methods, and an issue
+# about a replication (「复现那条这周做完」) with the issue tools.
+REPLICATION = re.compile(r"复现|一键跑完|run\s*all|展示稿|待补数据|replicat|作者的?\s*r\s*代码|(?<![a-z])r\s*包"
+                         r"|停(?:掉|下|止)?\s*r(?![a-z])")
+NOT_REPLICATION = re.compile(r"(?:做|生成|拟|写|出|建)(?:一个|一份|个|份)?复现方案|研究设计|识别假设|那条|这条|待办|议题"
+                             r"|优先级|截止|搁置|进行中|已完成|(?:这周|本周|下周)内?(?:做完|写完|交|完成)")
+
+
 def pick(text: str) -> Skill:
     """Route a chat request by trigger words; the general task skill otherwise. No model call."""
     t = (text or "").lower()
@@ -267,6 +280,8 @@ def pick(text: str) -> Skill:
             return skill
     if re.search(r"(?:检索|查找|搜索|找).{0,40}(?:文献|论文)", t) and not PROGRESS.search(t):
         return get("literature-map")
+    if REPLICATION.search(t) and not NOT_REPLICATION.search(t):
+        return get("replication-control")
     # Progress questions and commands about Leo's work go where the issue tools are, before a word like
     # 数据 sends 「数据清洗做到哪了」 to the analysis skill.
     if PROGRESS.search(t) or (COMMAND.search(t) and not asks(t)):

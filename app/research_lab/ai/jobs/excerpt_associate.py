@@ -19,7 +19,7 @@ from ...method.seed import ASEAN
 from ...search import anchors as anchor_mod
 from ...search.related import excerpt_title, is_meaningful, related
 from .. import registry
-from ..provider import SYSTEM_RULES, ChatRequest, JobSpec
+from ..provider import ChatRequest, JobSpec, system_rules
 
 MAX_CANDIDATES = 12
 SNIPPET = 600
@@ -187,7 +187,7 @@ class ExcerptAssociate(JobSpec):
         if rej:
             parts += ["", "## Suggestions the user rejected before (do not propose links like these)", *rej]
         parts += ["", "## Task", TASK.format(n_excerpts=n_excerpts, n_anchors=n_anchors)]
-        req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES.replace("Write English.", ZH_RULE)},
+        req = ChatRequest(messages=[{"role": "system", "content": system_rules().replace("Write English.", ZH_RULE)},
                                     {"role": "user", "content": "\n".join(parts)}],
                           max_tokens=2500, temperature=0.2)
         return req, []
@@ -266,10 +266,10 @@ def _as_title_row(row: sqlite3.Row) -> dict:
 ZH_RULE = ("Write reasons, the claim, next_question and target notes in Simplified Chinese; ids, case ids, camp keys, "
            "relation names and artifact section names stay exactly as given.")
 
-TASK = """Place this excerpt in Leo's research. Work only from the excerpt, the note and the candidates above.
+TASK = """Place this excerpt in the user's research. Work only from the excerpt, the note and the candidates above.
 - tags: propose vocabulary tags the user has not set (uses from A, cases from C, concept keys, one camp from B or the project camps). Empty lists when unsure.
 - links: at most 5, each to a candidate id above with the exact target_type shown; relation is one of supports, contradicts, same-case, same-concept, defines, mechanism, parallel; reason ≤ 30 words saying why the link matters for the argument, not what the texts say. Prefer anchors when no excerpt is truly related. Never link to an id that is not listed.
-- claim: one sentence Leo could test, resting only on this excerpt and the linked material; strength "seed" unless two or more independent excerpts support it, then "developed". null if nothing defensible.
+- claim: one sentence the user could test, resting only on this excerpt and the linked material; strength "seed" unless two or more independent excerpts support it, then "developed". null if nothing defensible.
 - next_question: one question that would move the project forward (a search, a case to check, a definition to settle), or null. It is shown as "to verify": do not assert facts about events.
 - targets: where this excerpt could go: artifact_section (ref "<artifact ref> § <section>", never Claim or What did I figure out), matrix_cell (ref "<claim code> × <case id>"), map_edge (ref "<paper> → <relation> → <camp>"); note ≤ 20 words. Suggest; never set evidence status.
 Do not include the quote or any quotation in your reply.

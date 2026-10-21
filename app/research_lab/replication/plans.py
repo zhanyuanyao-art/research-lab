@@ -1227,7 +1227,7 @@ def paper_block(conn: sqlite3.Connection, paper_id: str) -> str:
     (<paper_text>), the results tables (<results_pages>) and the data-availability windows (<availability>), in that
     order, each with its label line; it ends with a blank line, so the caller's own text follows directly.
 
-    DeepSeek caches a prompt by its exact opening, so two jobs that send the same system message (SYSTEM_RULES) and
+    DeepSeek caches a prompt by its exact opening, so two jobs that send the same system message (system_rules()) and
     start their user message with this block share the cache for the paper. It changes only with the paper's file,
     its page text or SELECTION_VERSION: the page pickers are cached per file (_cached) and nothing here reads the
     clock, the settings or the paper's summary and direction. Raises LookupError for an unknown paper and PlanError
@@ -1241,7 +1241,7 @@ def build(conn: sqlite3.Connection, paper_id: str):
     """The methods.replicate request for one paper. The user message opens with paper_block(), the part that stays
     the same from one request about the paper to the next, so DeepSeek's prefix cache covers it; what can change
     between two runs (the direction list, the reading aid, the rule links) follows it, and the task comes last."""
-    from ..ai.provider import SYSTEM_RULES, ChatRequest
+    from ..ai.provider import ChatRequest, system_rules
     paper = conn.execute("SELECT * FROM papers WHERE id = ?", (paper_id,)).fetchone()
     if paper is None:
         raise LookupError(f"no paper {paper_id}")
@@ -1290,7 +1290,7 @@ def build(conn: sqlite3.Connection, paper_id: str):
     )
     # PLAN_MAX_TOKENS is a ceiling, not a price (see there). With thinking on (a deep tier) the provider raises it to
     # its thinking floor, since the reasoning is counted against the same limit.
-    req = ChatRequest(messages=[{"role": "system", "content": SYSTEM_RULES}, {"role": "user", "content": user}],
+    req = ChatRequest(messages=[{"role": "system", "content": system_rules()}, {"role": "user", "content": user}],
                       max_tokens=PLAN_MAX_TOKENS)
     return req, []
 

@@ -15,7 +15,7 @@ HOST = "127.0.0.1"
 PORT = 4100
 # Single source of truth is pyproject.toml; tests assert this constant matches it (the packaged app has
 # no pyproject to read). Bump both together, then tag v<version>.
-APP_VERSION = "1.3.45"
+APP_VERSION = "1.3.46"
 
 _BUILD_FILE = Path(__file__).resolve().parent / "web" / "static" / "build.json"
 

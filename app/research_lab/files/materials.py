@@ -194,7 +194,7 @@ def validate(conn: sqlite3.Connection, plan: dict[str, Any], thread_id: str | No
     dl = plan.get("deliverable") if isinstance(plan.get("deliverable"), dict) else {}
     title = " ".join(str(dl.get("title") or "").split())[:120]
     if not title:
-        raise PlanError("deliverable.title is required (the title of the piece Leo hands in)")
+        raise PlanError("deliverable.title is required (the title of the piece the user hands in)")
     due = _date(dl.get("due"), "deliverable.due")
     words = _words(dl.get("words"), "deliverable.words")
 

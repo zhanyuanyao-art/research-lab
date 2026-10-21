@@ -1,6 +1,6 @@
 # License and distribution decision
 
-Decision recorded on 2026-10-12 after the owner delegated the choice: **AGPL-3.0-or-later**, with source-first local installation. Apple signing is a later binary-distribution step, not a prerequisite for publishing source. Actual publication still requires a separate release decision; do not expose the original private repository or its history.
+Decision recorded on 2026-10-12 after the owner delegated the choice: **AGPL-3.0-or-later**, with source-first local installation. Apple signing is a later binary-distribution step, not a prerequisite for publishing source. The source was published on 2026-10-21 at [github.com/zhanyuanyao-art/research-lab](https://github.com/zhanyuanyao-art/research-lab) as a fresh-history export; the original private repository and its history stay private.
 
 ## Application license
 
@@ -25,4 +25,4 @@ The LICENSE text is the verbatim GNU AGPL v3 text preserved in the pinned PyMuPD
 3. Prepare a separately verified Mac binary release. Offer application source and the required dependency source with each binary; preserve build instructions and notices.
 4. Add Developer ID signing and notarization when a distributable Mac installer is needed. This does not require an App Store listing. See [Apple's Developer ID overview](https://developer.apple.com/developer-id/).
 
-The current Mac candidate is ad-hoc signed and not notarized. Source licensing is decided; public release approval, reporting contacts and independent-machine validation remain separate tasks.
+The current Mac candidate is ad-hoc signed and not notarized. Source licensing and source publication are done, with private vulnerability reporting enabled. Independent-machine validation and a signed Mac binary remain open.

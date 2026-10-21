@@ -217,10 +217,10 @@ def test_megabyte_inputs_are_cut_and_every_part_finishes_in_time():
 
 def test_the_report_text_job_shares_the_paper_opening_and_writes_its_file(conn, fixture_plan):
     from research_lab.ai import registry
-    from research_lab.ai.provider import SYSTEM_RULES
+    from research_lab.ai.provider import system_rules
     spec = registry.get("replication.report_text")
     req, files = spec.build(fixture_plan["id"], conn)
-    assert files == [] and req.messages[0] == {"role": "system", "content": SYSTEM_RULES}
+    assert files == [] and req.messages[0] == {"role": "system", "content": system_rules()}
     user = req.messages[1]["content"]
     from research_lab.replication import plans
     assert user.startswith(plans.paper_block(conn, fixture_plan["paper"]))     # the same opening as methods.replicate

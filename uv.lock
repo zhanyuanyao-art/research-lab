@@ -1961,7 +1961,7 @@ wheels = [
 
 [[package]]
 name = "research-lab"
-version = "1.3.45"
+version = "1.3.46"
 source = { editable = "." }
 dependencies = [
     { name = "differences" },

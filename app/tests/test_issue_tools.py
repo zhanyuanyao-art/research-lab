@@ -84,7 +84,7 @@ def test_get_issue_shows_fields_sub_issues_and_activity(conn, lab):
     text = call(conn, "get_issue", {"ref": lab["ch2"]})
     assert f"[第二章](/issues/{lab['ch2']})" in text and "status todo (待办)" in text
     assert "sub-issues (0/2 done" in text and f"[第一节](/issues/{lab['s1']})" in text
-    assert "Leo: 导师说要压缩" in text
+    assert "the user: 导师说要压缩" in text
     root = call(conn, "get_issue", {"ref": ASEAN})                 # a 课题 by slug
     assert "kind 课题 (a project root" in root and "research question:" in root
     assert "no issue matches" in fails(conn, "get_issue", {"ref": "不存在的议题"})
@@ -132,7 +132,7 @@ def test_assistant_picked_objects_wait_on_a_card(conn, lab):
     nxt = T.next_friday()
     text = call(conn, "change_issues", {"changes": [{"ref": lab["s1"], "field": "due", "new": "下周"},
                                                      {"ref": lab["clean"], "field": "due", "new": nxt}]}, task)
-    assert text.startswith("waiting for Leo (对象是助手挑出来的：「第一节」、「数据清洗」)") and "card" in text
+    assert text.startswith("waiting for the user (对象是助手挑出来的：「第一节」、「数据清洗」)") and "card" in text
     assert T.get(lab["s1"])["due"] is None and not assistant_lines(lab["s1"])
     (b,) = CH.batches(conn, task_id=task)
     # 「挪到下周」 is a due date next Friday (no plan week since card 0093)
@@ -152,7 +152,7 @@ def test_the_direct_limit_counts_the_whole_request_not_one_call(conn, lab):
     for field, new in (("status", "doing"), ("priority", "high"), ("due", "12 月 1 日")):
         call(conn, "change_issues", {"changes": [{"ref": lab["ch2"], "field": field, "new": new}]}, one)
     text = call(conn, "change_issues", {"changes": [{"ref": lab["ch2"], "field": "labels", "add": ["写作"]}]}, one)
-    assert "waiting for Leo" in text and I.get(lab["ch2"])["labels"] == []
+    assert "waiting for the user" in text and I.get(lab["ch2"])["labels"] == []
     made = ask(conn, "在第二章下面加两个子议题：补笔记")
     call(conn, "create_issues", {"parent": "第二章", "items": [{"title": "补笔记"}]}, made)
     again = call(conn, "create_issues", {"parent": "第二章", "items": [{"title": "补笔记"}]}, made)
@@ -242,7 +242,7 @@ def test_a_value_changed_since_it_was_read_is_left_alone(conn, lab):
 def test_research_content_and_project_identity_are_out_of_reach(conn, lab):
     for field in ("claim", "level", "maturity", "assignee", "body"):
         assert "cannot change" in fails(conn, "change_issues", {"changes": [{"ref": lab["ch2"], "field": field, "new": "x"}]})
-    assert "Leo's to edit" in fails(conn, "change_issues", {"changes": [{"ref": ASEAN, "field": "description", "new": "x"}]})
+    assert "the user's to edit" in fails(conn, "change_issues", {"changes": [{"ref": ASEAN, "field": "description", "new": "x"}]})
     assert "delete" not in " ".join(skills.get("issues").tools)
 
 
@@ -257,7 +257,7 @@ def test_create_one_in_leos_words_directly_and_a_split_on_a_card(conn, lab):
     text = call(conn, "create_issues", {"parent": lab["lit"], "items": [
         {"title": "梳理东盟中心性的定义", "due": "下周"}, {"title": "比较三派解释", "due": "下周"},
         {"title": "列出待读文献", "due": nxt}]}, split)
-    assert text.startswith("waiting for Leo (一次新建 3 个议题；标题是助手起草的)") and len(T.read()) == before
+    assert text.startswith("waiting for the user (一次新建 3 个议题；标题是助手起草的)") and len(T.read()) == before
     (b,) = CH.batches(conn, task_id=split)
     assert b["status"] == "proposed" and [r["new"]["due"] for r in b["rows"]] == [nxt] * 3
     assert {r["new"]["parent"] for r in b["rows"]} == {lab["lit"]}
@@ -607,7 +607,7 @@ def test_deepseek_split_leaves_a_proposed_batch(conn, lab, inline, monkeypatch):
     (b,) = CH.batches(conn, thread_id=out[0].thread_id)
     assert b["status"] == "proposed" and len(b["rows"]) == 3 and {r["task_id"] for r in b["rows"]} == {t["id"]}
     assert all(r["action"] == "create" and r["new"]["due"] == T.next_friday() for r in b["rows"])
-    assert "waiting for Leo" in seen[2]["messages"][-1]["content"]
+    assert "waiting for the user" in seen[2]["messages"][-1]["content"]
 
 
 # ---------------------------------------------------------------- card 0084: the task skill holds the issue tools
@@ -852,12 +852,12 @@ def test_an_order_still_cards_what_the_assistant_picked(conn, lab):
     task = task_ask(conn, "把落后的都挪到下周")
     text = call(conn, "change_issues", {"changes": [{"ref": lab["s1"], "field": "due", "new": "下周"},
                                                      {"ref": lab["clean"], "field": "due", "new": "下周"}]}, task)
-    assert text.startswith("waiting for Leo (对象是助手挑出来的") and T.get(lab["s1"])["due"] is None
+    assert text.startswith("waiting for the user (对象是助手挑出来的") and T.get(lab["s1"])["due"] is None
     (b,) = CH.batches(conn, task_id=task)
     assert b["status"] == "proposed"
     task = task_ask(conn, "记下来")               # 0088 review: an order, but 引言 came from the selection
     text = call(conn, "change_issues", {"changes": [{"ref": "引言", "field": "status", "new": "done"}]}, task)
-    assert text.startswith("waiting for Leo (对象是助手挑出来的：「引言」)") and T.get(lab["intro"])["status"] == "todo"
+    assert text.startswith("waiting for the user (对象是助手挑出来的：「引言」)") and T.get(lab["intro"])["status"] == "todo"
 
 
 def asked_then(conn, question_prompt, question, answer):
@@ -895,7 +895,7 @@ def test_a_short_yes_to_the_standard_lines_is_leos_consent(conn, lab):
     lines = standard_lines(conn, "change_issues", {"changes": [{"ref": "第二章", "field": "status", "new": "done"}]})
     text = call(conn, "change_issues", {"changes": [{"ref": "第二章", "field": "status", "new": "done"}]},
                 asked_then(conn, "第二章写完了吗", "要把第二章标成完成吗？\n" + "\n".join(lines), "好"))
-    assert text.startswith("waiting for Leo (「第二章」还有 2 个子议题没完成") and T.get(lab["ch2"])["status"] == "todo"
+    assert text.startswith("waiting for the user (「第二章」还有 2 个子议题没完成") and T.get(lab["ch2"])["status"] == "todo"
 
 
 DOING = "要把引言改成进行中吗？\n「引言」状态：待办 → 进行中"
@@ -928,7 +928,7 @@ def test_a_yes_on_the_issue_skill_does_not_turn_a_question_into_an_order(conn, l
     said = call(conn, "change_issues", {"changes": [{"ref": "引言", "field": "status", "new": "doing"},
                                                      {"ref": "引言", "field": "priority", "new": "medium"}]},
                 ask(conn, "好", parent=first))
-    assert said.startswith("not changed (Leo 只同意了问句里原样写出的改动)") and I.get(lab["intro"])["priority"] == "none"
+    assert said.startswith("not changed (用户只同意了问句里原样写出的改动)") and I.get(lab["intro"])["priority"] == "none"
 
 
 # ---------------------------------------------------------------- card 0107: no plan week, due dates only
