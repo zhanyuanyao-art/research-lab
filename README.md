@@ -13,9 +13,9 @@ A local research workspace for social scientists: read papers, follow new journa
 - 期刊文章来自 Crossref 和 OpenAlex，新闻来自公开 RSS。设置的「学科与兴趣」里有政治学、国际关系、区域研究等预设；其他期刊按 ISSN 写进工作区的 `_data/feeds.yml`。
 
 
-![读论文](docs/screenshots/reader.png)
-
 ## 读论文
+
+![读论文](docs/screenshots/reader.png)
 
 - PDF 按原版排版显示，右栏是论文信息和中文概要。
 - 概要列出研究问题和核心论点，每条标页码，点页码跳到原文那一页。
